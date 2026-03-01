@@ -142,23 +142,57 @@
             margin-bottom: 5px;
         }
 
-        .history {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
+        .reminder-box {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            border-left: 5px solid #dee2e6;
+            transition: all 0.3s ease;
         }
 
-        .history-title {
+        .reminder-box .title {
             font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
-            font-weight: 600;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #333;
         }
 
-        .history-item {
-            font-size: 12px;
-            color: #888;
-            padding: 5px 0;
+        .reminder-box .date {
+            font-size: 15px;
+            color: #555;
+            font-family: monospace;
+            line-height: 1.4;
+        }
+
+        .reminder-box.status-safe {
+            border-left-color: #28a745;
+            background: #e9f7ef;
+        }
+
+        .reminder-box.status-warning {
+            border-left-color: #ffc107;
+            background: #fff9e6;
+            animation: pulse-yellow 2s infinite;
+        }
+
+        .reminder-box.status-danger {
+            border-left-color: #dc3545;
+            background: #fdf2f2;
+        }
+
+        @keyframes pulse-yellow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+            }
         }
 
         /* 教程部分样式 */
@@ -300,9 +334,12 @@
 
         <div id="status"></div>
 
-        <div class="history">
-            <div class="history-title">使用记录</div>
-            <div id="historyList"></div>
+        <div id="status"></div>
+
+        <!-- 保号提醒区 -->
+        <div id="reminder" class="reminder-box">
+            <div class="title">📅 下次保号提醒</div>
+            <div id="reminderContent" class="date">正在计算中...</div>
         </div>
 
         <div class="warning">
@@ -490,40 +527,43 @@
     </div>
 
     <script>
-        // 加载历史记录
-        function loadHistory() {
-            const history = JSON.parse(localStorage.getItem('ggHistory') || '[]');
-            const historyList = document.getElementById('historyList');
+        // 更新并显示提醒状态
+        function updateReminderStatus() {
+            const lastTime = localStorage.getItem('ggLastTime');
+            const reminder = document.getElementById('reminder');
+            const content = document.getElementById('reminderContent');
 
-            if (history.length === 0) {
-                historyList.innerHTML = '<div class="history-item">暂无记录</div>';
+            if (!lastTime) {
+                reminder.className = 'reminder-box';
+                content.innerHTML = "尚未进行过保号，请点击上方按钮开始。";
                 return;
             }
 
-            historyList.innerHTML = history.slice(-5).reverse().map(item =>
-                `<div class="history-item">✓ ${item.date} - ${item.size} KB</div>`
-            ).join('');
+            const startDate = new Date(parseInt(lastTime));
+            const expireDate = new Date(startDate.getTime() + 180 * 24 * 60 * 60 * 1000);
+            const now = new Date();
+
+            // 计算剩余天数
+            const diffDays = Math.ceil((expireDate - now) / (24 * 60 * 60 * 1000));
+
+            const dateStr = expireDate.toLocaleDateString() + ' ' + expireDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (diffDays > 15) {
+                reminder.className = 'reminder-box status-safe';
+                content.innerHTML = `状态正常<br>建议日期：${dateStr}`;
+            } else if (diffDays > 0) {
+                reminder.className = 'reminder-box status-warning';
+                content.innerHTML = `⚠️ 建议保号<br>距离过期仅剩 ${diffDays} 天<br>截止日期：${dateStr}`;
+            } else {
+                reminder.className = 'reminder-box status-danger';
+                content.innerHTML = `🚨 已经过期<br>已超期 ${Math.abs(diffDays)} 天<br>建议立即执行保号！`;
+            }
         }
 
-        // 保存历史记录
-        function saveHistory(size) {
-            const history = JSON.parse(localStorage.getItem('ggHistory') || '[]');
-            const now = new Date();
-            const dateStr = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-            history.push({
-                date: dateStr,
-                size: size,
-                timestamp: now.getTime()
-            });
-
-            // 只保留最近20条记录
-            if (history.length > 20) {
-                history.shift();
-            }
-
-            localStorage.setItem('ggHistory', JSON.stringify(history));
-            loadHistory();
+        // 成功后保存最后一次时间并刷新提醒
+        function saveLastKeepAlive() {
+            localStorage.setItem('ggLastTime', new Date().getTime().toString());
+            updateReminderStatus();
         }
 
         function consumeData() {
@@ -565,8 +605,8 @@
                         </div>
                     `;
 
-                    // 保存记录
-                    saveHistory(sizeInKB);
+                    // 更新提醒
+                    saveLastKeepAlive();
 
                     btn.disabled = false;
                     btn.innerText = "🔄 再次保号";
@@ -597,7 +637,7 @@
         }
 
         // 页面加载时显示历史记录
-        window.onload = loadHistory;
+        window.onload = updateReminderStatus;
     </script>
 </body>
 
