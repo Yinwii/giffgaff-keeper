@@ -161,8 +161,27 @@
         .reminder-box .date {
             font-size: 15px;
             color: #555;
-            font-family: monospace;
             line-height: 1.4;
+        }
+
+        .history {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .history-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .history-item {
+            font-size: 12px;
+            color: #888;
+            padding: 5px 0;
+            border-bottom: 1px solid #f9f9f9;
         }
 
         .reminder-box.status-safe {
@@ -340,6 +359,12 @@
         <div id="reminder" class="reminder-box">
             <div class="title">📅 下次保号提醒</div>
             <div id="reminderContent" class="date">正在计算中...</div>
+        </div>
+
+        <!-- 使用记录区 -->
+        <div class="history">
+            <div class="history-title">使用记录</div>
+            <div id="historyList"></div>
         </div>
 
         <div class="warning">
@@ -543,27 +568,57 @@
             const expireDate = new Date(startDate.getTime() + 180 * 24 * 60 * 60 * 1000);
             const now = new Date();
 
-            // 计算剩余天数
-            const diffDays = Math.ceil((expireDate - now) / (24 * 60 * 60 * 1000));
+            // 计算剩余天数 (向上取整)
+            const diffMs = expireDate - now;
+            const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
 
-            const dateStr = expireDate.toLocaleDateString() + ' ' + expireDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateStr = expireDate.toLocaleDateString('zh-CN', { year: 'numeric', month: 'numeric', day: 'numeric' }) + ' ' + expireDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             if (diffDays > 15) {
                 reminder.className = 'reminder-box status-safe';
-                content.innerHTML = `状态正常<br>建议日期：${dateStr}`;
+                content.innerHTML = `✅ 状态正常 (还剩 ${diffDays} 天)<br>建议日期：${dateStr}`;
             } else if (diffDays > 0) {
                 reminder.className = 'reminder-box status-warning';
-                content.innerHTML = `⚠️ 建议保号<br>距离过期仅剩 ${diffDays} 天<br>截止日期：${dateStr}`;
+                content.innerHTML = `🕒 建议保号 (仅剩 ${diffDays} 天)<br>截止日期：${dateStr}`;
             } else {
                 reminder.className = 'reminder-box status-danger';
-                content.innerHTML = `🚨 已经过期<br>已超期 ${Math.abs(diffDays)} 天<br>建议立即执行保号！`;
+                content.innerHTML = `🚨 已经过期 (超期 ${Math.abs(diffDays)} 天)<br>建议立即执行保号！`;
             }
         }
 
-        // 成功后保存最后一次时间并刷新提醒
-        function saveLastKeepAlive() {
-            localStorage.setItem('ggLastTime', new Date().getTime().toString());
+        // 加载历史记录
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('ggHistory') || '[]');
+            const historyList = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="history-item">暂无记录</div>';
+                return;
+            }
+
+            historyList.innerHTML = history.slice(-5).reverse().map(item =>
+                `<div class="history-item">✓ ${item.date} - ${item.size} KB</div>`
+            ).join('');
+        }
+
+        // 保存历史记录并刷新状态
+        function saveHistoryData(size) {
+            const now = new Date();
+            const timestamp = now.getTime();
+
+            // 1. 更新最后保号时间
+            localStorage.setItem('ggLastTime', timestamp.toString());
+
+            // 2. 更新历史列表
+            const history = JSON.parse(localStorage.getItem('ggHistory') || '[]');
+            const dateStr = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            history.push({ date: dateStr, size: size, timestamp: timestamp });
+            if (history.length > 20) history.shift();
+            localStorage.setItem('ggHistory', JSON.stringify(history));
+
+            // 3. 实时刷新 UI
             updateReminderStatus();
+            loadHistory();
         }
 
         function consumeData() {
@@ -605,8 +660,8 @@
                         </div>
                     `;
 
-                    // 更新提醒
-                    saveLastKeepAlive();
+                    // 保存数据并更新提醒
+                    saveHistoryData(sizeInKB);
 
                     btn.disabled = false;
                     btn.innerText = "🔄 再次保号";
@@ -637,7 +692,11 @@
         }
 
         // 页面加载时显示历史记录
-        window.onload = updateReminderStatus;
+        // 页面加载时显示状态和历史记录
+        window.onload = function () {
+            updateReminderStatus();
+            loadHistory();
+        };
     </script>
 </body>
 
