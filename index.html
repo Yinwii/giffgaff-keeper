@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giffgaff 保号助手</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
@@ -15,26 +21,30 @@
             justify-content: center;
             padding: 20px;
         }
-        .container { 
+
+        .container {
             background: white;
             padding: 40px 30px;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             max-width: 400px;
             width: 100%;
         }
-        h1 { 
+
+        h1 {
             color: #333;
             font-size: 28px;
             margin-bottom: 10px;
             text-align: center;
         }
+
         .subtitle {
             color: #666;
             font-size: 14px;
             text-align: center;
             margin-bottom: 30px;
         }
+
         .info-box {
             background: #f8f9fa;
             padding: 15px;
@@ -43,11 +53,13 @@
             font-size: 14px;
             color: #555;
         }
+
         .info-box strong {
             color: #333;
             display: block;
             margin-bottom: 5px;
         }
+
         button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -61,18 +73,22 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
+
         button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
         }
+
         button:active {
             transform: translateY(0);
         }
+
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
             box-shadow: none;
         }
+
         #status {
             margin-top: 25px;
             padding: 15px;
@@ -85,26 +101,31 @@
             justify-content: center;
             flex-direction: column;
         }
+
         #status.success {
             background: #d4edda;
             color: #155724;
             border: 2px solid #c3e6cb;
         }
+
         #status.loading {
             background: #fff3cd;
             color: #856404;
             border: 2px solid #ffeaa7;
         }
+
         #status.error {
             background: #f8d7da;
             color: #721c24;
             border: 2px solid #f5c6cb;
         }
+
         .stats {
             font-size: 13px;
             margin-top: 8px;
             opacity: 0.9;
         }
+
         .warning {
             font-size: 12px;
             color: #dc3545;
@@ -115,56 +136,356 @@
             border-left: 4px solid #dc3545;
             line-height: 1.6;
         }
+
         .warning strong {
             display: block;
             margin-bottom: 5px;
         }
+
         .history {
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid #eee;
         }
+
         .history-title {
             font-size: 14px;
             color: #666;
             margin-bottom: 10px;
             font-weight: 600;
         }
+
         .history-item {
             font-size: 12px;
             color: #888;
             padding: 5px 0;
         }
+
+        /* 教程部分样式 */
+        .tutorial-section {
+            margin-top: 30px;
+            border-top: 2px dashed #eee;
+            padding-top: 25px;
+        }
+
+        .tutorial-title {
+            font-size: 16px;
+            color: #333;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tutorial-item {
+            border: 1px solid #f0f0f0;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        .tutorial-item.active {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+
+        .tutorial-header {
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #444;
+            user-select: none;
+        }
+
+        .tutorial-header::after {
+            content: '▼';
+            font-size: 10px;
+            color: #999;
+            transition: transform 0.3s ease;
+        }
+
+        .tutorial-item.active .tutorial-header::after {
+            transform: rotate(180deg);
+            color: #667eea;
+        }
+
+        .tutorial-content {
+            display: none;
+            padding: 0 15px 15px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+            border-top: 1px solid #f5f5f5;
+        }
+
+        .tutorial-item.active .tutorial-content {
+            display: block;
+        }
+
+        .tutorial-content h4 {
+            font-size: 13px;
+            color: #333;
+            margin: 10px 0 5px;
+        }
+
+        .tutorial-content ul,
+        .tutorial-content ol {
+            padding-left: 18px;
+            margin-bottom: 10px;
+        }
+
+        .tutorial-content strong {
+            color: #444;
+        }
+
+        .cost-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            background: #fff;
+            font-size: 12px;
+        }
+
+        .cost-table th,
+        .cost-table td {
+            border: 1px solid #eee;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .cost-table th {
+            background: #f8f9fa;
+            color: #666;
+        }
+
+        .qa-item {
+            margin-bottom: 15px;
+        }
+
+        .qa-q {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .qa-a {
+            display: block;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🇬🇧 Giffgaff 保号</h1>
         <div class="subtitle">极简流量消耗工具</div>
-        
+
         <div class="info-box">
             <strong>本次将消耗：</strong>
             约 120 KB 数据流量<br>
             预计费用：2-3 便士 (£0.02-0.03)
         </div>
-        
+
         <button id="btn" onclick="consumeData()">
             🚀 开始保号
         </button>
-        
+
         <div id="status"></div>
-        
+
         <div class="history">
             <div class="history-title">使用记录</div>
             <div id="historyList"></div>
         </div>
-        
+
         <div class="warning">
             <strong>⚠️ 使用前必读：</strong>
             1. 关闭 Wi-Fi，确保使用移动数据<br>
             2. 禁止其他应用联网权限<br>
             3. 仅允许浏览器使用移动数据<br>
             4. 完成后立即关闭移动数据
+        </div>
+
+        <!-- 完整保号教程 (无损集成) -->
+        <div class="tutorial-section">
+            <div class="tutorial-title">
+                📖 完整操作指南
+                <a href="https://github.com/Yinwii/giffgaff-keeper" target="_blank"
+                    style="font-size: 12px; color: #667eea; text-decoration: none; margin-left: auto;">GitHub Project
+                    ↗</a>
+            </div>
+
+            <!-- 功能特点 -->
+            <div class="tutorial-item">
+                <div class="tutorial-header" onclick="toggleTutorial(this)">📋 功能特点</div>
+                <div class="tutorial-content">
+                    <ul>
+                        <li>✅ 精确控制流量消耗（约 120KB）</li>
+                        <li>✅ 防缓存机制，确保真实消耗流量</li>
+                        <li>✅ 实时显示消耗的流量大小</li>
+                        <li>✅ 本地记录使用历史</li>
+                        <li>✅ 响应式设计，手机浏览器友好</li>
+                        <li>✅ 完全静态，可部署在任何免费托管平台</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 快速部署 -->
+            <div class="tutorial-item">
+                <div class="tutorial-header" onclick="toggleTutorial(this)">🚀 快速部署</div>
+                <div class="tutorial-content">
+                    <h4>方案一：GitHub Pages（推荐）</h4>
+                    <ol>
+                        <li><strong>创建仓库：</strong>登录 GitHub，新建名 <code>giffgaff-keeper</code> 的 Public 仓库。</li>
+                        <li><strong>上传文件：</strong>上传 <code>index.html</code> 和 <code>payload.txt</code> 并 Commit。</li>
+                        <li><strong>启用服务：</strong>仓库 Settings → Pages → Branch 选择 main，点击 Save。</li>
+                        <li><strong>访问：</strong>等待 1-2 分钟访问 <code>https://你的用户名.github.io/giffgaff-keeper/</code> 并收藏。
+                        </li>
+                    </ol>
+                    <h4>方案二：Gitee Pages（国内访问更快）</h4>
+                    <p>上传文件后，进入仓库「服务」→「Gitee Pages」点击启动即可。</p>
+                    <h4>方案三：Cloudflare Pages</h4>
+                    <p>登录 Cloudflare，Pages 选择上传文件或连接 Git，部署完成后获得域名。</p>
+                </div>
+            </div>
+
+            <!-- 手机端设置 -->
+            <div class="tutorial-item">
+                <div class="tutorial-header" onclick="toggleTutorial(this)">📱 手机端设置 (重要！)</div>
+                <div class="tutorial-content">
+                    <h4>Android 系统</h4>
+                    <p><strong>方法一：使用独立浏览器（推荐）</strong></p>
+                    <ul>
+                        <li>下载 Via 或 X 浏览器。</li>
+                        <li>设置 → 应用管理 → 联网控制。</li>
+                        <li><strong>关闭所有软件</strong>的数据权限，仅开启该浏览器的移动数据。</li>
+                    </ul>
+                    <p><strong>方法二：使用系统浏览器</strong></p>
+                    <ul>
+                        <li>设置 → 移动网络 → 流量管理 → 应用联网。</li>
+                        <li>关闭所有应用，仅保留系统浏览器 (如 Chrome)。</li>
+                    </ul>
+                    <p><strong>小米手机专属：</strong>设置 → 应用设置 → 应用管理 → 权限管理 → 联网控制。</p>
+                    <p><strong>华为手机专属：</strong>设置 → 移动网络 → 流量管理 → 更多流量设置 → 应用联网。</p>
+
+                    <h4>iOS 系统</h4>
+                    <ol>
+                        <li>设置 → 蜂窝网络。</li>
+                        <li>向下滚动，<strong>关闭所有应用</strong>的蜂窝数据开关。</li>
+                        <li>仅保留 Safari。</li>
+                        <li><strong>关键：</strong>同时关闭底部的「Wi-Fi 助理」和「iCloud 云盘」蜂窝数据。</li>
+                    </ol>
+                    <p>⚠️ iOS 注意事项：部分系统服务会绕过限制产生 1-5KB 流量，这不影响保号，因为 120KB 足以覆盖。</p>
+                </div>
+            </div>
+
+            <!-- 使用步骤 -->
+            <div class="tutorial-item">
+                <div class="tutorial-header" onclick="toggleTutorial(this)">🎯 使用步骤</div>
+                <div class="tutorial-content">
+                    <p><strong>1. 准备阶段：</strong>关闭 Wi-Fi，插入 Giffgaff 卡，确认已设置好联网权限。</p>
+                    <p><strong>2. 执行保号：</strong>打开移动数据，打开本页并点击「开始保号」，等待显示成功。</p>
+                    <p><strong>3. 验证扣费：</strong>立即关数据，拨 <code>*100#</code> 确认余额减少 2-3 便士。</p>
+                </div>
+            </div>
+
+            <!-- 成本分析 -->
+            <div class="tutorial-item">
+                <div class="tutorial-header" onclick="toggleTutorial(this)">💰 成本分析</div>
+                <div class="tutorial-content">
+                    <table class="cost-table">
+                        <tr>
+                            <th>项目</th>
+                            <th>费用</th>
+                        </tr>
+                        <tr>
+                            <td>每次流量消耗</td>
+                            <td>约 120 KB</td>
+                        </tr>
+                        <tr>
+                            <td>Giffgaff 计费</td>
+                            <td>2-3 便士/次</td>
+                        </tr>
+                        <tr>
+                            <td>折合人民币</td>
+                            <td>约 0.2 元/次</td>
+                        </tr>
+                        <tr>
+                            <td>每月保号</td>
+                            <td>1-2 次即可</td>
+                        </tr>
+                        <tr>
+                            <td>年度成本</td>
+                            <td>约 5-10 元人民币</td>
+                        </tr>
+                    </table>
+                    <p>对比发短信 (约 1 元/条)，节省 80% 成本！</p>
+                </div>
+            </div>
+
+            <!-- 技术细节 -->
+            <div class="tutorial-item">
+                <div class="tutorial-header" onclick="toggleTutorial(this)">🔧 技术细节</div>
+                <div class="tutorial-content">
+                    <h4>防缓存机制</h4>
+                    <p>代码利用随机参数 <code>?t=${timestamp}&r=${randomStr}</code> 配合 <code>cache: 'no-store'</code> 头，确保 ISP
+                        无法使用缓存数据，产生真实话单流量。</p>
+                    <h4>Payload 文件说明</h4>
+                    <p>大小：120 KB (122,880 bytes)。内容由随机文本构成，防止被网络节点优化或压缩。</p>
+                </div>
+            </div>
+
+            <!-- 常见问题 -->
+            <div class="tutorial-item">
+                <div class="tutorial-header" onclick="toggleTutorial(this)">❓ 常见问题 (Q&A)</div>
+                <div class="tutorial-content">
+                    <div class="qa-item">
+                        <span class="qa-q">Q1: 为什么要禁用其他应用？</span>
+                        <span class="qa-a">A: 避免微信、更新等在后台偷跑流量，导致几十倍的扣费。</span>
+                    </div>
+                    <div class="qa-item">
+                        <span class="qa-q">Q2: 可以用 Wi-Fi 测试吗？</span>
+                        <span class="qa-a">A: 可测试页面功能，但保号必须关闭 Wi-Fi 并使用移动数据。</span>
+                    </div>
+                    <div class="qa-item">
+                        <span class="qa-q">Q3: 为什么选择 120KB？</span>
+                        <span class="qa-a">A: Giffgaff 可能忽略极小流量。120KB 是触发 1p 档位最保险的平衡点。</span>
+                    </div>
+                    <div class="qa-item">
+                        <span class="qa-q">Q4: 多久需要保号一次？</span>
+                        <span class="qa-a">A: 官方要求 6 个月。建议每 3-4 个月一次，或余额到期前 1 个月操作。</span>
+                    </div>
+                    <div class="qa-item">
+                        <span class="qa-q">Q5: 如何确认保号成功？</span>
+                        <span class="qa-a">A: 页面显示“成功”及流量；拨 <code>*100#</code> 确认余额减少 2-3 便士。</span>
+                    </div>
+                    <div class="qa-item">
+                        <span class="qa-q">Q6: iOS 能完全阻止系统服务吗？</span>
+                        <span class="qa-a">A: 不能。但系统服务跑的微量流量不影响保号效果。</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 安全声明 -->
+            <div class="tutorial-item">
+                <div class="tutorial-header" onclick="toggleTutorial(this)">🛡️ 安全提示与开源协议</div>
+                <div class="tutorial-content">
+                    <ul>
+                        <li>✅ 完全开源，无任何隐私收集。</li>
+                        <li>✅ 代码完全本地化运行，不连接第三方服务器。</li>
+                        <li>✅ 离线查看源代码即可验证安全性。</li>
+                        <li>📄 开源协议：MIT License。</li>
+                    </ul>
+                    <p>💡 操作完成后务必切记立即关闭移动数据！</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -173,42 +494,42 @@
         function loadHistory() {
             const history = JSON.parse(localStorage.getItem('ggHistory') || '[]');
             const historyList = document.getElementById('historyList');
-            
+
             if (history.length === 0) {
                 historyList.innerHTML = '<div class="history-item">暂无记录</div>';
                 return;
             }
-            
-            historyList.innerHTML = history.slice(-5).reverse().map(item => 
+
+            historyList.innerHTML = history.slice(-5).reverse().map(item =>
                 `<div class="history-item">✓ ${item.date} - ${item.size} KB</div>`
             ).join('');
         }
-        
+
         // 保存历史记录
         function saveHistory(size) {
             const history = JSON.parse(localStorage.getItem('ggHistory') || '[]');
             const now = new Date();
-            const dateStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-            
+            const dateStr = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+
             history.push({
                 date: dateStr,
                 size: size,
                 timestamp: now.getTime()
             });
-            
+
             // 只保留最近20条记录
             if (history.length > 20) {
                 history.shift();
             }
-            
+
             localStorage.setItem('ggHistory', JSON.stringify(history));
             loadHistory();
         }
-        
+
         function consumeData() {
             const btn = document.getElementById('btn');
             const status = document.getElementById('status');
-            
+
             btn.disabled = true;
             status.className = 'loading';
             status.innerHTML = "📡 正在连接服务器...<br><div class='stats'>请保持网络连接</div>";
@@ -216,7 +537,7 @@
             // 防缓存：添加时间戳
             const timestamp = new Date().getTime();
             const randomStr = Math.random().toString(36).substring(7);
-            const fileUrl = `payload.txt?t=${timestamp}&r=${randomStr}`; 
+            const fileUrl = `payload.txt?t=${timestamp}&r=${randomStr}`;
 
             const startTime = new Date().getTime();
 
@@ -234,7 +555,7 @@
                 .then(blob => {
                     const sizeInKB = (blob.size / 1024).toFixed(2);
                     const duration = ((new Date().getTime() - startTime) / 1000).toFixed(2);
-                    
+
                     status.className = 'success';
                     status.innerHTML = `
                         ✅ 保号成功！
@@ -243,10 +564,10 @@
                             耗时：${duration} 秒
                         </div>
                     `;
-                    
+
                     // 保存记录
                     saveHistory(sizeInKB);
-                    
+
                     btn.disabled = false;
                     btn.innerText = "🔄 再次保号";
                 })
@@ -259,9 +580,25 @@
                     btn.disabled = false;
                 });
         }
-        
+
+        // 教程折叠切换
+        function toggleTutorial(header) {
+            const item = header.parentElement;
+            const isActive = item.classList.contains('active');
+
+            // 关闭其他已展开的项（可选，目前保留多开模式）
+            // document.querySelectorAll('.tutorial-item').forEach(i => i.classList.remove('active'));
+
+            if (isActive) {
+                item.classList.remove('active');
+            } else {
+                item.classList.add('active');
+            }
+        }
+
         // 页面加载时显示历史记录
         window.onload = loadHistory;
     </script>
 </body>
+
 </html>
