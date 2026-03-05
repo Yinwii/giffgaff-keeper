@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>故障分析系统 | FLT-ANALYSIS EXTRACTOR</title>
+
+    <!-- 引入艺术与高辨识度字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;700;800&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- 引入 SheetJS 用于导出 Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        /* ================= 设计哲学：Geometric Silence (几何静谧) ================= */
+        :root {
+            --bg-color: #e8e8e3;
+            /* 粗糙的工业石色感背景 */
+            --surface: #f4f4f0;
+            /* 操作区背景 */
+            --ink-primary: #0a0a0a;
+            /* 极黑，用于主结构与文字 */
+            --ink-muted: #666666;
+            /* 次要信息 */
+            --accent: #d92400;
+            /* 工业警示红，极度克制的使用 */
+
+            --font-display: 'Bricolage Grotesque', 'Noto Sans SC', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-body: 'Noto Sans SC', sans-serif;
+
+            --border-strict: 1px solid var(--ink-primary);
+            --transition-swift: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--ink-primary);
+            font-family: var(--font-body);
+            padding: max(2vw, 20px);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 博物馆级画框感容器 */
+        .master-frame {
+            width: 100%;
+            max-width: 1600px;
+            background: var(--surface);
+            border: var(--border-strict);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 15px 15px 0px rgba(0, 0, 0, 0.08);
+            /* 沉重的物理阴影 */
+            position: relative;
+        }
+
+        /* ================= 头部排版 (Masthead) ================= */
+        header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            border-bottom: var(--border-strict);
+            background: var(--surface);
+        }
+
+        .header-main {
+            padding: 1.5rem 3rem;
+            /* 缩窄上下内边距 */
+            border-right: var(--border-strict);
+        }
+
+        .header-main h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            line-height: 1;
+            /* 缩窄行高 */
+            margin-bottom: 0.5rem;
+        }
+
+        .header-meta {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ink-muted);
+            display: flex;
+            gap: 2rem;
+        }
+
+        .header-sys-id {
+            padding: 3rem;
+            display: flex;
+            align-items: flex-end;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            writing-mode: vertical-lr;
+            /* 营造独特的几何方向感 */
+            transform: rotate(180deg);
+        }
+
+        /* ================= 主体网格区 ================= */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr;
+            flex: 1;
+            background: var(--surface);
+        }
+
+        @media (min-width: 1024px) {
+            .workspace {
+                grid-template-columns: 40% 60%;
+            }
+        }
+
+        .panel-left {
+            border-bottom: var(--border-strict);
+        }
+
+        .panel-right {
+            background: #ffffff;
+        }
+
+        @media (min-width: 1024px) {
+            .panel-left {
+                border-right: var(--border-strict);
+                border-bottom: none;
+            }
+        }
+
+        /* 面板头部控制台 */
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: var(--border-strict);
+            background: var(--surface);
+        }
+
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            letter-spacing: 0.02em;
+        }
+
+        .panel-title::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background: var(--ink-primary);
+        }
+
+        .panel-title.accent::before {
+            background: var(--accent);
+        }
+
+        /* 极致的交互按钮 */
+        .action-group {
+            display: flex;
+            gap: -1px;
+            /* 边框重叠效应 */
+        }
+
+        .btn {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.5rem 1rem;
+            background: transparent;
+            color: var(--ink-primary);
+            border: var(--border-strict);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            transition: color 0.3s;
+        }
+
+        .action-group .btn+.btn {
+            margin-left: -1px;
+            /* 修复相连按钮双倍边框 */
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--ink-primary);
+            transform: scaleY(0);
+            transform-origin: bottom;
+            transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: -1;
+        }
+
+        .btn:hover {
+            color: #ffffff;
+        }
+
+        .btn:hover::before {
+            transform: scaleY(1);
+        }
+
+        .btn.primary {
+            background: var(--ink-primary);
+            color: #ffffff;
+        }
+
+        .btn.primary::before {
+            background: var(--accent);
+        }
+
+        /* ================= 数据源输入区 ================= */
+        .input-area {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            height: calc(100% - 63px);
+            /* 扣除 header */
+        }
+
+        textarea {
+            width: 100%;
+            flex: 1;
+            min-height: 400px;
+            background: transparent;
+            border: none;
+            resize: none;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: var(--ink-primary);
+            outline: none;
+        }
+
+        textarea::placeholder {
+            color: rgba(0, 0, 0, 0.25);
+        }
+
+        .input-footer {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed var(--ink-muted);
+        }
+
+        .btn-massive {
+            width: 100%;
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            padding: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* ================= 结果输出区 ================= */
+        .output-body {
+            padding: 0;
+            overflow-y: auto;
+            max-height: 600px;
+            display: none;
+            /* 默认隐藏 */
+        }
+
+        .output-body.is-visible {
+            display: block;
+        }
+
+        .empty-state {
+            height: 100%;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.85rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            text-align: left;
+            padding: 1rem;
+            border-bottom: var(--border-strict);
+            background: #ffffff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-right: 1px dashed rgba(0, 0, 0, 0.1);
+        }
+
+        td {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            border-right: 1px dashed rgba(0, 0, 0, 0.1);
+            vertical-align: top;
+            transition: background 0.2s;
+        }
+
+        th:last-child,
+        td:last-child {
+            border-right: none;
+        }
+
+        tr:hover td {
+            background-color: var(--surface);
+        }
+
+        .cell-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .text-wrap {
+            word-break: break-all;
+            line-height: 1.8;
+            color: var(--ink-primary);
+        }
+
+        .copy-btn-micro {
+            align-self: flex-start;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--ink-muted);
+            color: var(--ink-muted);
+            background: transparent;
+            cursor: pointer;
+            transition: var(--transition-swift);
+        }
+
+        .copy-btn-micro:hover {
+            border-color: var(--ink-primary);
+            background: var(--ink-primary);
+            color: #ffffff;
+        }
+
+        .copy-btn-micro.copied {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #ffffff;
+        }
+
+        /* 滚动条静音化设计 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+            border-left: var(--border-strict);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--ink-primary);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="master-frame">
+        <!-- 头部识别区 -->
+        <header>
+            <div class="header-main">
+                <h1>故障分析智能提取系统</h1>
+                <div class="header-meta">
+                    <span>Data Extraction & Analysis Construct</span>
+                    <span>Type: TSV/Matrix</span>
+                    <span>REV-2.0</span>
+                </div>
+            </div>
+            <div class="header-sys-id">
+                SYS.ID-09X
+            </div>
+        </header>
+
+        <!-- 工作流网格 -->
+        <main class="workspace">
+
+            <!-- 左侧输入结构 -->
+            <section class="panel-left">
+                <div class="panel-header">
+                    <div class="panel-title">I. 数据源空间 <span>[SRC]</span></div>
+                    <div class="action-group">
+                        <button class="btn" id="clear-input-btn" onclick="clearInput()">清空 (Clear)</button>
+                        <button class="btn" id="paste-input-btn" onclick="pasteInput()">粘贴 (Paste)</button>
+                        <button class="btn" id="copy-input-btn" onclick="copyInput()">复制 (Copy)</button>
+                    </div>
+                </div>
+                <div class="input-area">
+                    <textarea id="input"
+                        placeholder="PASTE RAW TSV OR EXCEL DATA MATRIX HERE...&#10;&#10;>> Awaiting input signal..."></textarea>
+                    <div class="input-footer">
+                        <button class="btn primary btn-massive" onclick="generateOutput()">Engage Extraction /
+                            执行解析</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右侧解析结果 -->
+            <section class="panel-right">
+                <div class="panel-header">
+                    <div class="panel-title accent">II. 解析结果 <span>[RES]</span></div>
+                    <div class="action-group">
+                        <button class="btn" onclick="exportExcel()">导出 Excel (XLSX)</button>
+                        <button class="btn" onclick="exportData()">导出报告 (HTML)</button>
+                    </div>
+                </div>
+
+                <div id="output-empty" class="empty-state">
+                    [ No Data Matrix Processed ]
+                </div>
+
+                <div class="output-body" id="output-card">
+                    <div class="table-container" id="output"></div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // ======================== 数据解析引擎核心 ========================
+
+        let globalParsedData = []; // 用于存储解析后的结构化数据，供 Excel 导出使用
+
+        function parseTSV(text) {
+            // 替换垂直换行符
+            text = text.replace(/\x0B/g, '\n');
+
+            let rows = [];
+            let currentRow = [];
+            let currentCell = '';
+            let insideQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                let char = text[i];
+                let nextChar = text[i + 1];
+
+                if (char === '"') {
+                    if (insideQuotes && nextChar === '"') {
+                        currentCell += '"';
+                        i++;
+                    } else {
+                        insideQuotes = !insideQuotes;
+                    }
+                } else if (char === '\t' && !insideQuotes) {
+                    currentRow.push(currentCell);
+                    currentCell = '';
+                } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+                    if (char === '\r' && nextChar === '\n') i++;
+                    currentRow.push(currentCell);
+                    rows.push(currentRow);
+                    currentRow = [];
+                    currentCell = '';
+                } else {
+                    currentCell += char;
+                }
+            }
+
+            if (currentCell !== '' || currentRow.length > 0) {
+                currentRow.push(currentCell);
+                rows.push(currentRow);
+            }
+            return rows;
+        }
+
+        // ---------- 核心提取算法 ----------
+        function generateOutput() {
+            const input = document.getElementById("input").value.trim();
+            if (!input) {
+                alert("System Notice: Please provide input data first.");
+                return;
+            }
+
+            const rows = parseTSV(input);
+            let result = [];
+            let currentItem = null;
+
+            for (let i = 0; i < rows.length; i++) {
+                let columns = rows[i];
+                if (columns.length === 0 || (columns.length === 1 && columns[0].trim() === '')) continue;
+                while (columns.length < 6) columns.push("");
+
+                const no = columns[0].trim();
+                const phenom = columns[1].trim();
+                const reasonRaw = columns[2].replace(/\n/g, ' ').trim();
+                const measureRaw = columns[3].replace(/\n/g, ' ').trim();
+                const person = columns[4].trim();
+                const dueDay = columns[5].trim();
+
+                if (no.toUpperCase() === 'NO.' || no.toUpperCase() === 'NO') continue;
+
+                if (no.toUpperCase().startsWith('TOP')) {
+                    if (currentItem) result.push(currentItem);
+                    currentItem = {
+                        top: no.toUpperCase(), phenomenon: phenom,
+                        reasons: [], measures: [],
+                        person: person, dueDay: dueDay
+                    };
+                }
+
+                if (!currentItem) continue;
+
+                if (reasonRaw && !reasonRaw.toUpperCase().includes("F/R") && !/^Top\d+/i.test(reasonRaw)) {
+                    let text = reasonRaw.replace(/^原因分析[：:]/, '').trim().replace(/^\d+\./, '').trim().replace(/[；;。]$/, '');
+                    if (text) currentItem.reasons.push(text);
+                }
+
+                if (measureRaw && (measureRaw.includes("措施") || /^\d+\./.test(measureRaw))) {
+                    let text = measureRaw.replace(/^\d+\./, '').trim().replace(/^(临时|长期)?措施[：:]/, '').trim().replace(/[；;。]$/, '');
+                    if (text) currentItem.measures.push(text);
+                }
+            }
+
+            if (currentItem) result.push(currentItem);
+            globalParsedData = result; // 保存到全局变量，供导出 Excel 使用
+            renderTable(result);
+        }
+
+        // ---------- DOM 结构渲染 ----------
+        function renderTable(result) {
+            const outputCard = document.getElementById("output-card");
+            const emptyState = document.getElementById("output-empty");
+            const outputDiv = document.getElementById("output");
+
+            if (result.length === 0) {
+                outputDiv.innerHTML = "";
+                emptyState.innerHTML = "[ 无法识别有效格式，请校验数据矩阵 ]";
+                emptyState.style.display = "flex";
+                outputCard.classList.remove("is-visible");
+                return;
+            }
+
+            let outputHTML = `
+    <table>
+        <tr>
+            <th width="35%">原因分析</th>
+            <th width="40%">改善措施</th>
+            <th width="12%">责任人</th>
+            <th width="13%">完成日期</th>
+        </tr>`;
+
+            result.forEach(item => {
+                let reasonStr = `${item.top} 原因：${item.phenomenon}，${item.reasons.join('；')}。`.replace('不良打印均表现为', '表现为');
+                let measureStr = `${item.top} 措施：` + item.measures.map((m, idx) => `${idx + 1}. ${m}`).join('； ') + '。';
+
+                outputHTML += `
+        <tr>
+            <td>${generateCellHTML(reasonStr)}</td>
+            <td>${generateCellHTML(measureStr)}</td>
+            <td>${generateCellHTML(item.person)}</td>
+            <td>${generateCellHTML(item.dueDay)}</td>
+        </tr>`;
+            });
+
+            outputHTML += `</table>`;
+            outputDiv.innerHTML = outputHTML;
+
+            emptyState.style.display = "none";
+            outputCard.classList.add("is-visible");
+        }
+
+        function generateCellHTML(text) {
+            const safeText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `
+    <div class="cell-content">
+        <div class="text-wrap">${safeText}</div>
+        <button class="copy-btn-micro" onclick="copyCellText(this)">Copy [Ext]</button>
+    </div>`;
+        }
+
+        // ======================== 控制台级交互操作 ========================
+
+        // [核心需求] 清空数据源
+        function clearInput() {
+            const inputEl = document.getElementById("input");
+            inputEl.value = "";
+            inputEl.focus();
+
+            // UI 反馈
+            const btn = document.getElementById("clear-input-btn");
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "已清空";
+            btn.style.color = "var(--accent)";
+            btn.style.borderColor = "var(--accent)";
+
+            // 隐藏解析结果
+            document.getElementById("output-card").classList.remove("is-visible");
+            const emptyState = document.getElementById("output-empty");
+            emptyState.innerHTML = "[ No Data Matrix Processed ]";
+            emptyState.style.display = "flex";
+
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.color = "";
+                btn.style.borderColor = "";
+            }, 1500);
+        }
+
+        // 复制源数据
+        function copyInput() {
+            const inputContent = document.getElementById("input").value;
+            const btn = document.getElementById("copy-input-btn");
+
+            if (!inputContent.trim()) {
+                alert("System Notice: Data core is empty.");
+                return;
+            }
+
+            navigator.clipboard.writeText(inputContent).then(() => {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = "Copied ✓";
+                btn.classList.add("primary");
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove("primary");
+                }, 2000);
+            }).catch(() => {
+                alert("System Notice: Clipboard access denied.");
+            });
+        }
+
+        // 粘贴数据源
+        async function pasteInput() {
+            const inputEl = document.getElementById("input");
+            const btn = document.getElementById("paste-input-btn");
+
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    // 将粘贴内容附加到现有内容之后，或直接覆盖（这里选择附加，如果为空则直接赋值）
+                    if (inputEl.value.trim() === '') {
+                        inputEl.value = text;
+                    } else {
+                        inputEl.value += '\n' + text;
+                    }
+
+                    // UI 反馈
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = "Pasted ✓";
+                    btn.classList.add("primary");
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.remove("primary");
+                    }, 2000);
+                } else {
+                    alert("System Notice: Clipboard is empty.");
+                }
+            } catch (err) {
+                alert("System Notice: Clipboard read access denied. Please paste manually (Ctrl+V).");
+            }
+        }
+
+        // 复制单元格内容
+        function copyCellText(buttonElement) {
+            const textWrap = buttonElement.previousElementSibling;
+            const textToCopy = textWrap.innerText;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = buttonElement.innerText;
+                buttonElement.innerText = 'Copied ✓';
+                buttonElement.classList.add('copied');
+                setTimeout(() => {
+                    buttonElement.innerText = originalText;
+                    buttonElement.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                alert('System Notice: Clipboard fallback needed.');
+            });
+        }
+
+        // ======================== 高定版报告导出模块 ========================
+
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return weekNo.toString().padStart(2, '0');
+        }
+
+        function exportData() {
+            const inputContent = document.getElementById("input").value.trim();
+            const outputDiv = document.getElementById("output");
+            const emptyState = document.getElementById("output-empty");
+
+            if (!inputContent || emptyState.style.display !== "none") {
+                alert("System Notice: Cannot export empty matrix.");
+                return;
+            }
+
+            const outputClone = outputDiv.cloneNode(true);
+            const buttons = outputClone.querySelectorAll('.copy-btn-micro');
+            buttons.forEach(btn => btn.remove());
+
+            const safeInput = inputContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+            const fileNo = `${timestamp}+WK${getWeekNumber(now)}`;
+
+            const exportHtmlStr = `
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>分析档案 | ARCHIVE ${fileNo}</title>
+    <style>
+        body { font-family: "Noto Sans SC", sans-serif; background: #fff; color: #111; padding: 40px; margin: 0 auto; max-width: 1000px; line-height: 1.6; }
+        .doc-header { border-bottom: 2px solid #111; padding-bottom: 20px; margin-bottom: 40px; }
+        .doc-header p { font-family: monospace; color: #666; font-size: 12px; text-transform: uppercase; margin: 0; }
+        h1 { font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 10px 0; }
+        h2 { font-size: 14px; font-weight: 700; background: #111; color: #fff; padding: 5px 10px; display: inline-block; margin-top: 30px; text-transform: uppercase; }
+        pre { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        th, td { border: 1px solid #111; padding: 15px; text-align: left; vertical-align: top; }
+        th { font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; border-bottom-width: 2px; }
+        .footer { margin-top: 60px; font-family: monospace; font-size: 11px; color: #999; text-align: left; border-top: 1px solid #eee; padding-top: 20px;}
+    </style>
+</head>
+<body>
+    <div class="doc-header">
+        <h1>系统导出档案</h1>
+        <p>Document No. ${fileNo} // Generated via Intelligence Extraction Sys.</p>
+    </div>
+
+    <h2>[I] 原始分析矩阵</h2>
+    <pre>${safeInput}</pre>
+    
+    <h2>[II] 结构化输出结果</h2>
+    ${outputClone.innerHTML}
+    
+    <div class="footer">AUTO-GENERATED REPORT · UTC+8 ${now.toLocaleString()}</div>
+</body>
+</html>`;
+
+            const blob = new Blob([exportHtmlStr], { type: "text/html;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `分析报告_${fileNo}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 导出 XLSX Excel 文件
+        function exportExcel() {
+            if (!globalParsedData || globalParsedData.length === 0) {
+                alert("System Notice: No data available to export to Excel. Please process data first.");
+                return;
+            }
+
+            // 将内部数据结构转换为适合 Excel 处理的二维数组结构
+            const excelData = [
+                ["原因分析", "改善措施", "责任人", "完成日期"] // 表头
+            ];
+
+            globalParsedData.forEach(item => {
+                let reasonStr = `${item.top} 原因：${item.phenomenon}，${item.reasons.join('；')}。`.replace('不良打印均表现为', '表现为');
+                let measureStr = `${item.top} 措施：` + item.measures.map((m, idx) => `${idx + 1}. ${m}`).join('； ') + '。';
+
+                excelData.push([
+                    reasonStr,
+                    measureStr,
+                    item.person,
+                    item.dueDay
+                ]);
+            });
+
+            // 创建工作簿和工作表
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+            // 设置列宽
+            const wscols = [
+                { wch: 50 }, // A列 原因分析
+                { wch: 50 }, // B列 改善措施
+                { wch: 15 }, // C列 责任人
+                { wch: 15 }  // D列 完成日期
+            ];
+            ws['!cols'] = wscols;
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "故障分析列表");
+
+            // 生成文件名
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+            const filename = `分析数据矩阵_${timestamp}.xlsx`;
+
+            // 触发下载
+            XLSX.writeFile(wb, filename);
+        }
+    </script>
+
+</body>
+
+</html>
