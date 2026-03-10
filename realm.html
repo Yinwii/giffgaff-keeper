@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realm 终极运维加速面板</title>
+    <link rel="icon" href="https://cdn-1.webcatalog.io/catalog/realm/realm-icon-filled-256.png?v=1675612020045" type="image/x-icon">
+    <style>
+        :root {
+            --primary: #2563eb; 
+            --primary-hover: #1d4ed8;
+            --success: #10b981; 
+            --danger: #ef4444;
+            --client-bg: #fff7ed;
+            --server-bg: #eff6ff;
+            --slate-50: #f8fafc; 
+            --slate-100: #f1f5f9; 
+            --slate-200: #e2e8f0;
+            --slate-700: #334155; 
+            --slate-900: #0f172a;
+        }
+
+        /* 全局字体统一：Inter/System UI */
+        * { font-family: 'Inter', system-ui, -apple-system, sans-serif; box-sizing: border-box; }
+        body { background-color: var(--slate-50); color: var(--slate-700); margin: 0; padding: 20px; line-height: 1.5; }
+        
+        .container { max-width: 1350px; margin: 0 auto; }
+
+        .card { background: white; border-radius: 12px; border: 1px solid var(--slate-200); box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 24px; position: relative; }
+        
+        h1 { font-size: 1.875rem; color: var(--slate-900); margin-top: 0; font-weight: 700; border-bottom: 2px solid var(--slate-100); padding-bottom: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+        h2 { font-size: 1.25rem; color: var(--slate-900); margin-top: 0; font-weight: 700; }
+
+        /* STEP 标签：蓝底白字 */
+        .step-tag-blue { background: var(--primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-right: 12px; display: inline-block; }
+        .step-header { display: flex; align-items: center; margin: 10px 0 15px 0; font-size: 18px; font-weight: bold; color: var(--slate-900); }
+
+        /* 输入布局 */
+        .grid-toolbar { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .input-box { flex: 1; display: flex; flex-direction: column; gap: 6px; position: relative; }
+        label { font-size: 0.875rem; font-weight: 600; color: var(--slate-700); }
+        
+        input { 
+            width: 100%; padding: 10px 40px 10px 12px; border: 1px solid var(--slate-200); border-radius: 8px; 
+            font-size: 14px; transition: all 0.2s; outline: none; background: var(--slate-50);
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); background: white; }
+
+        /* 复制小图标 */
+        .btn-copy-sm { position: absolute; right: 8px; bottom: 8px; padding: 4px; background: none; border: none; cursor: pointer; color: var(--primary); }
+
+        /* 按钮样式 */
+        button { 
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; 
+            transition: all 0.2s; border: none; 
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; padding: 6px 12px; font-size: 12px; }
+        .btn-ghost { background: var(--slate-100); color: var(--slate-700); }
+        .btn-ghost:hover { background: var(--slate-200); }
+
+        /* 表格样式：宽屏适配，不换行 */
+        .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--slate-200); margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; font-size: 14px; min-width: 1150px; }
+        th { padding: 12px; text-align: center; font-weight: 600; border: 1px solid var(--slate-200); white-space: nowrap; }
+        th.col-client { background: #ffedd5; color: #9a3412; }
+        th.col-server { background: #dbeafe; color: #1e40af; }
+        
+        td { padding: 12px; border: 1px solid var(--slate-200); vertical-align: middle; position: relative; white-space: nowrap; }
+        
+        /* 交互点击复制 */
+        .td-clickable { cursor: copy; transition: background 0.2s; }
+        .td-clickable:hover { background: rgba(0,0,0,0.03) !important; }
+        .copy-hint { font-size: 10px; color: #94a3b8; margin-left: 6px; opacity: 0.6; }
+
+        .td-client { background: var(--client-bg); color: #c2410c; text-align: center; font-weight: 700; }
+        .td-server { background: var(--server-bg); }
+
+        /* IPv4/IPv6 简洁标签 */
+        .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 700; vertical-align: middle; display: inline-block; }
+        .tag-v4 { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .tag-v6 { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+
+        /* 代码块显示区 */
+        pre { 
+            margin: 0; padding: 20px; background: var(--slate-900); color: #94a3b8; 
+            border-radius: 8px; overflow-x: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; line-height: 1.6;
+        }
+        .code-container { position: relative; }
+
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--slate-900); color: white; padding: 10px 24px; border-radius: 24px; display: none; z-index: 1000; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+<div id="toast">已复制</div>
+
+<div class="container">
+    <!-- 顶部配置：IP 输入与备份 -->
+    <div class="card">
+        <h1>🚀 Realm 中转控制面板</h1>
+        <div class="grid-toolbar">
+            <div class="input-box">
+                <label>📍 美西中转 IPv4 地址</label>
+                <input type="text" id="westIPv4" placeholder="1.2.3.4" oninput="renderTable()">
+                <button class="btn-copy-sm" onclick="copyValue('westIPv4')" title="复制">📋</button>
+            </div>
+            <div class="input-box">
+                <label>📍 美西中转 IPv6 地址</label>
+                <input type="text" id="westIPv6" placeholder="2001:db8::1" oninput="renderTable()">
+                <button class="btn-copy-sm" onclick="copyValue('westIPv6')" title="复制">📋</button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-ghost" onclick="exportJSON()">💾 导出 JSON</button>
+                <button class="btn-ghost" onclick="document.getElementById('fileInput').click()">📂 导入 JSON</button>
+                <input type="file" id="fileInput" style="display:none" accept=".json" onchange="importJSON(event)">
+                <button class="btn-ghost" onclick="exportHTML()">📄 备份网页</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 转发规则管理器 -->
+    <div class="card">
+        <h2>🛠 转发规则管理器</h2>
+        <div class="grid-toolbar" style="border-bottom: 1px solid var(--slate-100); padding-bottom: 20px;">
+            <div class="input-box">
+                <label>目标服务器 IP (美东目标机)</label>
+                <input type="text" id="eastIP" placeholder="输入美东机 IP">
+                <button class="btn-copy-sm" onclick="copyValue('eastIP')" title="复制">📋</button>
+            </div>
+            <div class="input-box" style="flex: 0.5;">
+                <label>目标起始端口</label>
+                <input type="number" id="eastPortStart" value="443">
+                <button class="btn-copy-sm" onclick="copyValue('eastPortStart')" title="复制">📋</button>
+            </div>
+            <div class="input-box" style="flex: 0.5;">
+                <label>中转起始端口</label>
+                <input type="number" id="westPortStart" value="44444">
+                <button class="btn-copy-sm" onclick="copyValue('westPortStart')" title="复制">📋</button>
+            </div>
+            <button class="btn-primary" onclick="addRow()">+ 智能追加节点</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th colspan="2" class="col-client" style="width: 45%;">本地代理客户端配置 (点击值复制)</th>
+                        <th colspan="2" class="col-server" style="width: 45%;">中转服务端规则 (Realm)</th>
+                        <th rowspan="2" style="background:var(--slate-50); width: 10%;">管理</th>
+                    </tr>
+                    <tr>
+                        <th class="col-client">连接地址 (Server IP)</th>
+                        <th class="col-client">端口 (Port)</th>
+                        <th class="col-server">目标地址 (Remote)</th>
+                        <th class="col-server">目标端口</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        <button class="btn-success" style="width: 100%; margin-top: 20px; font-size: 16px;" onclick="generateAll()">⚡️ 生成全量部署指令</button>
+    </div>
+
+    <!-- STEP 1 默认展示 -->
+    <div class="card">
+        <div class="step-header">
+            <span class="step-tag-blue">STEP 1</span> 环境初始化 (仅限新机执行一次)
+        </div>
+        <div class="code-container">
+            <button class="btn-ghost" style="position:absolute; right:10px; top:10px;" onclick="copyCode('code1')">一键复制</button>
+            <pre id="code1">wget -qO- https://github.com/zhboner/realm/releases/download/v2.6.0/realm-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C /usr/local/bin/ && chmod +x /usr/local/bin/realm</pre>
+        </div>
+    </div>
+
+    <!-- STEP 2 默认展示 -->
+    <div class="card">
+        <div class="step-header">
+            <span class="step-tag-blue">STEP 2</span> 全量部署与重载脚本
+        </div>
+        <div class="code-container">
+            <button class="btn-ghost" style="position:absolute; right:10px; top:10px;" onclick="copyCode('code2')">一键复制</button>
+            <pre id="code2">等待生成配置...</pre>
+        </div>
+    </div>
+</div>
+
+<script>
+    let rules = [];
+
+    // 工具函数：识别 IPv6
+    function isIPv6(ip) { return ip.includes(':') && ip.split(':').length > 2; }
+
+    // 智能追加节点：基于最后一行自动递增端口
+    function addRow() {
+        const eIP = document.getElementById('eastIP').value;
+        if (!eIP) { showToast("请输入目标IP"); return; }
+        let wPort, ePort;
+        if (rules.length > 0) {
+            wPort = parseInt(rules[rules.length - 1].wPort) + 1;
+            ePort = parseInt(rules[rules.length - 1].ePort) + 1;
+        } else {
+            wPort = parseInt(document.getElementById('westPortStart').value);
+            ePort = parseInt(document.getElementById('eastPortStart').value);
+        }
+        rules.push({ wPort, eIP, ePort });
+        renderTable();
+    }
+
+    // 渲染表格
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        const w4 = document.getElementById('westIPv4').value || "[需填写 v4 IP]";
+        const w6 = document.getElementById('westIPv6').value || "[需填写 v6 IP]";
+        tbody.innerHTML = '';
+
+        rules.forEach((r, idx) => {
+            const eIsV6 = isIPv6(r.eIP);
+            const displayIP = eIsV6 ? w6 : w4;
+            const tagClass = eIsV6 ? 'tag-v6' : 'tag-v4';
+            const tagText = eIsV6 ? 'IPv6' : 'IPv4';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="td-client td-clickable" onclick="directCopy('${displayIP}')">
+                    ${displayIP} <span class="tag ${tagClass}">${tagText}</span> <span class="copy-hint">📋</span>
+                </td>
+                <td class="td-client td-clickable" onclick="directCopy('${r.wPort}')">
+                    ${r.wPort} <span class="copy-hint">📋</span>
+                </td>
+                <td class="td-server td-clickable" onclick="directCopy('${r.eIP}')">
+                    ${r.eIP} <span class="copy-hint">📋</span>
+                </td>
+                <td class="td-server td-clickable" onclick="directCopy('${r.ePort}')">
+                    ${r.ePort} <span class="copy-hint">📋</span>
+                </td>
+                <td style="text-align:center">
+                    <button class="btn-danger" onclick="removeRule(${idx})">移除</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function removeRule(i) { rules.splice(i, 1); renderTable(); }
+
+    // 生成全量部署指令
+    function generateAll() {
+        if (rules.length === 0) { showToast("请先在表格中添加规则"); return; }
+        
+        let toml = "";
+        let ports = rules.map(r => parseInt(r.wPort));
+        let min = Math.min(...ports), max = Math.max(...ports);
+
+        rules.forEach(r => {
+            const remote = isIPv6(r.eIP) ? `[${r.eIP}]:${r.ePort}` : `${r.eIP}:${r.ePort}`;
+            toml += `[[endpoints]]\nlisten = "0.0.0.0:${r.wPort}"\nremote = "${remote}"\n\n`;
+        });
+
+        const w4 = document.getElementById('westIPv4').value || "未填";
+        const w6 = document.getElementById('westIPv6').value || "未填";
+
+        const script = `
+# 1. 覆盖写入配置
+cat > /etc/realm/config.toml <<'EOF'
+${toml.trim()}
+EOF
+
+# 2. 建立守护服务
+cat > /etc/systemd/system/realm.service <<'EOF'
+[Unit]
+Description=realm
+After=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/realm -c /etc/realm/config.toml
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 3. 内核转发与防火墙放行
+echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf && sysctl -p
+iptables -I INPUT -p tcp --dport ${min}:${max} -j ACCEPT
+iptables -I INPUT -p udp --dport ${min}:${max} -j ACCEPT
+ip6tables -I INPUT -p tcp --dport ${min}:${max} -j ACCEPT
+ip6tables -I INPUT -p udp --dport ${min}:${max} -j ACCEPT
+
+# 4. 重载配置并启动服务
+systemctl daemon-reload
+systemctl enable realm
+systemctl restart realm
+
+# 5. 打印完成信息与对照
+echo "------------------------------------------------"
+systemctl status realm --no-pager
+echo "------------------------------------------------"
+echo "✅ 部署成功！"
+echo "IPv4 中转 IP: ${w4}"
+echo "IPv6 中转 IP: ${w6}"
+echo "监听端口范围: ${min} 到 ${max}"`.trim();
+        
+        document.getElementById('code2').innerText = script;
+        showToast("指令已更新，点击 Step 2 即可复制");
+    }
+
+    // 复制功能
+    function directCopy(val) {
+        if(!val || val.includes('[需填写')) return;
+        navigator.clipboard.writeText(val);
+        showToast("已复制: " + val);
+    }
+
+    function copyValue(id) {
+        const val = document.getElementById(id).value;
+        if(!val) return;
+        navigator.clipboard.writeText(val);
+        showToast("已复制: " + val);
+    }
+
+    function copyCode(id) {
+        const code = document.getElementById(id).innerText;
+        if(code.includes("等待生成")) return;
+        navigator.clipboard.writeText(code);
+        showToast("指令已复制到剪贴板");
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 1500);
+    }
+
+    // 备份导出 (JSON)
+    function exportJSON() {
+        const data = { 
+            westIPv4: document.getElementById('westIPv4').value, 
+            westIPv6: document.getElementById('westIPv6').value, 
+            rules 
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = 'realm_relay_config.json'; a.click();
+    }
+
+    // 备份导入 (JSON)
+    function importJSON(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(res) {
+            try {
+                const data = JSON.parse(res.target.result);
+                document.getElementById('westIPv4').value = data.westIPv4 || "";
+                document.getElementById('westIPv6').value = data.westIPv6 || "";
+                rules = data.rules || [];
+                renderTable();
+                showToast("配置导入成功");
+            } catch(e) { alert("文件解析失败"); }
+        };
+        reader.readAsText(file);
+    }
+
+    // 备份网页 (HTML 快照)
+    function exportHTML() {
+        // 将输入值显式写入 DOM 属性，以确保保存的静态网页中包含这些值
+        document.getElementById('westIPv4').setAttribute('value', document.getElementById('westIPv4').value);
+        document.getElementById('westIPv6').setAttribute('value', document.getElementById('westIPv6').value);
+        document.getElementById('eastIP').setAttribute('value', document.getElementById('eastIP').value);
+        
+        document.getElementById('toast').style.display = 'none';
+        const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'realm_full_backup.html';
+        a.click();
+        showToast("网页快照已保存");
+    }
+</script>
+
+</body>
+</html>
