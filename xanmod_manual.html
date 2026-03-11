@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ubuntu 24.04 成功安装 XanMod (BBRv3) 方案总结</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f7f9;
+        }
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+            border-left: 5px solid #3498db;
+            padding-left: 15px;
+        }
+        .info-box {
+            background-color: #e8f4fd;
+            border: 1px solid #3498db;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success-box {
+            background-color: #eafaf1;
+            border: 1px solid #2ecc71;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        code {
+            background-color: #2d3436;
+            color: #fab1a0;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre {
+            background-color: #2d3436;
+            color: #dfe6e9;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 14px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        table th {
+            background-color: #f2f2f2;
+        }
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Ubuntu 24.04 XanMod (BBRv3) 优化方案</h1>
+
+    <div class="info-box">
+        <strong>服务器环境：</strong> OVH SAS (Oregon, US)<br>
+        <strong>硬件配置：</strong> Intel Haswell CPU (4 Cores), 8GB RAM<br>
+        <strong>核心痛点：</strong> 跨境丢包导致到中国内地上传速度极低（仅 0.36 Mbps）
+    </div>
+
+    <h2>第一步：安装 XanMod x64v3 内核</h2>
+    <p>针对 OVH 机房 IP 屏蔽 <code>dl.xanmod.org</code> (403错误) 的问题，采用 Ubuntu 官方密钥服务器绕过方案。</p>
+    
+    <pre># 1. 导入 GPG 密钥 (从 Ubuntu 官方密钥服务器拉取)
+sudo mkdir -p /etc/apt/keyrings
+sudo gpg --no-default-keyring --keyring /etc/apt/keyrings/xanmod-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 86F7D09EE734E623
+
+# 2. 添加 XanMod 官方软件源
+echo 'deb [signed-by=/etc/apt/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org releases main' | sudo tee /etc/apt/sources.list.d/xanmod-release.list
+
+# 3. 安装针对 Haswell 优化的 x64v3 内核
+sudo apt update && sudo apt install linux-xanmod-x64v3 -y</pre>
+
+    <h2>第二步：开启 BBRv3 拥塞控制协议</h2>
+    <p>XanMod 内核已集成最新的 BBRv3 源码，通过系统配置即可激活。</p>
+    <pre># 写入 BBR3 配置指令
+cat <<EOF | sudo tee /etc/sysctl.d/99-bbr3.conf
+net.core.default_qdisc=fq
+net.ipv4.tcp_congestion_control=bbr
+EOF
+
+# 应用配置并重启以切换内核
+sudo sysctl --system
+sudo reboot</pre>
+
+    <h2>第三步：清理冗余内核与残留</h2>
+    <p>保持系统纯净，仅保留 XanMod 内核和官方保底内核。</p>
+    <pre># 1. 卸载过渡内核 (如 Liquorix)
+sudo apt purge linux-image-liquorix-amd64 linux-headers-liquorix-amd64 -y
+
+# 2. 彻底清除旧内核残留配置文件 (状态为 deinstall 的包)
+sudo dpkg --purge linux-image-6.8.0-86-generic
+
+# 3. 自动清理无用依赖
+sudo apt autoremove -y && sudo update-grub</pre>
+
+    <h2>第四步：优化成果对比</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>测试指标</th>
+                <th>优化前 (Cubic / BBRv1)</th>
+                <th>优化后 (XanMod v3 + BBRv3)</th>
+                <th>提升幅度</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>内核版本</td>
+                <td>6.8.0-generic</td>
+                <td><span class="highlight">6.19.6-xanmod1</span></td>
+                <td>最新特性支持</td>
+            </tr>
+            <tr>
+                <td>磁盘 I/O 平均速度</td>
+                <td>681.3 MB/s</td>
+                <td>761.7 MB/s</td>
+                <td>+11.8%</td>
+            </tr>
+            <tr>
+                <td>苏州节点 (Upload)</td>
+                <td><span class="highlight">0.36 Mbps</span></td>
+                <td><span class="highlight">260.28 Mbps</span></td>
+                <td><strong>~722 倍提升</strong></td>
+            </tr>
+            <tr>
+                <td>系统响应能力</td>
+                <td>标准</td>
+                <td>x64v3 指令集优化</td>
+                <td>更低 CPU 占用</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="success-box">
+        <strong>结论：</strong> 方案执行非常成功。BBRv3 在高延迟（320ms+）且存在丢包的环境下，展现了极强的抗干扰能力，彻底解决了跨境网络传输瓶颈。
+    </div>
+
+    <h2>验证命令参考</h2>
+    <ul>
+        <li>查看运行内核：<code>uname -r</code></li>
+        <li>查看 BBR 状态：<code>sysctl net.ipv4.tcp_congestion_control</code></li>
+        <li>列出所有内核：<code>dpkg --get-selections | grep linux-image</code></li>
+    </ul>
+
+    <footer>
+        <p>此文档由技术支持总结并整理 &copy; 2026</p>
+    </footer>
+</div>
+
+</body>
+</html>
