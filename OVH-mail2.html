@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OVH VPS 顶级邮局全能指南 (BBR3 & 内存优化版)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 1000px; margin: 0 auto; padding: 20px; background-color: #f0f2f5; }
+        .container { background-color: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #1a73e8; border-bottom: 3px solid #1a73e8; padding-bottom: 10px; text-align: center; }
+        h2 { color: #202124; margin-top: 30px; background: #e8f0fe; padding: 10px 15px; border-radius: 5px; border-left: 5px solid #1a73e8; display: flex; align-items: center; }
+        h3 { color: #1a73e8; margin-top: 25px; border-bottom: 1px solid #e8f0fe; padding-bottom: 5px; }
+        .status-box { background-color: #e6fffa; border: 1px solid #38b2ac; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .warning-box { background-color: #fffaf0; border: 1px solid #ed8936; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .code-container { position: relative; margin: 15px 0; }
+        pre { background-color: #2d3436; color: #dfe6e9; padding: 15px; border-radius: 6px; overflow-x: auto; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; background: #1a73e8; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; opacity: 0.8; }
+        .copy-btn:hover { opacity: 1; }
+        .dns-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+        .dns-table th, .dns-table td { border: 1px solid #dadce0; padding: 12px; text-align: left; }
+        .dns-table th { background-color: #f8f9fa; }
+        .step-num { display: inline-block; background: #1a73e8; color: white; width: 28px; height: 28px; text-align: center; border-radius: 50%; margin-right: 10px; line-height: 28px; font-weight: bold; flex-shrink: 0; }
+        .desc { font-size: 0.95em; color: #555; margin-bottom: 8px; }
+        .card { border: 1px solid #dadce0; padding: 15px; border-radius: 8px; background: #fafafa; margin-bottom: 15px; }
+        footer { margin-top: 40px; text-align: center; font-size: 0.9em; color: #5f6368; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>OVH 自建邮局终极实操指南</h1>
+
+    <div class="status-box">
+        <strong>✅ 环境就绪：</strong> Ubuntu 24.04 | XanMod v3 | BBR3 已激活 | 8GB RAM | 25 端口已放行
+    </div>
+
+    <h2><span class="step-num">1</span> 域名基建 (DNS & PTR)</h2>
+    <p><b>必须关闭 Cloudflare 小黄云 (灰色云朵 DNS Only)</b>，否则 SSL 握手和发信校验将失败。</p>
+    
+    <div class="warning-box">
+        <strong>PTR 必做：</strong> 登录 OVH 面板，为 IPv4 和 IPv6 均设置 <b>Reverse DNS</b> 为 <code>mail.yourdomain.com</code>。
+    </div>
+
+    <table class="dns-table">
+        <tr><th>类型</th><th>主机名</th><th>记录值</th><th>说明</th></tr>
+        <tr><td>A</td><td>mail</td><td>15.204.x.x</td><td>服务器 IPv4 地址</td></tr>
+        <tr><td>AAAA</td><td>mail</td><td>2604:2dc0...</td><td>服务器 IPv6 地址</td></tr>
+        <tr><td>MX</td><td>@</td><td>mail.yourdomain.com</td><td>指向邮件服务器，优先级 10</td></tr>
+        <tr><td>TXT</td><td>@</td><td>v=spf1 mx ~all</td><td>SPF 授权：允许此 IP 发信</td></tr>
+        <tr><td>TXT</td><td>_dmarc</td><td>v=DMARC1; p=quarantine; adkim=r; aspf=r</td><td>DMARC 策略：防止被冒用</td></tr>
+    </table>
+
+    <h2><span class="step-num">2</span> 邮局部署 (Poste.io)</h2>
+    <div class="desc">使用单镜像全能方案。默认加入禁用杀毒参数，启动后内存占用仅约 700MB。</div>
+    <div class="code-container">
+        <button class="copy-btn" onclick="copyCode(this)">一键复制部署命令</button>
+        <pre>mkdir -p /home/docker/mail && docker run -d --name mailserver \
+  -e HTTPS=ON \
+  -e DISABLE_CLAMAV=TRUE \
+  -p 25:25 -p 465:465 -p 587:587 -p 993:993 -p 8080:8080 \
+  -v /home/docker/mail:/data \
+  analogic/poste.io</pre>
+    </div>
+
+    <h2><span class="step-num">3</span> 核心管理命令详解</h2>
+    
+    <div class="card">
+        <h3>1. 内存监测：<code>mailmem</code> 基础命令</h3>
+        <p class="desc">功能：静态查看容器占用的物理内存百分比。确认 ClamAV 关闭后应在 20% 左右。</p>
+        <div class="code-container">
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+            <pre>docker stats mailserver --no-stream</pre>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>2. 杀毒进程审计</h3>
+        <p class="desc">功能：确认容器内 <code>clamd</code> 进程是否运行。如果有输出，说明它正在消耗 1GB 内存。</p>
+        <div class="code-container">
+            <button class="copy-btn" onclick="copyCode(this)">复制</button>
+            <pre>docker exec mailserver ps aux | grep clamd</pre>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>3. 精准控制杀毒 (基于运行时)</h3>
+        <p class="desc">功能：使用 s6 管理器直接关闭或开启 clamd 进程，实时释放内存。</p>
+        <div class="code-container">
+            <button class="copy-btn" onclick="copyCode(this)">复制禁用命令</button>
+            <pre>docker exec mailserver s6-svc -d /var/run/s6/services/clamd</pre>
+        </div>
+        <div class="code-container">
+            <button class="copy-btn" onclick="copyCode(this)">复制启用命令</button>
+            <pre>docker exec mailserver s6-svc -u /var/run/s6/services/clamd</pre>
+        </div>
+    </div>
+
+    <h2><span class="step-num">4</span> 长期管理别名 (一键配置)</h2>
+    <p>将上述复杂命令封装为简单快捷键。配置后，输入 <code>clamoff</code> 即可释放 1GB 内存。</p>
+    <div class="code-container">
+        <button class="copy-btn" onclick="copyCode(this)">一键复制并配置别名</button>
+        <pre>cat <<EOF >> ~/.bashrc
+# Poste.io 内存优化快捷键
+alias mailmem='docker stats mailserver --no-stream'
+alias clamoff='docker exec mailserver s6-svc -d /var/run/s6/services/clamd && echo "✅ clamd 已关闭，内存正在释放..."'
+alias clamon='docker exec mailserver s6-svc -u /var/run/s6/services/clamd && echo "🚀 clamd 已启动"'
+EOF
+source ~/.bashrc</pre>
+    </div>
+
+    <h2><span class="step-num">5</span> 移动端与 PC 连接指南</h2>
+    <div class="desc">无论使用 iPhone、Android 还是 Outlook，请统一手动配置以下 SSL 参数：</div>
+    <table class="dns-table">
+        <tr><th>协议</th><th>服务器地址</th><th>端口</th><th>加密方式</th></tr>
+        <tr><td><b>IMAP (收)</b></td><td>mail.yourdomain.com</td><td>993</td><td>SSL/TLS</td></tr>
+        <tr><td><b>SMTP (发)</b></td><td>mail.yourdomain.com</td><td>465</td><td>SSL/TLS</td></tr>
+    </table>
+    <div class="warning-box">
+        <b>登录凭证：</b> 用户名必须是<b>完整邮箱地址</b>。如果 SSL 连接失败，请检查防火墙是否允许 993/465 端口。
+    </div>
+
+    <h2><span class="step-num">6</span> 进阶测试与维护</h2>
+    <ol>
+        <li><b>跑分测试：</b> 前往 <a href="https://www.mail-tester.com" target="_blank">Mail-Tester.com</a>，目标 10/10 满分。</li>
+        <li><b>DKIM 配置：</b> 在 Poste.io 后台生成密钥后，在 DNS 添加 <code>s1._domainkey</code> 的 TXT 记录。</li>
+        <li><b>防火墙放行：</b> <code>sudo ufw allow 993/tcp 465/tcp 80/tcp</code></li>
+    </ol>
+
+    <footer>
+        <p>基于 XanMod 6.19.6 + BBR3 环境调优 | 10/10 Mail-Tester 满分标准方案</p>
+        <p>&copy; 2026 技术专家组运维文档</p>
+    </footer>
+</div>
+
+<script>
+    function copyCode(btn) {
+        const pre = btn.nextElementSibling;
+        const text = pre.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = btn.innerText;
+            btn.innerText = "已复制！";
+            btn.style.background = "#2ecc71";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = "#1a73e8";
+            }, 2000);
+        });
+    }
+</script>
+
+</body>
+</html>
