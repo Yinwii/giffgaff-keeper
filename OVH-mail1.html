@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OVH VPS 自建顶级邮局全攻略 (Ubuntu 24.04 + BBR3)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: #1a73e8;
+            border-bottom: 3px solid #1a73e8;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        h2 {
+            color: #202124;
+            margin-top: 30px;
+            background: #e8f0fe;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border-left: 5px solid #1a73e8;
+        }
+        h3 {
+            color: #1a73e8;
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+        .status-box {
+            background-color: #e6fffa;
+            border: 1px solid #38b2ac;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .warning-box {
+            background-color: #fffaf0;
+            border: 1px solid #ed8936;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        pre {
+            background-color: #2d3436;
+            color: #dfe6e9;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: "SFMono-Regular", Consolas, monospace;
+            font-size: 14px;
+        }
+        code {
+            background-color: #f1f3f4;
+            color: #d93025;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        .dns-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .dns-table th, .dns-table td {
+            border: 1px solid #dadce0;
+            padding: 12px;
+            text-align: left;
+        }
+        .dns-table th {
+            background-color: #f8f9fa;
+        }
+        .step-num {
+            display: inline-block;
+            background: #1a73e8;
+            color: white;
+            width: 28px;
+            height: 28px;
+            text-align: center;
+            border-radius: 50%;
+            margin-right: 10px;
+            line-height: 28px;
+            font-weight: bold;
+        }
+        .param-grid {
+            background: #f8f9fa;
+            border: 1px dashed #1a73e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #5f6368;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>OVH 自建顶级邮局实战指南</h1>
+
+    <div class="status-box">
+        <strong>✅ 硬件与环境就绪检查：</strong>
+        <ul>
+            <li><strong>CPU/内存：</strong> 4核 8GB (完美运行各类型邮局方案)</li>
+            <li><strong>内核优化：</strong> XanMod v3 + BBRv3 (加速附件传输，极致抗丢包)</li>
+            <li><strong>网络端口：</strong> 25 端口出站/入站双向开启 (建邮局的核心入场券)</li>
+            <li><strong>IP 类型：</strong> OVH 原生 IPv4 + IPv6</li>
+        </ul>
+    </div>
+
+    <h2><span class="step-num">1</span> 核心准备：设置 PTR (反向解析)</h2>
+    <p>这是邮局信誉度的基础。没有 PTR 记录，Gmail 等主流厂商会直接拒收邮件。</p>
+    <div class="warning-box">
+        <strong>操作位置：</strong> 登录 OVH 控制面板 -> IP 管理 -> 选择对应的 IP 地址。
+    </div>
+    <ul>
+        <li><strong>IPv4 PTR：</strong> 将 <code>15.204.x.x</code> 的 Reverse DNS 设置为 <code>mail.yourdomain.com</code></li>
+        <li><strong>IPv6 PTR：</strong> 将 <code>2604:2dc0:202:300::2a47</code> 同样设置为 <code>mail.yourdomain.com</code></li>
+    </ul>
+
+    <h2><span class="step-num">2</span> 域名解析 (DNS) 配置</h2>
+    <p>在你的域名服务商（如 Cloudflare）处添加以下记录。<b>注意：必须关闭小黄云（改为灰色云朵 DNS Only）。</b></p>
+    <table class="dns-table">
+        <thead>
+            <tr>
+                <th>记录类型</th>
+                <th>主机记录</th>
+                <th>记录值</th>
+                <th>备注</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>A</td>
+                <td>mail</td>
+                <td>15.204.x.x</td>
+                <td>指向你的 IPv4 地址</td>
+            </tr>
+            <tr>
+                <td>AAAA</td>
+                <td>mail</td>
+                <td>2604:2dc0:202:300::2a47</td>
+                <td>指向你的 IPv6 地址</td>
+            </tr>
+            <tr>
+                <td>MX</td>
+                <td>@</td>
+                <td>mail.yourdomain.com</td>
+                <td>优先级设为 10</td>
+            </tr>
+            <tr>
+                <td>TXT</td>
+                <td>@</td>
+                <td>v=spf1 mx ~all</td>
+                <td>SPF 记录：授权服务器发信</td>
+            </tr>
+            <tr>
+                <td>TXT</td>
+                <td>_dmarc</td>
+                <td>v=DMARC1; p=quarantine; adkim=r; aspf=r</td>
+                <td>DMARC 记录：安全策略</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2><span class="step-num">3</span> 方案选型：找到最适合你的邮局</h2>
+    <table class="dns-table">
+        <thead>
+            <tr>
+                <th>方案名称</th>
+                <th>内存消耗</th>
+                <th>管理界面</th>
+                <th>适用场景</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Mailcow</strong></td>
+                <td>3.5GB+</td>
+                <td>功能极其强大</td>
+                <td>全能、商业级、抗垃圾引擎顶级</td>
+            </tr>
+            <tr>
+                <td><strong>Stalwart</strong></td>
+                <td>500MB</td>
+                <td>现代、简洁</td>
+                <td>轻量、高性能 Rust 编写、支持 JMAP</td>
+            </tr>
+            <tr>
+                <td><strong>Maddy</strong></td>
+                <td>100MB</td>
+                <td>纯命令行</td>
+                <td>极致极简、资源占用极低</td>
+            </tr>
+            <tr>
+                <td><strong>Postal</strong></td>
+                <td>4GB+</td>
+                <td>发信管理系统</td>
+                <td><strong>发信引擎</strong>，适合验证码/推送业务</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2><span class="step-num">4</span> 部署操作 (方案建议二选一)</h2>
+    
+    <h3>方案 A：Mailcow (全能型，首选推荐)</h3>
+    <pre># 部署命令
+curl -sSL https://get.docker.com/ | sh
+cd /opt
+sudo git clone https://github.com/mailcow/mailcow-dockerized
+cd mailcow-dockerized
+sudo ./generate_config.sh # 输入 mail.yourdomain.com
+sudo docker compose up -d
+
+# 默认后台: https://mail.yourdomain.com
+# 账号密码: admin / moohoo</pre>
+
+    <h3>方案 B：Stalwart (轻量现代化，Rust 驱动)</h3>
+    <pre># 使用 Docker 极速部署
+docker run -d --name stalwart \
+  -p 25:25 -p 465:465 -p 587:587 -p 993:993 -p 8080:8080 \
+  -v /opt/stalwart-mail:/opt/stalwart-mail \
+  ghcr.io/stalwartlabs/mail-server:latest
+
+# 查看自动生成的 admin 密码:
+docker logs stalwart | grep "admin"
+# 后台地址: http://服务器IP:8080</pre>
+
+    <h2><span class="step-num">5</span> 配置 DKIM 签名</h2>
+    <p>部署好并<b>进入后台创建好邮箱账号</b>后，必须配置 DKIM 以大幅提高发信成功率：</p>
+    <div class="method-card">
+        <p><b>Mailcow：</b> Configuration -> Mail Setup -> Domains -> 填写 Selector 为 <code>dkim</code> -> 生成并复制公钥。</p>
+        <p><b>Stalwart：</b> Settings -> Domains -> Signing Keys -> 创建 Selector 为 <code>stalwart</code> 的密钥。</p>
+    </div>
+    <p><b>DNS 设置：</b> 在 Cloudflare 添加 TXT 记录，名称为 <code>选择器._domainkey</code>（例如 <code>dkim._domainkey</code>），内容为生成的以 <code>v=DKIM1;</code> 开头的整段字符串。</p>
+
+    <h2><span class="step-num">6</span> 终极测试：邮件跑分</h2>
+    <p>访问 <a href="https://www.mail-tester.com" target="_blank">Mail-Tester.com</a> 发送测试信。凭借 <strong>XanMod BBR3</strong> 和 <strong>正确的双栈 PTR</strong>，您将极大概率获得 <strong>10/10 满分</strong>。</p>
+
+    <h2><span class="step-num">7</span> 客户端配置：将邮箱添加至手机与 PC</h2>
+    <p>在所有设备的手动配置界面，请统一使用以下参数：</p>
+    
+    <div class="param-grid">
+        <strong>通用连接参数：</strong><br>
+        • <b>用户名：</b> 您的完整邮箱地址 (如 admin@yourdomain.com)<br>
+        • <b>密码：</b> 您在邮局后台设置的密码<br>
+        • <b>收件服务器 (IMAP)：</b> <code>mail.yourdomain.com</code> | 端口：<code>993</code> | 加密：<code>SSL/TLS</code><br>
+        • <b>发件服务器 (SMTP)：</b> <code>mail.yourdomain.com</code> | 端口：<code>465</code> | 加密：<code>SSL/TLS</code>
+    </div>
+
+    <h3>📱 在 iPhone (iOS) / Android 上添加</h3>
+    <ol>
+        <li>进入设置 -> 邮件/帐号 -> 添加帐号 -> <b>其他</b>。</li>
+        <li>选择 <b>添加邮件帐号 (IMAP)</b>。</li>
+        <li>输入账号信息，并在收件和发件服务器处均填入 <code>mail.yourdomain.com</code>。</li>
+        <li>确保<b>发件服务器也填写了用户名和密码</b>（即使系统标记为选填）。</li>
+    </ol>
+
+    <h3>💻 在 PC (Outlook / Thunderbird) 上添加</h3>
+    <ol>
+        <li>选择 <b>手动设置</b> 账户。</li>
+        <li>账户类型选择 <b>IMAP</b>。</li>
+        <li>按照上述参数填入端口 993 和 465，并勾选对应的 <b>SSL/TLS</b> 加密。</li>
+    </ol>
+
+    <div class="warning-box">
+        <strong>⚠️ 连接失败排查：</strong><br>
+        如果无法连接，请在 VPS 终端运行以下命令开放防火墙端口：<br>
+        <code>sudo ufw allow 993/tcp && sudo ufw allow 465/tcp && sudo ufw allow 587/tcp</code>
+    </div>
+
+    <footer>
+        <p>基于 Ubuntu 24.04 XanMod v3 架构优化方案整理</p>
+        <p>&copy; 2026 技术专家组文档存档</p>
+    </footer>
+</div>
+
+</body>
+</html>
