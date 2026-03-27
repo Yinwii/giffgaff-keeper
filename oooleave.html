@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>休假成本对比计算器</title>
+    <style>
+        body { font-family: "Microsoft YaHei", sans-serif; background-color: #f5f5f5; padding: 20px; line-height: 1.5; }
+        .container { max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        
+        /* 输入区样式 */
+        .input-box { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 15px; background: #fcfcfc; border: 1px solid #ddd; }
+        .input-group { display: flex; align-items: center; }
+        .input-group label { margin-right: 10px; font-weight: bold; font-size: 14px; }
+        input { width: 80px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* 表格样式 */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 14px; }
+        th { background-color: #f8f9fa; color: #333; }
+        
+        .formula { font-size: 12px; color: #666; margin-top: 5px; display: block; }
+        .result-cell { font-weight: bold; font-size: 16px; color: #d32f2f; }
+        .win { background-color: #e8f5e9; font-weight: bold; color: #2e7d32; }
+        
+        button { width: 100%; padding: 12px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-bottom: 20px; }
+        button:hover { background: #1565c0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>休假对比计算器 (含明细)</h2>
+
+    <div class="input-box">
+        <div class="input-group">
+            <label>基本工资:</label>
+            <input type="number" id="baseSalary" value="5000">
+        </div>
+        <div class="input-group">
+            <label>全勤奖:</label>
+            <input type="number" id="bonus" value="100">
+        </div>
+        <div class="input-group">
+            <label>休假天数:</label>
+            <input type="number" id="leaveDays" value="3">
+        </div>
+        <div class="input-group">
+            <label>计薪天数:</label>
+            <input type="number" id="workDays" value="21.75">
+        </div>
+    </div>
+
+    <button onclick="calculate()">执行对比计算</button>
+
+    <div id="resultArea">
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">项目 / 方案</th>
+                    <th width="25%">方案 A：调休 (1倍)</th>
+                    <th width="25%">方案 B：调休 (1.5倍)</th>
+                    <th width="25%">方案 C：事假 (1倍)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>工资单价</b></td>
+                    <td id="unit_a">-</td>
+                    <td id="unit_b">-</td>
+                    <td id="unit_c">-</td>
+                </tr>
+                <tr>
+                    <td><b>工资扣除明细</b></td>
+                    <td id="detail_a">-</td>
+                    <td id="detail_b">-</td>
+                    <td id="detail_c">-</td>
+                </tr>
+                <tr>
+                    <td><b>全勤奖损失</b></td>
+                    <td>0 元<br><small>(调休不扣全勤)</small></td>
+                    <td>0 元<br><small>(调休不扣全勤)</small></td>
+                    <td id="bonus_c">-</td>
+                </tr>
+                <tr>
+                    <td><b>总扣款金额</b></td>
+                    <td id="total_a" class="result-cell">-</td>
+                    <td id="total_b" class="result-cell">-</td>
+                    <td id="total_c" class="result-cell">-</td>
+                </tr>
+                <tr>
+                    <td><b>实发工资参考</b></td>
+                    <td id="final_a">-</td>
+                    <td id="final_b">-</td>
+                    <td id="final_c">-</td>
+                </tr>
+                <tr>
+                    <td><b>分析结论</b></td>
+                    <td id="win_a"></td>
+                    <td id="win_b"></td>
+                    <td id="win_c"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function calculate() {
+    const salary = parseFloat(document.getElementById('baseSalary').value);
+    const bonus = parseFloat(document.getElementById('bonus').value);
+    const days = parseFloat(document.getElementById('leaveDays').value);
+    const workDays = parseFloat(document.getElementById('workDays').value);
+    const hours = days * 8;
+
+    // 基础单价
+    const dailyWage = salary / workDays;
+    const hourlyWage = dailyWage / 8;
+
+    // --- 方案 A: 调休 1倍 ---
+    const lossA = hourlyWage * 1.0 * hours;
+    const totalA = lossA;
+    document.getElementById('unit_a').innerHTML = hourlyWage.toFixed(2) + " 元/时";
+    document.getElementById('detail_a').innerHTML = hourlyWage.toFixed(2) + " × 1.0 × " + hours + "H<br>= " + lossA.toFixed(2) + " 元";
+    document.getElementById('total_a').innerHTML = totalA.toFixed(2) + " 元";
+    document.getElementById('final_a').innerHTML = (salary + bonus - totalA).toFixed(2) + " 元";
+
+    // --- 方案 B: 调休 1.5倍 ---
+    const lossB = hourlyWage * 1.5 * hours;
+    const totalB = lossB;
+    document.getElementById('unit_b').innerHTML = (hourlyWage * 1.5).toFixed(2) + " 元/时<br>(1.5倍)";
+    document.getElementById('detail_b').innerHTML = (hourlyWage * 1.5).toFixed(2) + " × " + hours + "H<br>= " + lossB.toFixed(2) + " 元";
+    document.getElementById('total_b').innerHTML = totalB.toFixed(2) + " 元";
+    document.getElementById('final_b').innerHTML = (salary + bonus - totalB).toFixed(2) + " 元";
+
+    // --- 方案 C: 事假 ---
+    const lossC = dailyWage * days;
+    const totalC = lossC + bonus;
+    document.getElementById('unit_c').innerHTML = dailyWage.toFixed(2) + " 元/天";
+    document.getElementById('detail_c').innerHTML = dailyWage.toFixed(2) + " × " + days + "天<br>= " + lossC.toFixed(2) + " 元";
+    document.getElementById('bonus_c').innerHTML = bonus.toFixed(2) + " 元<br><small>(事假扣全勤)</small>";
+    document.getElementById('total_c').innerHTML = totalC.toFixed(2) + " 元";
+    document.getElementById('final_c').innerHTML = (salary + bonus - totalC).toFixed(2) + " 元";
+
+    // --- 结论判定 ---
+    const minLoss = Math.min(totalA, totalB, totalC);
+    document.getElementById('win_a').innerHTML = totalA === minLoss ? "【最划算】" : "";
+    document.getElementById('win_a').className = totalA === minLoss ? "win" : "";
+    document.getElementById('win_b').innerHTML = totalB === minLoss ? "【最划算】" : "";
+    document.getElementById('win_b').className = totalB === minLoss ? "win" : "";
+    document.getElementById('win_c').innerHTML = totalC === minLoss ? "【最划算】" : "";
+    document.getElementById('win_c').className = totalC === minLoss ? "win" : "";
+}
+
+// 页面加载时自动计算一次
+window.onload = calculate;
+</script>
+
+</body>
+</html>
