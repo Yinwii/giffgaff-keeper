@@ -257,8 +257,13 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="p-fields"></div>
             <div class="mt-8 pt-8 border-t border-slate-50">
                 <div class="flex justify-between items-center mb-4">
-                    <span class="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"><svg class="w-3 h-3 text-slate-400 inline-block -mt-0.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>模型列表 (IDs)</span>
-                    <button class="add-m text-white bg-indigo-500 font-bold text-[10px] px-4 py-2 rounded-xl hover:bg-indigo-600 transition shadow-lg shadow-indigo-100">+ 新增模型 ID</button>
+                    <span class="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"><svg class="w-3 h-3 text-slate-400 inline-block -mt-0.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>模型字典 (IDs & Names)</span>
+                    <button class="add-m text-white bg-indigo-500 font-bold text-[10px] px-4 py-2 rounded-xl hover:bg-indigo-600 transition shadow-lg shadow-indigo-100">+ 新增模型</button>
+                </div>
+                <div class="flex gap-3 px-2 mb-2">
+                    <div class="flex-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">模型 ID (Model ID)</div>
+                    <div class="flex-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1 ml-1 text-indigo-400/80">显示别名 (Custom Name)</div>
+                    <div class="w-6"></div>
                 </div>
                 <div class="m-list space-y-3 font-mono"></div>
             </div>
@@ -340,12 +345,38 @@
                 (pData.models||[]).forEach((m, idx) => {
                     const row = document.createElement('div');
                     row.className = "flex gap-3 items-center";
-                    row.innerHTML = `<input type="text" value="${m.id}" class="flex-1 text-[11px] border rounded-2xl p-3 bg-slate-50 font-mono outline-none shadow-sm"><button class="text-slate-300 hover:text-red-500 text-2xl font-bold">&times;</button>`;
-                    row.querySelector('input').onchange = (e) => { m.id = e.target.value; updatePreview(); };
-                    row.querySelector('button').onclick = () => { pData.models.splice(idx,1); renderForm(); updatePreview(); };
+                    row.innerHTML = `
+                        <div class="relative flex-1 group/id">
+                            <input type="text" placeholder="模型 ID (必备)" value="${m.id || ''}" class="inp-id w-full text-[11px] border border-slate-200 rounded-2xl py-3 pl-3 pr-10 bg-slate-50 font-mono outline-none focus:border-indigo-400 focus:bg-white transition-colors shadow-sm placeholder-slate-300">
+                            <button class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 p-1.5 rounded-lg opacity-0 group-hover/id:opacity-100 transition-all bg-white shadow-sm border border-slate-100" onclick="navigator.clipboard.writeText(this.previousElementSibling.value); showToast('已复制 ID: ' + this.previousElementSibling.value)" title="复制 ID">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+                        <div class="relative flex-1 group/name">
+                            <input type="text" placeholder="别名 Name (默认同ID)" value="${m.name || ''}" class="inp-name w-full text-[11px] border border-slate-200 rounded-2xl py-3 pl-3 pr-10 bg-slate-50 font-sans font-bold text-slate-600 outline-none focus:border-indigo-400 focus:bg-white transition-colors shadow-sm placeholder-slate-300">
+                            <button class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 p-1.5 rounded-lg opacity-0 group-hover/name:opacity-100 transition-all bg-white shadow-sm border border-slate-100" onclick="navigator.clipboard.writeText(this.previousElementSibling.value); showToast('已复制 Name: ' + this.previousElementSibling.value)" title="复制 Name">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+                        <button class="text-slate-300 hover:text-red-500 text-2xl font-bold transition-colors w-6">&times;</button>
+                    `;
+                    const inputs = row.querySelectorAll('input');
+                    inputs[0].onchange = (e) => { 
+                        m.id = e.target.value; 
+                        if (!m.name || m.name === "new-model") { 
+                            m.name = e.target.value; inputs[1].value = m.name; 
+                        }
+                        updatePreview(); 
+                    };
+                    inputs[1].onchange = (e) => {
+                        if (e.target.value.trim()) { m.name = e.target.value.trim(); } 
+                        else { delete m.name; } // 空值时清理干净 JSON 体积
+                        updatePreview();
+                    };
+                    row.lastElementChild.onclick = () => { pData.models.splice(idx,1); renderForm(); updatePreview(); };
                     mList.appendChild(row);
                 });
-                temp.querySelector('.add-m').onclick = () => { if(!pData.models) pData.models=[]; pData.models.push({id:"new-model"}); renderForm(); updatePreview(); };
+                temp.querySelector('.add-m').onclick = () => { if(!pData.models) pData.models=[]; pData.models.push({id:"new-model", name:"new-model"}); renderForm(); updatePreview(); };
                 temp.querySelector('.del-p').onclick = () => { delete data.models.providers[pKey]; renderForm(); updatePreview(); };
                 pContainer.appendChild(temp);
             }
@@ -379,7 +410,7 @@
                             </div>
                             <div class="flex flex-col min-w-0">
                                 <span class="text-[10px] font-black uppercase tracking-widest ${isOk ? 'text-indigo-400' : 'text-slate-400'}">${pKey}</span>
-                                <span class="text-[13px] font-bold font-mono tracking-tight truncate ${isOk ? 'text-indigo-900' : 'text-slate-600'}" title="${m.id}">${m.id}</span>
+                                <span class="text-[13px] font-bold font-sans tracking-tight truncate ${isOk ? 'text-indigo-900' : 'text-slate-600'}" title="ID: ${m.id}">${m.name || m.id}</span>
                             </div>
                         </div>
                         ${isOk ? `
@@ -406,13 +437,14 @@
                         const fullId = `${pKey}/${m.id}`;
                         const isSelected = (selectedModel === fullId);
                         if(isSelected) {
-                            document.getElementById('pm-display').textContent = fullId;
+                            document.getElementById('pm-display').textContent = m.name ? `${pKey} / ${m.name}` : fullId;
                             displayFound = true;
                         }
                         const opt = document.createElement('div');
                         opt.className = `pm-option px-4 py-3 text-xs font-mono font-bold rounded-xl cursor-pointer transition-colors flex items-center gap-2 mt-1 ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'}`;
                         opt.setAttribute('data-id', m.id);
-                        opt.innerHTML = `<span class="truncate">${m.id}</span>`;
+                        opt.setAttribute('data-name', m.name || '');
+                        opt.innerHTML = `<span class="truncate">${m.name || m.id}</span>`;
                         opt.onclick = () => {
                             updateDeep('agents.defaults.model.primary', fullId);
                             document.getElementById('pm-dropdown').classList.add('hidden');
@@ -433,18 +465,20 @@
                     if(currentGroup && !groupHasVisible) currentGroup.style.display = 'none';
                     currentGroup = node; groupHasVisible = false; currentGroup.style.display = 'flex';
                 } else if(node.classList.contains('pm-option')) {
-                    const originalText = node.getAttribute('data-id') || '';
-                    const searchBase = originalText.toLowerCase() + (currentGroup ? currentGroup.textContent.toLowerCase() : '');
+                    const dataId = node.getAttribute('data-id') || '';
+                    const dataName = node.getAttribute('data-name') || '';
+                    const displayText = dataName || dataId;
+                    const searchBase = dataId.toLowerCase() + dataName.toLowerCase() + (currentGroup ? currentGroup.textContent.toLowerCase() : '');
+                    
                     if(searchBase.includes(keyword) && keyword !== '') { 
                         node.style.display = 'flex'; groupHasVisible = true; 
-                        // 执行文字内高亮包裹
                         const regex = new RegExp(`(${keyword})`, 'gi');
-                        const highlighted = originalText.replace(regex, '<span class="bg-yellow-300 text-yellow-900 rounded-[4px] px-1 shadow-sm">$1</span>');
+                        const highlighted = displayText.replace(regex, '<span class="bg-yellow-300 text-yellow-900 rounded-[4px] px-1 shadow-sm">$1</span>');
                         node.innerHTML = `<span class="truncate">${highlighted}</span>`;
                     } 
                     else if (keyword === '') {
                         node.style.display = 'flex'; groupHasVisible = true;
-                        node.innerHTML = `<span class="truncate">${originalText}</span>`;
+                        node.innerHTML = `<span class="truncate">${displayText}</span>`;
                     }
                     else {
                         node.style.display = 'none';
@@ -468,18 +502,22 @@
                 
                 let hasAnyModelMatch = false;
                 providerDiv.querySelectorAll('.m-list > div').forEach(modelRow => {
-                    const mInput = modelRow.querySelector('input');
-                    if (mInput) {
+                    let rowMatched = false;
+                    modelRow.querySelectorAll('input').forEach(mInput => {
                         mInput.classList.remove('bg-yellow-100', 'text-yellow-900', 'border-yellow-400', 'ring-2', 'ring-yellow-400');
                         if (keyword && mInput.value.toLowerCase().includes(keyword)) {
-                            modelRow.style.setProperty('display', 'flex', 'important');
+                            rowMatched = true;
                             hasAnyModelMatch = true;
                             mInput.classList.add('bg-yellow-100', 'text-yellow-900', 'border-yellow-400', 'ring-2', 'ring-yellow-400');
-                        } else if (keyword) {
-                            modelRow.style.setProperty('display', 'none', 'important');
-                        } else {
-                            modelRow.style.setProperty('display', 'flex', 'important');
                         }
+                    });
+                    
+                    if (rowMatched) {
+                        modelRow.style.setProperty('display', 'flex', 'important');
+                    } else if (keyword) {
+                        modelRow.style.setProperty('display', 'none', 'important');
+                    } else {
+                        modelRow.style.setProperty('display', 'flex', 'important');
                     }
                 });
 
