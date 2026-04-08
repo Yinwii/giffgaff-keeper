@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw 配置管理中心</title>
+    <link rel="icon" href="https://tse3.mm.bing.net/th/id/OIP.naLS4S80DOfkJGqLVkIWwQAAAA?rs=1&pid=ImgDetMain&o=7&rm=3" type="image/x-icon">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn.active { border-bottom: 2px solid #6366f1; color: #6366f1; }
+        
+        /* 顶部方案切换美化 */
+        .profile-pill { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .profile-pill.active { background: #6366f1; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
+        .profile-pill.active input { color: white !important; font-weight: 800; }
+        .profile-pill.active button { background: rgba(255, 255, 255, 0.2); color: white; border-color: rgba(255, 255, 255, 0.3); }
+        
+        /* 恢复原装简洁滚动条 - 美化版更贴合边框 */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; border-radius: 20px; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 20px; border: 3px solid transparent; background-clip: padding-box; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.7); border: 3px solid transparent; background-clip: padding-box; }
+
+        /* 代码高亮颜色定义 */
+        .json-key { color: #f07178; }
+        .json-string { color: #c3e88d; }
+        .json-number { color: #f78c6c; }
+        .json-boolean { color: #ffcb6b; }
+        
+        /* 窗口状态控制 */
+        .collapsed-box { max-height: 600px; overflow-y: auto !important; }
+        .expanded-box { max-height: none !important; overflow-y: visible !important; }
+
+        /* 手动修正区同步高亮层 */
+        .edit-container { position: relative; width: 100%; min-height: 600px; background: #0f172a; border-radius: 2rem; overflow: hidden; }
+        #raw-json-edit, #edit-highlight-layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            padding: 2rem; margin: 0; border: none; outline: none !important;
+            white-space: pre-wrap; word-wrap: break-word; word-break: break-all;
+            overflow-y: scroll;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+            font-size: 13px !important;
+            line-height: 1.7 !important;
+            letter-spacing: normal !important;
+            tab-size: 4 !important;
+        }
+        #raw-json-edit { 
+            background: transparent; color: transparent; caret-color: white;
+            z-index: 2; resize: none; 
+        }
+        #edit-highlight-layer { 
+            z-index: 1; pointer-events: none; 
+        }
+        #edit-highlight-layer::-webkit-scrollbar-thumb { background: transparent !important; border: none !important; }
+        #edit-highlight-layer::-webkit-scrollbar-track { background: transparent !important; border: none !important; }
+
+        .edit-area-collapsed { height: 600px; overflow: hidden !important; }
+        .edit-area-expanded { overflow: visible !important; }
+
+        #toast { transition: all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); transform: translate(-50%, 100%); }
+        #toast.show { transform: translate(-50%, -20px); opacity: 1; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-2 md:p-6 pb-20">
+
+    <div class="max-w-[1600px] mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200">
+        
+        <!-- Header -->
+        <div class="relative overflow-hidden p-6 md:p-8 text-white flex flex-col lg:flex-row justify-between items-center gap-6 rounded-t-3xl border-b border-slate-800 z-10 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.5)]">
+            <!-- 背景板与科技氛围光幕 -->
+            <div class="absolute inset-0 bg-[#0B1120] z-0"></div>
+            <div class="absolute inset-0 z-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, #fff 1px, transparent 0); background-size: 32px 32px;"></div>
+            <div class="absolute -top-[150px] -right-[50px] w-[300px] h-[300px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[90px] opacity-40 z-0 pointer-events-none animate-pulse"></div>
+            <div class="absolute -bottom-[150px] -left-[50px] w-[300px] h-[300px] bg-fuchsia-600 rounded-full mix-blend-screen filter blur-[90px] opacity-30 z-0 pointer-events-none"></div>
+            <div class="absolute top-0 right-1/2 w-[500px] h-[1px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent opacity-30 z-0"></div>
+            
+            <div class="relative z-10 flex items-center gap-5 w-full lg:w-auto justify-center lg:justify-start">
+                <!-- 品牌发光图标 -->
+                <div class="bg-gradient-to-br from-indigo-500 to-fuchsia-600 p-4 rounded-[1.25rem] shadow-lg shadow-indigo-500/40 relative group cursor-pointer border border-white/10 shrink-0">
+                    <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity rounded-[1.25rem] duration-300"></div>
+                    <svg class="w-6 h-6 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <!-- 品牌渐变文字 -->
+                <div class="text-center lg:text-left">
+                    <h1 class="text-3xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-white via-slate-200 to-slate-400">OpenClaw <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-fuchsia-300">Hub</span></h1>
+                    <p class="text-[10px] text-fuchsia-200/70 uppercase font-black tracking-[0.3em] mt-1 drop-shadow-sm">Openclaw配置工具</p>
+                </div>
+            </div>
+            
+            <!-- 配置方案毛玻璃隔离区 -->
+            <div class="relative z-10 flex flex-wrap justify-center bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-inner w-full lg:w-auto">
+                <div id="pill-p1" class="profile-pill flex items-center px-4 py-1.5 rounded-xl">
+                    <input type="text" id="name-p1" onchange="renameProfile('p1', this.value)" class="bg-transparent border-none text-xs font-bold w-full md:w-28 focus:ring-0 text-center text-slate-200 transition cursor-edit placeholder-slate-400 hover:text-white outline-none">
+                    <button id="btn-p1" onclick="switchProfile('p1')" class="ml-2 px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-white/30 text-white transition hover:bg-white/20 shrink-0">应用方案</button>
+                </div>
+                <div id="pill-p2" class="profile-pill flex items-center px-4 py-1.5 rounded-xl mt-2 md:mt-0 md:ml-1">
+                    <input type="text" id="name-p2" onchange="renameProfile('p2', this.value)" class="bg-transparent border-none text-xs font-bold w-full md:w-36 focus:ring-0 text-center text-slate-200 transition cursor-edit placeholder-slate-400 hover:text-white outline-none">
+                    <button id="btn-p2" onclick="switchProfile('p2')" class="ml-2 px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-white/30 text-white transition hover:bg-white/20 shrink-0">应用方案</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col lg:flex-row h-full">
+            <!-- Left Panel (Editor 2/3) -->
+            <div class="w-full lg:w-2/3 p-4 md:p-8 border-r border-slate-100 overflow-y-auto">
+                <div class="flex border-b mb-8 space-x-2 overflow-x-auto no-scrollbar">
+                    <button onclick="switchTab('tab-general')" class="tab-btn active px-6 py-3 font-bold text-sm text-slate-400 flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>基础设置</button>
+                    <button onclick="switchTab('tab-providers')" class="tab-btn px-6 py-3 font-bold text-sm text-slate-400 flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>模型仓库</button>
+                    <button onclick="switchTab('tab-agents')" class="tab-btn px-6 py-3 font-bold text-sm text-blue-500 flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>Agent 准入</button>
+                    <button onclick="switchTab('tab-import')" class="tab-btn px-6 py-3 font-bold text-sm text-emerald-600 flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>导入/代码修正</button>
+                </div>
+
+                <!-- Tab: General -->
+                <div id="tab-general" class="tab-content active space-y-6">
+                    <div id="field-workspace"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div id="field-port"></div>
+                        <div id="field-gate-token"></div>
+                    </div>
+                    <div class="p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4">
+                        <h4 class="flex items-center text-xs font-black text-slate-400 uppercase tracking-widest"><svg class="w-4 h-4 mr-1.5 inline-block -mt-0.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>频道 Token 管理</h4>
+                        <div id="field-tg-token"></div>
+                        <div id="discord-section" class="pt-4 border-t border-slate-200">
+                            <div id="field-dc-token"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Providers -->
+                <div id="tab-providers" class="tab-content space-y-6">
+                    <div class="sticky top-0 z-10 bg-slate-50/90 backdrop-blur pb-2 -mx-2 px-2">
+                        <div class="flex items-center bg-white rounded-2xl px-4 py-2 border border-slate-200 shadow-sm focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+                            <svg class="w-5 h-5 text-slate-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <input type="text" oninput="filterProviders(this.value)" class="w-full p-2 outline-none text-sm font-bold text-slate-600 bg-transparent" placeholder="搜索提供商或模型 ID...">
+                        </div>
+                    </div>
+                    <div id="providers-container" class="space-y-4"></div>
+                    <button onclick="addProvider()" class="w-full py-5 border-2 border-dashed border-slate-200 text-slate-400 rounded-3xl hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all font-bold">+ 增加新的 API 提供商 (Provider)</button>
+                </div>
+
+                <!-- Tab: Agents -->
+                <div id="tab-agents" class="tab-content space-y-6">
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-100 flex gap-3">
+                        <span class="text-amber-500 font-bold">!</span>
+                        <p class="text-xs text-amber-700 leading-relaxed">模型必须在此页勾选才能被 Agent 识别。勾选后下方下拉框会自动更新可选的 Primary Model。</p>
+                    </div>
+                    <div id="agent-models-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    <div class="pt-8 border-t border-slate-100">
+                        <label class="flex items-center text-xs font-black text-slate-400 uppercase tracking-widest mb-4"><svg class="w-4 h-4 mr-1.5 inline-block -mt-0.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>默认首选模型 (Primary Model)</label>
+                        <div class="relative w-full" id="pm-dropdown-wrapper">
+                            <div onclick="document.getElementById('pm-dropdown').classList.toggle('hidden'); document.getElementById('pm-search').focus();" class="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none flex justify-between items-center cursor-pointer transition-colors hover:border-indigo-300">
+                                <span id="pm-display" class="truncate font-mono">请选择模型...</span>
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                            <div id="pm-dropdown" class="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-3xl shadow-2xl hidden flex flex-col max-h-[350px] overflow-hidden">
+                                <div class="p-3 border-b border-slate-100 bg-slate-50 shrink-0">
+                                    <div class="flex items-center bg-white rounded-xl px-3 border border-slate-200 focus-within:border-indigo-400 transition-all">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                        <input type="text" id="pm-search" oninput="filterPrimaryModels(this.value)" class="w-full p-2 outline-none text-sm bg-transparent" placeholder="搜索提供商或模型名称...">
+                                    </div>
+                                </div>
+                                <div id="pm-options" class="overflow-y-auto p-2 flex-1 scrollbar-thin"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Import/修正 -->
+                <div id="tab-import" class="tab-content space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <label class="p-10 border-2 border-dashed border-slate-200 rounded-[2rem] hover:bg-emerald-50 cursor-pointer text-center group transition-all">
+                            <svg class="w-12 h-12 mx-auto mb-2 text-emerald-500 group-hover:scale-110 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span class="text-sm font-bold text-slate-600">上传配置文件</span>
+                            <input type="file" accept=".json" onchange="handleFileImport(this)" class="hidden">
+                        </label>
+                        <div class="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 flex flex-col">
+                            <h4 class="flex items-center text-[10px] font-black text-emerald-600 uppercase mb-3"><svg class="w-3 h-3 mr-1 inline-block -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>代码粘贴快速导入</h4>
+                            <textarea id="paste-import-area" placeholder="在此粘贴 JSON 文本..." class="w-full h-24 text-[11px] font-mono p-4 bg-white border border-emerald-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                            <button onclick="handlePasteImport()" class="w-full mt-4 bg-emerald-600 text-white py-3 rounded-2xl text-xs font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">覆盖并导入</button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center px-2">
+                            <h4 class="flex items-center text-xs font-black text-slate-400 uppercase tracking-wider"><svg class="w-4 h-4 mr-1.5 inline-block -mt-0.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>手动代码修正区 (全量展示)</h4>
+                            <div class="flex gap-2">
+                                <button onclick="toggleExpand('raw-json-edit')" class="text-[10px] bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-xl font-bold text-slate-600 transition">展开 / 收起</button>
+                                <button onclick="copyJSON()" class="text-[10px] bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-xl font-bold text-slate-600 transition flex items-center gap-1">复制</button>
+                                <button onclick="downloadJSON()" class="text-[10px] bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-xl font-bold text-slate-600 transition flex items-center gap-1">导出</button>
+                                <button onclick="updatePreview(true)" class="text-[10px] bg-indigo-600 hover:bg-indigo-700 px-5 py-1.5 rounded-xl text-white font-bold shadow-lg shadow-indigo-200 transition">应用修改到表单</button>
+                            </div>
+                        </div>
+                        <div id="edit-wrapper" class="edit-container edit-area-collapsed">
+                            <textarea id="raw-json-edit" spellcheck="false" onscroll="syncScroll()" oninput="handleEditInput()"></textarea>
+                            <div id="edit-highlight-layer" class="font-mono text-[12px] leading-relaxed"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel (Output 1/3) -->
+            <div class="w-full lg:w-1/3 bg-slate-50 p-6 md:p-8 flex flex-col h-full border-l border-slate-200">
+                <div class="flex justify-between items-center mb-6 px-1">
+                    <h2 class="flex items-center text-xl font-black text-slate-800 tracking-tight"><svg class="w-6 h-6 mr-2 inline-block -mt-1 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>配置实时输出</h2>
+                    <span id="line-counter" class="bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full text-[10px] font-bold font-mono">0 LINES</span>
+                </div>
+                
+                <div class="relative flex-1 group">
+                    <div id="preview-wrapper" class="collapsed-box rounded-[2rem] bg-slate-900 border border-slate-800 shadow-2xl relative">
+                        <pre id="json-preview" class="p-8 text-[11px] font-mono leading-relaxed whitespace-pre-wrap"></pre>
+                        <!-- 展开按钮 -->
+                        <button onclick="toggleExpand('json-preview')" class="absolute top-6 right-6 bg-slate-800/80 hover:bg-slate-700 p-3 rounded-2xl text-white backdrop-blur shadow-xl transition opacity-0 group-hover:opacity-100" title="展开查看全部">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-8 grid grid-cols-2 gap-4">
+                    <button onclick="copyJSON()" class="bg-indigo-600 text-white py-4 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all font-bold text-sm">复制 JSON</button>
+                    <button onclick="downloadJSON()" class="bg-slate-800 text-white py-4 rounded-2xl shadow-xl hover:bg-slate-700 transition-all font-bold text-sm">保存文件</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-0 left-1/2 -translate-x-1/2 opacity-0 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl z-[9999] flex items-center gap-3 min-w-[300px] border border-slate-700 pointer-events-none text-sm font-bold">
+        <div id="toast-icon"></div>
+        <div id="toast-msg"></div>
+    </div>
+
+    <!-- UI Template -->
+    <template id="tpl-input">
+        <div class="space-y-1">
+            <label class="flex items-center text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest"></label>
+            <div class="flex items-center bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500">
+                <input class="flex-1 bg-transparent border-none outline-none text-sm font-bold text-slate-700">
+                <div class="flex gap-1 ml-2">
+                    <button class="eye-btn p-1.5 text-slate-300 hover:text-indigo-500 hidden transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eye-o"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <svg class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eye-c"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
+                    </button>
+                    <button class="copy-btn p-1.5 text-slate-300 hover:text-indigo-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg></button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-provider">
+        <div class="p-8 border border-slate-200 rounded-[2rem] bg-white shadow-sm relative group hover:border-indigo-400 transition-all">
+            <button class="absolute top-6 right-6 text-slate-300 hover:text-red-500 del-p text-xl">&times;</button>
+            <input type="text" placeholder="Provider ID" class="p-key font-black text-indigo-600 text-xl border-b-2 border-slate-50 mb-8 focus:border-indigo-500 outline-none w-1/2 bg-transparent font-mono">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="p-fields"></div>
+            <div class="mt-8 pt-8 border-t border-slate-50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"><svg class="w-3 h-3 text-slate-400 inline-block -mt-0.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>模型列表 (IDs)</span>
+                    <button class="add-m text-white bg-indigo-500 font-bold text-[10px] px-4 py-2 rounded-xl hover:bg-indigo-600 transition shadow-lg shadow-indigo-100">+ 新增模型 ID</button>
+                </div>
+                <div class="m-list space-y-3 font-mono"></div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // 配置数据
+        const dataCCS = {"agents":{"defaults":{"workspace":"/root/.openclaw/workspace","models":{"openrouter/auto":{"alias":"OpenRouter"},"openrouter/qwen/qwen3-coder:free":{},"openrouter/qwen/qwen3.6-plus:free":{}},"model":{"primary":"openrouter/qwen/qwen3.6-plus:free"}}},"models":{"mode":"merge","providers":{"openrouter":{"baseUrl":"https://openrouter.ai/api/v1","apiKey":"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","api":"openai-completions","models":[{"id":"qwen/qwen3.6-plus:free","name":"OpenRouter · Qwen 3.6 Plus (Free)","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":262144,"maxTokens":65536}]}}},"gateway":{"mode":"local","auth":{"mode":"token","token":"f6eef98563e2c51ad60d7d41202156d1a658511a9209a7ab"},"port":18789,"bind":"loopback","tailscale":{"mode":"off","resetOnExit":false},"controlUi":{"allowInsecureAuth":true},"nodes":{"denyCommands":["camera.snap","camera.clip","screen.record","contacts.add","calendar.add","reminders.add","sms.send","sms.search"]}},"session":{"dmScope":"per-channel-peer"},"tools":{"profile":"coding","elevated":{"enabled":true,"allowFrom":{"telegram":["*"]}},"exec":{}},"hooks":{"internal":{"enabled":true,"entries":{"bootstrap-extra-files":{"enabled":true},"command-logger":{"enabled":true},"session-memory":{"enabled":true}}}},"wizard":{"lastRunAt":"2026-04-02T08:00:25.558Z","lastRunVersion":"2026.4.1","lastRunCommand":"doctor","lastRunMode":"local"},"meta":{"lastTouchedVersion":"2026.4.1","lastTouchedAt":"2026-04-02T08:00:25.659Z"},"auth":{"profiles":{"openrouter:default":{"provider":"openrouter","mode":"api_key"}}},"channels":{"telegram":{"enabled":true,"groups":{"*":{"requireMention":true}},"botToken":"8251360018:AAEUMVll5Ev-Eqss71vbzllZkLgY-lW1vUs"}}};
+        const dataCC = {"meta":{"lastTouchedVersion":"2026.2.2-3","lastTouchedAt":"2026-04-03T09:56:36.802Z"},"wizard":{"lastRunAt":"2026-04-02T08:00:25.558Z","lastRunVersion":"2026.4.1","lastRunCommand":"doctor","lastRunMode":"local"},"auth":{"profiles":{"openrouter:default":{"provider":"openrouter","mode":"api_key"}}},"models":{"mode":"merge","providers":{"openrouter":{"baseUrl":"https://openrouter.ai/api/v1","apiKey":"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","api":"openai-completions","models":[{"id":"qwen/qwen3.6-plus:free","name":"OpenRouter · Qwen 3.6 Plus (Free)","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":262144,"maxTokens":65536}]}}},"agents":{"defaults":{"model":{"primary":"openrouter/qwen/qwen3.6-plus:free"},"models":{"openrouter/auto":{"alias":"OpenRouter"},"openrouter/qwen/qwen3-coder:free":{},"openrouter/qwen/qwen3.6-plus:free":{}},"workspace":"/root/.openclaw/workspace","maxConcurrent":4,"subagents":{"maxConcurrent":8}}},"tools":{"profile":"coding","elevated":{"enabled":true,"allowFrom":{"telegram":["*"]}},"exec":{"security":"full","ask":"off"}},"commands":{"native":"auto","nativeSkills":"auto"},"session":{"dmScope":"per-channel-peer"},"hooks":{"internal":{"enabled":true,"entries":{"bootstrap-extra-files":{"enabled":true},"command-logger":{"enabled":true},"session-memory":{"enabled":true}}}},"channels":{"telegram":{"enabled":true,"dmPolicy":"pairing","botToken":"8612376962:AAF8bOBlJL9zv9-ZXDS1jg8kxLXpy1hltdQ","groups":{"*":{"requireMention":true}},"groupPolicy":"allowlist","streamMode":"partial"},"discord":{"enabled":true,"token":"MTQ2ODg3MjI1Njg0NjU2MTM2NQ.G1JIu0.vWCdSGSHRs8OYJQS7vYsRxUEHRLfQCLR9eazVs","groupPolicy":"open"}},"gateway":{"port":18789,"mode":"local","bind":"loopback","controlUi":{"allowInsecureAuth":true},"auth":{"mode":"token","token":"f6eef98563e2c51ad60d7d41202156d1a658511a9209a7ab"},"tailscale":{"mode":"off","resetOnExit":false},"nodes":{"denyCommands":["camera.snap","camera.clip","screen.record","contacts.add","calendar.add","reminders.add","sms.send","sms.search"]}},"messages":{"ackReactionScope":"group-mentions"},"plugins":{"entries":{"telegram":{"enabled":true},"discord":{"enabled":true}}}};
+
+        let profiles = { "p1": { name: "TG(CCS)", data: dataCCS }, "p2": { name: "TG+Discord(CC)", data: dataCC } };
+        let activeProfile = "p1";
+
+        function highlightJSON(json) {
+            if (typeof json !== 'string') json = JSON.stringify(json, null, 2);
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                var cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) cls = 'json-key';
+                    else cls = 'json-string';
+                } else if (/true|false/.test(match)) cls = 'json-boolean';
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function syncScroll() {
+            const edit = document.getElementById('raw-json-edit');
+            const layer = document.getElementById('edit-highlight-layer');
+            layer.scrollTop = edit.scrollTop; layer.scrollLeft = edit.scrollLeft;
+        }
+
+        function handleEditInput() {
+            const edit = document.getElementById('raw-json-edit');
+            const layer = document.getElementById('edit-highlight-layer');
+            layer.innerHTML = highlightJSON(edit.value);
+        }
+
+        function showToast(msg, type='success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            document.getElementById('toast-icon').innerHTML = type === 'success' ? '<svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' : '<svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function updatePreview(reverse = false) {
+            if(reverse) {
+                try {
+                    profiles[activeProfile].data = JSON.parse(document.getElementById('raw-json-edit').value);
+                    renderForm(); showToast('同步成功');
+                } catch(e) { showToast('JSON 语法错误', 'error'); return; }
+            }
+            const data = profiles[activeProfile].data;
+            const str = JSON.stringify(data, null, 2);
+            document.getElementById('json-preview').innerHTML = highlightJSON(str);
+            document.getElementById('raw-json-edit').value = str;
+            document.getElementById('edit-highlight-layer').innerHTML = highlightJSON(str);
+            document.getElementById('line-counter').textContent = str.split('\n').length + " LINES";
+        }
+
+        function renderForm() {
+            const data = profiles[activeProfile].data;
+            const sysMap = { 'field-workspace':['Workspace 路径','agents.defaults.workspace'], 'field-port':['端口','gateway.port','number'], 'field-gate-token':['Gate Token','gateway.auth.token','text',true], 'field-tg-token':['TG Token','channels.telegram.botToken','text',true], 'field-dc-token':['Discord Token','channels.discord.token','text',true] };
+            for(let id in sysMap) { const c = document.getElementById(id); c.innerHTML=''; c.appendChild(createInput(...sysMap[id])); }
+            document.getElementById('discord-section').style.display = data.channels?.discord ? "block" : "none";
+
+            const pContainer = document.getElementById('providers-container');
+            pContainer.innerHTML = '';
+            for(let pKey in data.models.providers) {
+                const pData = data.models.providers[pKey];
+                const temp = document.getElementById('tpl-provider').content.cloneNode(true);
+                temp.querySelector('.p-key').value = pKey;
+                temp.querySelector('.p-key').onchange = (e) => { data.models.providers[e.target.value] = data.models.providers[pKey]; delete data.models.providers[pKey]; renderForm(); updatePreview(); };
+                temp.querySelector('#p-fields').appendChild(createInput('Base URL', `models.providers.${pKey}.baseUrl`));
+                temp.querySelector('#p-fields').appendChild(createInput('API Key', `models.providers.${pKey}.apiKey`, 'text', true));
+                const mList = temp.querySelector('.m-list');
+                (pData.models||[]).forEach((m, idx) => {
+                    const row = document.createElement('div');
+                    row.className = "flex gap-3 items-center";
+                    row.innerHTML = `<input type="text" value="${m.id}" class="flex-1 text-[11px] border rounded-2xl p-3 bg-slate-50 font-mono outline-none shadow-sm"><button class="text-slate-300 hover:text-red-500 text-2xl font-bold">&times;</button>`;
+                    row.querySelector('input').onchange = (e) => { m.id = e.target.value; updatePreview(); };
+                    row.querySelector('button').onclick = () => { pData.models.splice(idx,1); renderForm(); updatePreview(); };
+                    mList.appendChild(row);
+                });
+                temp.querySelector('.add-m').onclick = () => { if(!pData.models) pData.models=[]; pData.models.push({id:"new-model"}); renderForm(); updatePreview(); };
+                temp.querySelector('.del-p').onclick = () => { delete data.models.providers[pKey]; renderForm(); updatePreview(); };
+                pContainer.appendChild(temp);
+            }
+            renderAgentSync(data);
+        }
+
+        function renderAgentSync(data) {
+            const list = document.getElementById('agent-models-list');
+            const pmOpts = document.getElementById('pm-options');
+            list.innerHTML = ''; 
+            if(pmOpts) pmOpts.innerHTML = '';
+            
+            let selectedModel = data.agents.defaults.model.primary;
+            let displayFound = false;
+
+            for(let pKey in data.models.providers) {
+                const activeModels = [];
+                (data.models.providers[pKey].models||[]).forEach(m => {
+                    const fullId = `${pKey}/${m.id}`;
+                    const isOk = data.agents.defaults.models.hasOwnProperty(fullId);
+                    if (isOk) activeModels.push(m);
+
+                    const div = document.createElement('label');
+                    div.className = `relative flex items-center justify-between p-4 rounded-[1.5rem] border-2 cursor-pointer transition-all duration-200 overflow-hidden ${isOk ? 'border-indigo-500 bg-indigo-50/50 shadow-md outline-none ring-4 ring-indigo-500/10' : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm opacity-80 hover:opacity-100'}`;
+                    
+                    div.innerHTML = `
+                        <div class="flex items-center gap-4 w-full pr-10">
+                            <input type="checkbox" ${isOk?'checked':''} class="hidden" id="chk-${fullId}">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${isOk ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-400'}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[10px] font-black uppercase tracking-widest ${isOk ? 'text-indigo-400' : 'text-slate-400'}">${pKey}</span>
+                                <span class="text-[13px] font-bold font-mono tracking-tight truncate ${isOk ? 'text-indigo-900' : 'text-slate-600'}" title="${m.id}">${m.id}</span>
+                            </div>
+                        </div>
+                        ${isOk ? `
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2">
+                            <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-[0_2px_10px_rgba(99,102,241,0.5)]">
+                                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </div>` : `
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2">
+                            <div class="w-5 h-5 rounded-full border-2 border-slate-200"></div>
+                        </div>`}
+                    `;
+                    div.querySelector('input').onchange = (e) => { if(e.target.checked) data.agents.defaults.models[fullId]={}; else delete data.agents.defaults.models[fullId]; renderForm(); updatePreview(); };
+                    list.appendChild(div);
+                });
+
+                if(pmOpts && activeModels.length > 0) {
+                    const groupTitle = document.createElement('div');
+                    groupTitle.className = 'pm-optgroup px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 first:mt-0 bg-slate-50 rounded-lg flex items-center gap-2';
+                    groupTitle.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>${pKey}`;
+                    pmOpts.appendChild(groupTitle);
+                    
+                    activeModels.forEach(m => {
+                        const fullId = `${pKey}/${m.id}`;
+                        const isSelected = (selectedModel === fullId);
+                        if(isSelected) {
+                            document.getElementById('pm-display').textContent = fullId;
+                            displayFound = true;
+                        }
+                        const opt = document.createElement('div');
+                        opt.className = `pm-option px-4 py-3 text-xs font-mono font-bold rounded-xl cursor-pointer transition-colors flex items-center gap-2 mt-1 ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'}`;
+                        opt.setAttribute('data-id', m.id);
+                        opt.innerHTML = `<span class="truncate">${m.id}</span>`;
+                        opt.onclick = () => {
+                            updateDeep('agents.defaults.model.primary', fullId);
+                            document.getElementById('pm-dropdown').classList.add('hidden');
+                        };
+                        pmOpts.appendChild(opt);
+                    });
+                }
+            }
+            if(!displayFound && document.getElementById('pm-display')) document.getElementById('pm-display').textContent = selectedModel || '未选择模型';
+        }
+
+        // 搜索辅助与关闭
+        function filterPrimaryModels(keyword) {
+            keyword = keyword.toLowerCase();
+            let currentGroup = null; let groupHasVisible = false;
+            document.getElementById('pm-options').childNodes.forEach(node => {
+                if(node.classList.contains('pm-optgroup')) {
+                    if(currentGroup && !groupHasVisible) currentGroup.style.display = 'none';
+                    currentGroup = node; groupHasVisible = false; currentGroup.style.display = 'flex';
+                } else if(node.classList.contains('pm-option')) {
+                    const originalText = node.getAttribute('data-id') || '';
+                    const searchBase = originalText.toLowerCase() + (currentGroup ? currentGroup.textContent.toLowerCase() : '');
+                    if(searchBase.includes(keyword) && keyword !== '') { 
+                        node.style.display = 'flex'; groupHasVisible = true; 
+                        // 执行文字内高亮包裹
+                        const regex = new RegExp(`(${keyword})`, 'gi');
+                        const highlighted = originalText.replace(regex, '<span class="bg-yellow-300 text-yellow-900 rounded-[4px] px-1 shadow-sm">$1</span>');
+                        node.innerHTML = `<span class="truncate">${highlighted}</span>`;
+                    } 
+                    else if (keyword === '') {
+                        node.style.display = 'flex'; groupHasVisible = true;
+                        node.innerHTML = `<span class="truncate">${originalText}</span>`;
+                    }
+                    else {
+                        node.style.display = 'none';
+                    }
+                }
+            });
+            if(currentGroup && !groupHasVisible) currentGroup.style.display = 'none';
+        }
+
+        function filterProviders(keyword) {
+            keyword = keyword.toLowerCase();
+            document.querySelectorAll('#providers-container > div').forEach(providerDiv => {
+                let providerMatch = false;
+                providerDiv.querySelectorAll('#p-fields input, .p-key').forEach(inp => {
+                    inp.classList.remove('bg-yellow-100', 'text-yellow-900', 'border-yellow-400', 'ring-2', 'ring-yellow-400');
+                    if (keyword && inp.value.toLowerCase().includes(keyword)) {
+                        providerMatch = true;
+                        inp.classList.add('bg-yellow-100', 'text-yellow-900', 'border-yellow-400', 'ring-2', 'ring-yellow-400');
+                    }
+                });
+                
+                let hasAnyModelMatch = false;
+                providerDiv.querySelectorAll('.m-list > div').forEach(modelRow => {
+                    const mInput = modelRow.querySelector('input');
+                    if (mInput) {
+                        mInput.classList.remove('bg-yellow-100', 'text-yellow-900', 'border-yellow-400', 'ring-2', 'ring-yellow-400');
+                        if (keyword && mInput.value.toLowerCase().includes(keyword)) {
+                            modelRow.style.setProperty('display', 'flex', 'important');
+                            hasAnyModelMatch = true;
+                            mInput.classList.add('bg-yellow-100', 'text-yellow-900', 'border-yellow-400', 'ring-2', 'ring-yellow-400');
+                        } else if (keyword) {
+                            modelRow.style.setProperty('display', 'none', 'important');
+                        } else {
+                            modelRow.style.setProperty('display', 'flex', 'important');
+                        }
+                    }
+                });
+
+                if (providerMatch || !keyword) { // 若供货商本身被主搜到或为空，则放出其全部从属模型
+                    providerDiv.querySelectorAll('.m-list > div').forEach(modelRow => {
+                        modelRow.style.setProperty('display', 'flex', 'important');
+                    });
+                }
+                
+                providerDiv.style.setProperty('display', (!keyword || providerMatch || hasAnyModelMatch) ? 'block' : 'none', 'important');
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('pm-dropdown-wrapper');
+            if(wrapper && !wrapper.contains(e.target)) { const dd = document.getElementById('pm-dropdown'); if(dd) dd.classList.add('hidden'); }
+        });
+
+        function createInput(label, path, type="text", isSecret=false) {
+            const temp = document.getElementById('tpl-input').content.cloneNode(true);
+            temp.querySelector('label').innerHTML = `<svg class="w-3 h-3 text-slate-400 inline-block -mt-0.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>` + label;
+            const input = temp.querySelector('input');
+            input.type = isSecret ? "password" : type;
+            let val = profiles[activeProfile].data;
+            path.split('.').forEach(p => val = val?.[p]);
+            input.value = val || "";
+            temp.querySelector('.copy-btn').onclick = () => { navigator.clipboard.writeText(input.value); showToast('已复制'); };
+            if(isSecret) {
+                const btn = temp.querySelector('.eye-btn'); btn.classList.remove('hidden');
+                btn.onclick = () => { const isP = input.type === "password"; input.type = isP ? "text" : "password"; btn.querySelector('#eye-o').classList.toggle('hidden', isP); btn.querySelector('#eye-c').classList.toggle('hidden', !isP); };
+            }
+            input.oninput = (e) => updateDeep(path, type==='number'?parseInt(e.target.value):e.target.value);
+            return temp;
+        }
+
+        function toggleExpand(id) {
+            const wrapper = id === 'raw-json-edit' ? document.getElementById('edit-wrapper') : document.getElementById('preview-wrapper');
+            const editArea = document.getElementById('raw-json-edit');
+            if(id === 'raw-json-edit') {
+                const isC = wrapper.classList.contains('edit-area-collapsed');
+                if(isC) { 
+                    wrapper.classList.replace('edit-area-collapsed', 'edit-area-expanded'); 
+                    const h = (editArea.scrollHeight + 100) + 'px';
+                    editArea.style.height = h; 
+                    wrapper.style.height = h;
+                }
+                else { 
+                    wrapper.classList.replace('edit-area-expanded', 'edit-area-collapsed'); 
+                    editArea.style.height = '100%'; 
+                    wrapper.style.height = ''; 
+                }
+            } else { wrapper.classList.toggle('collapsed-box'); wrapper.classList.toggle('expanded-box'); }
+        }
+
+        function switchProfile(id) {
+            activeProfile = id;
+            document.querySelectorAll('.profile-pill').forEach(p => p.classList.remove('active'));
+            document.getElementById('pill-' + id).classList.add('active');
+            renderForm(); updatePreview();
+        }
+
+        function switchTab(id) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); event.target.classList.add('active'); }
+        function updateDeep(path, val) { let curr = profiles[activeProfile].data; const parts = path.split('.'); for(let i=0; i<parts.length-1; i++) { if(!curr[parts[i]]) curr[parts[i]] = {}; curr = curr[parts[i]]; } curr[parts[parts.length-1]] = val; updatePreview(); }
+        function handleFileImport(input) { const reader = new FileReader(); reader.onload = (e) => { try { profiles[activeProfile].data = JSON.parse(e.target.result); renderForm(); updatePreview(); showToast('导入成功'); } catch(e) {showToast('无效 JSON', 'error');} }; reader.readAsText(input.files[0]); }
+        function handlePasteImport() { try { profiles[activeProfile].data = JSON.parse(document.getElementById('paste-import-area').value); renderForm(); updatePreview(); showToast('导入成功'); } catch(e) {showToast('内容解析失败', 'error');} }
+        function copyJSON() { navigator.clipboard.writeText(JSON.stringify(profiles[activeProfile].data, null, 2)); showToast('已复制完整 JSON'); }
+        function downloadJSON() { const blob = new Blob([JSON.stringify(profiles[activeProfile].data, null, 2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'config.json'; a.click(); showToast('正在下载'); }
+        function renameProfile(id, name) { profiles[id].name = name; }
+        function addProvider() { const id = "p_"+Date.now().toString().slice(-4); profiles[activeProfile].data.models.providers[id] = {baseUrl:"", apiKey:"", models:[]}; renderForm(); updatePreview(); }
+
+        window.onload = () => { document.getElementById('name-p1').value=profiles.p1.name; document.getElementById('name-p2').value=profiles.p2.name; switchProfile('p1'); };
+    </script>
+</body>
+</html>
