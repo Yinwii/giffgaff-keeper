@@ -68,13 +68,14 @@
     <div class="max-w-[1600px] mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200">
         
         <!-- Header -->
-        <div class="relative overflow-hidden p-6 md:p-8 text-white flex flex-col lg:flex-row justify-between items-center gap-6 rounded-t-3xl border-b border-slate-800 z-10 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.5)]">
+        <div class="relative p-6 md:p-8 text-white flex flex-col lg:flex-row justify-between items-center gap-6 rounded-t-3xl border-b border-slate-800 z-10 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.5)]">
             <!-- 背景板与科技氛围光幕 -->
-            <div class="absolute inset-0 bg-[#0B1120] z-0"></div>
-            <div class="absolute inset-0 z-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, #fff 1px, transparent 0); background-size: 32px 32px;"></div>
-            <div class="absolute -top-[150px] -right-[50px] w-[300px] h-[300px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[90px] opacity-40 z-0 pointer-events-none animate-pulse"></div>
-            <div class="absolute -bottom-[150px] -left-[50px] w-[300px] h-[300px] bg-fuchsia-600 rounded-full mix-blend-screen filter blur-[90px] opacity-30 z-0 pointer-events-none"></div>
-            <div class="absolute top-0 right-1/2 w-[500px] h-[1px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent opacity-30 z-0"></div>
+            <div class="absolute inset-0 bg-[#0B1120] z-0 rounded-t-3xl overflow-hidden">
+                <div class="absolute inset-0 z-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, #fff 1px, transparent 0); background-size: 32px 32px;"></div>
+                <div class="absolute -top-[150px] -right-[50px] w-[300px] h-[300px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[90px] opacity-40 z-0 pointer-events-none animate-pulse"></div>
+                <div class="absolute -bottom-[150px] -left-[50px] w-[300px] h-[300px] bg-fuchsia-600 rounded-full mix-blend-screen filter blur-[90px] opacity-30 z-0 pointer-events-none"></div>
+                <div class="absolute top-0 right-1/2 w-[500px] h-[1px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent opacity-30 z-0"></div>
+            </div>
             
             <div class="relative z-10 flex items-center gap-5 w-full lg:w-auto justify-center lg:justify-start">
                 <!-- 品牌发光图标 -->
@@ -89,15 +90,38 @@
                 </div>
             </div>
             
-            <!-- 配置方案毛玻璃隔离区 -->
-            <div class="relative z-10 flex flex-wrap justify-center bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-inner w-full lg:w-auto">
-                <div id="pill-p1" class="profile-pill flex items-center px-4 py-1.5 rounded-xl">
-                    <input type="text" id="name-p1" onchange="renameProfile('p1', this.value)" class="bg-transparent border-none text-xs font-bold w-full md:w-28 focus:ring-0 text-center text-slate-200 transition cursor-edit placeholder-slate-400 hover:text-white outline-none">
-                    <button id="btn-p1" onclick="switchProfile('p1')" class="ml-2 px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-white/30 text-white transition hover:bg-white/20 shrink-0">应用方案</button>
+            <!-- 配置方案与状态组 -->
+            <div class="relative z-10 flex flex-col xl:flex-row gap-4 items-center justify-center lg:justify-end w-full lg:w-auto mt-4 lg:mt-0">
+                <!-- 方案切换毛玻璃隔离区 -->
+                <div class="flex flex-wrap justify-center bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-inner w-full md:w-auto">
+                    <div id="pill-p1" class="profile-pill flex items-center px-4 py-1.5 rounded-xl">
+                        <input type="text" id="name-p1" onchange="renameProfile('p1', this.value)" class="bg-transparent border-none text-xs font-bold w-full md:w-28 focus:ring-0 text-center text-slate-200 transition cursor-edit placeholder-slate-400 hover:text-white outline-none">
+                        <button id="btn-p1" onclick="switchProfile('p1')" class="ml-2 px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-white/30 text-white transition hover:bg-white/20 shrink-0">应用方案</button>
+                    </div>
+                    <div id="pill-p2" class="profile-pill flex items-center px-4 py-1.5 rounded-xl mt-2 md:mt-0 md:ml-1">
+                        <input type="text" id="name-p2" onchange="renameProfile('p2', this.value)" class="bg-transparent border-none text-xs font-bold w-full md:w-36 focus:ring-0 text-center text-slate-200 transition cursor-edit placeholder-slate-400 hover:text-white outline-none">
+                        <button id="btn-p2" onclick="switchProfile('p2')" class="ml-2 px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-white/30 text-white transition hover:bg-white/20 shrink-0">应用方案</button>
+                    </div>
                 </div>
-                <div id="pill-p2" class="profile-pill flex items-center px-4 py-1.5 rounded-xl mt-2 md:mt-0 md:ml-1">
-                    <input type="text" id="name-p2" onchange="renameProfile('p2', this.value)" class="bg-transparent border-none text-xs font-bold w-full md:w-36 focus:ring-0 text-center text-slate-200 transition cursor-edit placeholder-slate-400 hover:text-white outline-none">
-                    <button id="btn-p2" onclick="switchProfile('p2')" class="ml-2 px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-white/30 text-white transition hover:bg-white/20 shrink-0">应用方案</button>
+
+                <!-- 本地存储开关 -->
+                <div class="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10 shadow-inner w-full md:w-auto justify-center">
+                    <label class="relative inline-flex items-center cursor-pointer group/toggle">
+                        <input type="checkbox" id="ls-toggle" class="sr-only peer" onchange="toggleLocalStorage()">
+                        <div class="w-9 h-5 bg-slate-500/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 group-hover/toggle:after:scale-95 shadow-inner"></div>
+                    </label>
+                    <span id="ls-status-text" class="text-[10px] font-black text-slate-300 tracking-wider transition-colors pt-px select-none whitespace-nowrap">无痕模式 (不保留)</span>
+                    
+                    <!-- 提示标识 (Tooltip) -->
+                    <div class="relative group cursor-help ml-1" onclick="showModeModal()">
+                        <svg class="w-4 h-4 text-slate-400 hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div class="absolute right-0 top-full mt-3 w-64 p-3 bg-slate-800 text-slate-300 text-[10px] font-bold rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.5)] opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:-translate-y-1 transition-all z-50 border border-slate-700 pointer-events-none text-left leading-relaxed">
+                            <strong class="text-white block mb-1">无痕模式（默认）</strong>
+                            <p class="mb-2 text-slate-400">页面刷新即重置配置为文件初始状态，不留痕迹，绝对保护 Token 隐私。</p>
+                            <strong class="text-emerald-400 block mb-1">记忆模式（开启）</strong>
+                            <p class="text-slate-400">所有改动与导入的配置将自动实时储存在浏览器的本地缓存中，刷新页面或关闭标签页后依然自动恢复，杜绝手滑。</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -146,7 +170,20 @@
                         <span class="text-amber-500 font-bold">!</span>
                         <p class="text-xs text-amber-700 leading-relaxed">模型必须在此页勾选才能被 Agent 识别。勾选后下方下拉框会自动更新可选的 Primary Model。</p>
                     </div>
-                    <div id="agent-models-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    <div>
+                        <label class="flex items-center text-xs font-black text-slate-400 uppercase tracking-widest mb-4"><svg class="w-4 h-4 mr-1.5 inline-block -mt-0.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>模型字典 & 提供商 (Models & Providers)</label>
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center bg-slate-50 rounded-xl px-3 py-2 border border-slate-100 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all w-full md:w-1/2">
+                                <svg class="w-4 h-4 text-slate-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <input type="text" id="agent-model-search" oninput="filterAgentModels(this.value)" class="w-full text-xs outline-none font-bold text-slate-600 bg-transparent" placeholder="筛选供应商或模型...">
+                            </div>
+                            <div class="flex gap-2 w-full md:w-auto justify-end px-2">
+                                <button onclick="selectAllAgentModels(true)" class="text-[10px] bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-xl font-bold text-indigo-600 border border-indigo-100 transition tracking-widest uppercase">全选 (Select All)</button>
+                                <button onclick="selectAllAgentModels(false)" class="text-[10px] bg-slate-50 hover:bg-slate-100 px-4 py-2 rounded-xl font-bold text-slate-500 border border-slate-200 transition tracking-widest uppercase">清空 (Clear All)</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="agent-models-list" class="space-y-6"></div>
                     <div class="pt-8 border-t border-slate-100">
                         <label class="flex items-center text-xs font-black text-slate-400 uppercase tracking-widest mb-4"><svg class="w-4 h-4 mr-1.5 inline-block -mt-0.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>默认首选模型 (Primary Model)</label>
                         <div class="relative w-full" id="pm-dropdown-wrapper">
@@ -170,17 +207,27 @@
                 <!-- Tab: Import/修正 -->
                 <div id="tab-import" class="tab-content space-y-8">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <label class="p-10 border-2 border-dashed border-slate-200 rounded-[2rem] hover:bg-emerald-50 cursor-pointer text-center group transition-all">
-                            <svg class="w-12 h-12 mx-auto mb-2 text-emerald-500 group-hover:scale-110 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            <span class="text-sm font-bold text-slate-600">上传配置文件</span>
-                            <input type="file" accept=".json" onchange="handleFileImport(this)" class="hidden">
-                        </label>
+                        <div id="upload-label" onclick="if(!event.target.closest('#clear-upload-btn')) document.getElementById('json-file-input').click()" class="relative flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-200 rounded-[2rem] hover:bg-emerald-50 cursor-pointer text-center group transition-all min-h-[160px]">
+                            <div id="upload-status-default" class="flex flex-col items-center pointer-events-none">
+                                <svg class="w-12 h-12 mx-auto mb-2 text-emerald-500 group-hover:scale-110 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <span class="text-sm font-bold text-slate-600">上传配置文件 (JSON)</span>
+                            </div>
+                            <div id="upload-status-success" class="hidden flex-col items-center w-full px-4 pointer-events-none">
+                                <svg class="w-10 h-10 mx-auto mb-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <span id="uploaded-filename" class="text-[11px] font-bold text-emerald-700 truncate w-full text-center mt-1">file.json</span>
+                            </div>
+                            <button id="clear-upload-btn" onclick="clearUploadFile(event)" class="hidden absolute top-4 right-4 bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-xl border border-red-100 transition z-10" title="移除文件"><svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            <input type="file" id="json-file-input" accept=".json" onchange="handleFileImport(this)" class="hidden">
+                        </div>
                         <div class="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 flex flex-col">
                             <h4 class="flex items-center text-[10px] font-black text-emerald-600 uppercase mb-3"><svg class="w-3 h-3 mr-1 inline-block -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>代码粘贴快速导入</h4>
                             <textarea id="paste-import-area" placeholder="在此粘贴 JSON 文本..." class="w-full h-24 text-[11px] font-mono p-4 bg-white border border-emerald-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
-                            <button onclick="handlePasteImport()" class="w-full mt-4 bg-emerald-600 text-white py-3 rounded-2xl text-xs font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">覆盖并导入</button>
+                            <div class="flex gap-2 mt-4">
+                                <button onclick="handlePasteImport()" class="flex-1 bg-emerald-600 text-white py-3 rounded-2xl text-xs font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">覆盖并导入</button>
+                                <button onclick="document.getElementById('paste-import-area').value=''" class="px-5 bg-white text-emerald-700 py-3 rounded-2xl border border-emerald-200 text-xs font-bold hover:bg-emerald-100 transition shadow-sm whitespace-nowrap">清空输入</button>
+                            </div>
                         </div>
                     </div>
                     
@@ -188,10 +235,11 @@
                         <div class="flex justify-between items-center px-2">
                             <h4 class="flex items-center text-xs font-black text-slate-400 uppercase tracking-wider"><svg class="w-4 h-4 mr-1.5 inline-block -mt-0.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>手动代码修正区 (全量展示)</h4>
                             <div class="flex gap-2">
+                                <button onclick="document.getElementById('raw-json-edit').value=''; document.getElementById('edit-highlight-layer').innerHTML='';" class="text-[10px] bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-xl font-bold text-red-500 transition shadow-sm">清空区</button>
                                 <button onclick="toggleExpand('raw-json-edit')" class="text-[10px] bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-xl font-bold text-slate-600 transition">展开 / 收起</button>
                                 <button onclick="copyJSON()" class="text-[10px] bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-xl font-bold text-slate-600 transition flex items-center gap-1">复制</button>
                                 <button onclick="downloadJSON()" class="text-[10px] bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-xl font-bold text-slate-600 transition flex items-center gap-1">导出</button>
-                                <button onclick="updatePreview(true)" class="text-[10px] bg-indigo-600 hover:bg-indigo-700 px-5 py-1.5 rounded-xl text-white font-bold shadow-lg shadow-indigo-200 transition">应用修改到表单</button>
+                                <button onclick="updatePreview(true)" class="text-[10px] bg-indigo-600 hover:bg-indigo-700 px-5 py-1.5 rounded-xl text-white font-bold shadow-lg shadow-indigo-200 transition">应用修改与渲染</button>
                             </div>
                         </div>
                         <div id="edit-wrapper" class="edit-container edit-area-collapsed">
@@ -205,7 +253,10 @@
             <!-- Right Panel (Output 1/3) -->
             <div class="w-full lg:w-1/3 bg-slate-50 p-6 md:p-8 flex flex-col h-full border-l border-slate-200">
                 <div class="flex justify-between items-center mb-6 px-1">
-                    <h2 class="flex items-center text-xl font-black text-slate-800 tracking-tight"><svg class="w-6 h-6 mr-2 inline-block -mt-1 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>配置实时输出</h2>
+                    <div class="flex gap-4 items-center">
+                        <h2 class="flex items-center text-xl font-black text-slate-800 tracking-tight"><svg class="w-6 h-6 mr-2 inline-block -mt-1 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>配置实时输出</h2>
+                        <button onclick="profiles[activeProfile].data={}; renderForm(); updatePreview(); showToast('配置已清空', 'info');" class="text-[10px] bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-xl font-bold text-red-500 transition shadow-sm tracking-wider">清空并重置</button>
+                    </div>
                     <span id="line-counter" class="bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full text-[10px] font-bold font-mono">0 LINES</span>
                 </div>
                 
@@ -223,6 +274,54 @@
                     <button onclick="copyJSON()" class="bg-indigo-600 text-white py-4 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all font-bold text-sm">复制 JSON</button>
                     <button onclick="downloadJSON()" class="bg-slate-800 text-white py-4 rounded-2xl shadow-xl hover:bg-slate-700 transition-all font-bold text-sm">保存文件</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 运行模式选择弹窗 (Mode Selection Modal) -->
+    <div id="mode-modal" class="fixed inset-0 z-[10000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModeModal()"></div>
+        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 transform scale-95 opacity-0 transition-all duration-300" id="mode-modal-content">
+            <div class="bg-[#0B1120] p-6 text-center relative overflow-hidden">
+                <div class="absolute inset-0 z-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, #fff 1px, transparent 0); background-size: 24px 24px;"></div>
+                <div class="absolute -top-[100px] -right-[50px] w-[200px] h-[200px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[60px] opacity-40 z-0 animate-pulse pointer-events-none"></div>
+                <div class="absolute -bottom-[100px] -left-[50px] w-[200px] h-[200px] bg-fuchsia-600 rounded-full mix-blend-screen filter blur-[60px] opacity-30 z-0 pointer-events-none"></div>
+                <div class="absolute z-0 top-0 right-1/4 w-[300px] h-[1px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent opacity-30"></div>
+                <h3 class="text-xl font-black text-white relative z-10 tracking-wide drop-shadow-md">请选择本地存储模式</h3>
+                <p class="text-[11px] text-indigo-100/80 mt-2 relative z-10 font-bold tracking-wide">决定当您刷新页面或关闭浏览器时，系统如何处理您的隐私 Token 与前端脱敏配置</p>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <button onclick="setMode('incognito')" class="w-full text-left p-4 border-2 border-slate-200 rounded-2xl hover:border-slate-400 hover:bg-slate-50 transition-all group">
+                    <div class="flex items-start gap-4">
+                        <div class="p-3 bg-slate-100 text-slate-500 rounded-xl group-hover:bg-slate-200 transition-colors shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </div>
+                        <div>
+                            <h4 class="font-black text-slate-800 flex items-center gap-2">无痕模式 <span class="text-[9px] font-bold bg-slate-200 text-slate-500 px-2 py-0.5 rounded-md">更安全 (默认)</span></h4>
+                            <p class="text-[11px] text-slate-500 mt-1.5 leading-relaxed">页面刷新即<strong class="text-slate-700 font-black">彻底重置</strong>配置为文件初始状态，不留任何痕迹，<strong class="text-indigo-600 font-bold">绝对保护您的核心 Token 隐私</strong>。</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button onclick="setMode('remember')" class="w-full text-left p-4 border-2 border-emerald-100 rounded-2xl hover:border-emerald-400 hover:bg-emerald-50 transition-all group bg-emerald-50/30">
+                    <div class="flex items-start gap-4">
+                        <div class="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                        </div>
+                        <div>
+                            <h4 class="font-black text-emerald-700 flex items-center gap-2">自动记忆模式 <span class="text-[9px] font-bold bg-emerald-200 text-emerald-700 px-2 py-0.5 rounded-md">防丢失</span></h4>
+                            <p class="text-[11px] text-slate-500 mt-1.5 leading-relaxed">所有改动与导入的配置将自动<strong class="text-emerald-600 font-black">实时储存在浏览器本地缓存中</strong>。不小心刷新页面或关闭重开依然<strong class="text-emerald-600 font-bold">自动恢复</strong>，防止手滑。</p>
+                        </div>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="bg-slate-50/80 p-4 border-t border-slate-200 text-center flex items-center justify-center">
+                <p class="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 cursor-default select-none">
+                    <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                    请点击上方 <span class="bg-white border text-[9px] border-slate-200 shadow-sm px-1.5 py-0.5 rounded text-slate-500">☑️ 选择模式</span> ，或点击弹窗外灰色区域直接返回
+                </p>
             </div>
         </div>
     </div>
@@ -324,10 +423,21 @@
             document.getElementById('raw-json-edit').value = str;
             document.getElementById('edit-highlight-layer').innerHTML = highlightJSON(str);
             document.getElementById('line-counter').textContent = str.split('\n').length + " LINES";
+            if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
         }
 
         function renderForm() {
+            if(!profiles[activeProfile].data) profiles[activeProfile].data = {};
             const data = profiles[activeProfile].data;
+            
+            // 确保核心数据结构存在，避免空配置导入时的渲染崩溃
+            if(!data.models) data.models = {};
+            if(!data.models.providers) data.models.providers = {};
+            if(!data.agents) data.agents = {};
+            if(!data.agents.defaults) data.agents.defaults = {};
+            if(!data.agents.defaults.model) data.agents.defaults.model = { primary: "" };
+            if(!data.agents.defaults.models) data.agents.defaults.models = {};
+
             const sysMap = { 'field-workspace':['Workspace 路径','agents.defaults.workspace'], 'field-port':['端口','gateway.port','number'], 'field-gate-token':['Gate Token','gateway.auth.token','text',true], 'field-tg-token':['TG Token','channels.telegram.botToken','text',true], 'field-dc-token':['Discord Token','channels.discord.token','text',true] };
             for(let id in sysMap) { const c = document.getElementById(id); c.innerHTML=''; c.appendChild(createInput(...sysMap[id])); }
             document.getElementById('discord-section').style.display = data.channels?.discord ? "block" : "none";
@@ -394,38 +504,72 @@
 
             for(let pKey in data.models.providers) {
                 const activeModels = [];
-                (data.models.providers[pKey].models||[]).forEach(m => {
+                const providerModels = data.models.providers[pKey].models || [];
+                if (providerModels.length === 0) continue;
+
+                // Group Wrapper
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'agent-provider-group space-y-3';
+                groupDiv.setAttribute('data-pkey', pKey);
+
+                // Group Header (Title + Icon + Group Select Button)
+                const header = document.createElement('div');
+                header.className = 'flex justify-between items-center px-2 py-1 border-b border-dashed border-slate-200 pb-2 mb-3';
+                header.innerHTML = `
+                    <h4 class="flex items-center text-xs font-black text-slate-500 uppercase tracking-widest gap-2">
+                        <div class="p-1.5 bg-indigo-100 text-indigo-500 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></div>
+                        ${pKey}
+                    </h4>
+                    <div class="flex gap-2">
+                        <button onclick="selectGroupModels('${pKey}', true)" class="text-[9px] bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1 rounded-xl font-bold transition border border-indigo-100">选定本组 (Group Select)</button>
+                        <button onclick="selectGroupModels('${pKey}', false)" class="text-[9px] bg-slate-50 hover:bg-slate-100 text-slate-500 px-3 py-1 rounded-xl font-bold transition border border-slate-100">清空本组 (Group Clear)</button>
+                    </div>
+                `;
+                groupDiv.appendChild(header);
+
+                // Grid Container for Models
+                const gridDiv = document.createElement('div');
+                gridDiv.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 group-models-grid';
+                
+                providerModels.forEach(m => {
                     const fullId = `${pKey}/${m.id}`;
                     const isOk = data.agents.defaults.models.hasOwnProperty(fullId);
                     if (isOk) activeModels.push(m);
 
-                    const div = document.createElement('label');
-                    div.className = `relative flex items-center justify-between p-4 rounded-[1.5rem] border-2 cursor-pointer transition-all duration-200 overflow-hidden ${isOk ? 'border-indigo-500 bg-indigo-50/50 shadow-md outline-none ring-4 ring-indigo-500/10' : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm opacity-80 hover:opacity-100'}`;
-                    
-                    div.innerHTML = `
-                        <div class="flex items-center gap-4 w-full pr-10">
+                    const lbl = document.createElement('label');
+                    lbl.className = `agent-model-item relative flex items-center justify-between p-4 rounded-[1.5rem] border-2 cursor-pointer transition-all duration-200 overflow-hidden ${isOk ? 'border-indigo-500 bg-indigo-50/50 shadow-md outline-none ring-4 ring-indigo-500/10' : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm opacity-80 hover:opacity-100'}`;
+                    lbl.setAttribute('data-search', `${pKey} ${m.id} ${m.name||''}`.toLowerCase());
+                    lbl.innerHTML = `
+                        <div class="flex items-center gap-3 w-full pr-8">
                             <input type="checkbox" ${isOk?'checked':''} class="hidden" id="chk-${fullId}">
-                            <div class="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${isOk ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-400'}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            <div class="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${isOk ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-400'}">
+                                <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                             </div>
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-[10px] font-black uppercase tracking-widest ${isOk ? 'text-indigo-400' : 'text-slate-400'}">${pKey}</span>
-                                <span class="text-[13px] font-bold font-sans tracking-tight truncate ${isOk ? 'text-indigo-900' : 'text-slate-600'}" title="ID: ${m.id}">${m.name || m.id}</span>
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <span class="agent-model-text text-[11px] font-bold font-sans tracking-tight truncate ${isOk ? 'text-indigo-900' : 'text-slate-600'}" title="ID: ${m.id}" data-origin-text="${(m.name || m.id).replace(/"/g, '&quot;')}">${m.name || m.id}</span>
                             </div>
                         </div>
                         ${isOk ? `
-                        <div class="absolute right-4 top-1/2 -translate-y-1/2">
-                            <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-[0_2px_10px_rgba(99,102,241,0.5)]">
-                                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div class="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shadow-[0_2px_10px_rgba(99,102,241,0.5)]">
+                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                             </div>
                         </div>` : `
-                        <div class="absolute right-4 top-1/2 -translate-y-1/2">
-                            <div class="w-5 h-5 rounded-full border-2 border-slate-200"></div>
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div class="w-4 h-4 rounded-full border-2 border-slate-200"></div>
                         </div>`}
                     `;
-                    div.querySelector('input').onchange = (e) => { if(e.target.checked) data.agents.defaults.models[fullId]={}; else delete data.agents.defaults.models[fullId]; renderForm(); updatePreview(); };
-                    list.appendChild(div);
+                    lbl.querySelector('input').onchange = (e) => { 
+                        if(e.target.checked) data.agents.defaults.models[fullId]={}; 
+                        else delete data.agents.defaults.models[fullId]; 
+                        renderForm(); 
+                        updatePreview(); 
+                    };
+                    gridDiv.appendChild(lbl);
                 });
+
+                groupDiv.appendChild(gridDiv);
+                list.appendChild(groupDiv);
 
                 if(pmOpts && activeModels.length > 0) {
                     const groupTitle = document.createElement('div');
@@ -454,6 +598,65 @@
                 }
             }
             if(!displayFound && document.getElementById('pm-display')) document.getElementById('pm-display').textContent = selectedModel || '未选择模型';
+
+            const currentSearch = document.getElementById('agent-model-search');
+            if (currentSearch && currentSearch.value) {
+                filterAgentModels(currentSearch.value);
+            }
+        }
+
+        function filterAgentModels(keyword) {
+            const lowerKeyword = keyword.toLowerCase();
+            document.querySelectorAll('.agent-provider-group').forEach(groupDiv => {
+                let anyVisible = false;
+                groupDiv.querySelectorAll('.agent-model-item').forEach(lbl => {
+                    const searchBase = lbl.getAttribute('data-search') || '';
+                    if (searchBase.includes(lowerKeyword) || lowerKeyword === '') {
+                        lbl.style.display = 'flex';
+                        anyVisible = true;
+                        
+                        const textSpan = lbl.querySelector('.agent-model-text');
+                        if (textSpan) {
+                            const originalText = textSpan.getAttribute('data-origin-text') || '';
+                            if (lowerKeyword !== '') {
+                                const escapeRegex = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                                const regex = new RegExp(`(${escapeRegex(keyword)})`, 'gi');
+                                textSpan.innerHTML = originalText.replace(regex, '<span class="bg-yellow-300 text-yellow-900 rounded-[4px] px-1 shadow-sm">$1</span>');
+                            } else {
+                                textSpan.textContent = originalText;
+                            }
+                        }
+                    } else {
+                        lbl.style.display = 'none';
+                    }
+                });
+                groupDiv.style.display = anyVisible ? 'block' : 'none';
+            });
+        }
+
+        function selectAllAgentModels(checkOrUncheck) {
+            const data = profiles[activeProfile].data;
+            for(let pKey in data.models.providers) {
+                (data.models.providers[pKey].models||[]).forEach(m => {
+                    const fullId = `${pKey}/${m.id}`;
+                    if (checkOrUncheck) data.agents.defaults.models[fullId]={};
+                    else delete data.agents.defaults.models[fullId];
+                });
+            }
+            renderForm();
+            updatePreview();
+        }
+
+        function selectGroupModels(pKey, checkOrUncheck) {
+            const data = profiles[activeProfile].data;
+            const models = data.models.providers[pKey]?.models || [];
+            models.forEach(m => {
+                const fullId = `${pKey}/${m.id}`;
+                if (checkOrUncheck) data.agents.defaults.models[fullId]={};
+                else delete data.agents.defaults.models[fullId];
+            });
+            renderForm();
+            updatePreview();
         }
 
         // 搜索辅助与关闭
@@ -581,14 +784,135 @@
 
         function switchTab(id) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); event.target.classList.add('active'); }
         function updateDeep(path, val) { let curr = profiles[activeProfile].data; const parts = path.split('.'); for(let i=0; i<parts.length-1; i++) { if(!curr[parts[i]]) curr[parts[i]] = {}; curr = curr[parts[i]]; } curr[parts[parts.length-1]] = val; updatePreview(); }
-        function handleFileImport(input) { const reader = new FileReader(); reader.onload = (e) => { try { profiles[activeProfile].data = JSON.parse(e.target.result); renderForm(); updatePreview(); showToast('导入成功'); } catch(e) {showToast('无效 JSON', 'error');} }; reader.readAsText(input.files[0]); }
+        function handleFileImport(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                let parsed;
+                try {
+                    let cleanContent = e.target.result.replace(/^\uFEFF/, '').trim();
+                    parsed = JSON.parse(cleanContent);
+                } catch(err) {
+                    showToast('文件格式错误：JSON 解析失败', 'error');
+                    console.error("Parse Error:", err);
+                    input.value = '';
+                    return;
+                }
+
+                try {
+                    profiles[activeProfile].data = parsed;
+                    renderForm(); 
+                    updatePreview(); 
+                    showToast('配置导入成功');
+                    
+                    document.getElementById('upload-status-default').classList.add('hidden');
+                    document.getElementById('upload-status-success').classList.replace('hidden', 'flex');
+                    document.getElementById('uploaded-filename').textContent = file.name;
+                    document.getElementById('clear-upload-btn').classList.remove('hidden');
+                    document.getElementById('upload-label').classList.replace('border-slate-200', 'border-emerald-400');
+                    document.getElementById('upload-label').classList.add('bg-emerald-50');
+                } catch(err) {
+                    showToast('文件结构不兼容：缺乏核心节点', 'error');
+                    console.error("Render Error:", err);
+                    input.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearUploadFile(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const input = document.getElementById('json-file-input');
+            input.value = '';
+            document.getElementById('upload-status-default').classList.remove('hidden');
+            document.getElementById('upload-status-success').classList.replace('flex', 'hidden');
+            document.getElementById('uploaded-filename').textContent = '';
+            document.getElementById('clear-upload-btn').classList.add('hidden');
+            document.getElementById('upload-label').classList.replace('border-emerald-400', 'border-slate-200');
+            document.getElementById('upload-label').classList.remove('bg-emerald-50');
+            showToast('已移除文件');
+        }
         function handlePasteImport() { try { profiles[activeProfile].data = JSON.parse(document.getElementById('paste-import-area').value); renderForm(); updatePreview(); showToast('导入成功'); } catch(e) {showToast('内容解析失败', 'error');} }
         function copyJSON() { navigator.clipboard.writeText(JSON.stringify(profiles[activeProfile].data, null, 2)); showToast('已复制完整 JSON'); }
         function downloadJSON() { const blob = new Blob([JSON.stringify(profiles[activeProfile].data, null, 2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'config.json'; a.click(); showToast('正在下载'); }
         function renameProfile(id, name) { profiles[id].name = name; }
         function addProvider() { const id = "p_"+Date.now().toString().slice(-4); profiles[activeProfile].data.models.providers[id] = {baseUrl:"", apiKey:"", models:[]}; renderForm(); updatePreview(); }
 
-        window.onload = () => { document.getElementById('name-p1').value=profiles.p1.name; document.getElementById('name-p2').value=profiles.p2.name; switchProfile('p1'); };
+        function toggleLocalStorage() {
+            const isEnabled = document.getElementById('ls-toggle').checked;
+            const text = document.getElementById('ls-status-text');
+            if(isEnabled) {
+                localStorage.setItem('openclaw_save_enabled', 'true');
+                text.textContent = '记忆模式 (本地保存)';
+                text.className = 'text-[10px] font-black text-emerald-400 tracking-wider transition-colors pt-px select-none whitespace-nowrap drop-shadow-sm';
+                saveToLocalStorage();
+                showToast('已开启本地缓存记忆', 'success');
+            } else {
+                localStorage.setItem('openclaw_save_enabled', 'false');
+                localStorage.removeItem('openclaw_profiles');
+                text.textContent = '无痕模式 (不保留)';
+                text.className = 'text-[10px] font-black text-slate-300 tracking-wider transition-colors pt-px select-none whitespace-nowrap';
+                showToast('已关闭并清空本地缓存', 'info');
+            }
+        }
+
+        function saveToLocalStorage() {
+            if(localStorage.getItem('openclaw_save_enabled') === 'true') {
+                localStorage.setItem('openclaw_profiles', JSON.stringify(profiles));
+            }
+        }
+
+        function showModeModal() {
+            const m = document.getElementById('mode-modal');
+            const c = document.getElementById('mode-modal-content');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+            setTimeout(() => { c.classList.remove('scale-95', 'opacity-0'); c.classList.add('scale-100', 'opacity-100'); }, 10);
+        }
+
+        function closeModeModal() {
+            const m = document.getElementById('mode-modal');
+            const c = document.getElementById('mode-modal-content');
+            c.classList.remove('scale-100', 'opacity-100'); c.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { m.classList.remove('flex'); m.classList.add('hidden'); }, 300);
+        }
+
+        function setMode(mode) {
+            const toggle = document.getElementById('ls-toggle');
+            toggle.checked = (mode === 'remember');
+            toggleLocalStorage();
+            closeModeModal();
+        }
+
+        window.onload = () => { 
+            const savedState = localStorage.getItem('openclaw_save_enabled');
+            const isEnabled = (savedState === 'true');
+            
+            if (isEnabled) {
+                const saved = localStorage.getItem('openclaw_profiles');
+                if (saved) {
+                    try { profiles = JSON.parse(saved); } catch(e) { console.error(e); }
+                }
+                const toggle = document.getElementById('ls-toggle');
+                toggle.checked = true;
+                const text = document.getElementById('ls-status-text');
+                text.textContent = '记忆模式 (本地保存)';
+                text.className = 'text-[10px] font-black text-emerald-400 tracking-wider transition-colors pt-px select-none whitespace-nowrap drop-shadow-sm';
+            }
+
+            document.getElementById('name-p1').value=profiles.p1.name; 
+            document.getElementById('name-p2').value=profiles.p2.name; 
+            switchProfile('p1'); 
+
+            if (isEnabled) {
+                setTimeout(() => showToast('已从本地缓存恢复上次配置'), 500);
+            } else if (!savedState || savedState === 'false') {
+                // 当处于无痕模式时，毫不妥协地在每次页面刷新时都强行弹窗供用户确认
+                setTimeout(showModeModal, 300);
+            }
+        };
     </script>
 </body>
 </html>
