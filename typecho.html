@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typecho Docker 全能部署与维护手册 (修复版)</title>
+    <link rel="icon" href="https://th.bing.com/th/id/R.92e367a03e6c827e28de150548d52afe?rik=vvMCdqKq7GPIfQ&pid=ImgRaw&r=0" type="image/x-icon">
+    <style>
+        body { font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 1000px; margin: 0 auto; padding: 20px; background-color: #f5f7fa; }
+        h1 { text-align: center; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { background: #3498db; color: white; padding: 10px 15px; border-radius: 5px; margin-top: 30px; }
+        h3 { color: #2980b9; border-left: 4px solid #2980b9; padding-left: 10px; margin-top: 20px; }
+        .card, .step { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-family: "Cascadia Code", Consolas, "Courier New", Courier, monospace; color: #e74c3c; font-size: 14px; }
+        pre { background: #2d3436; color: #fab1a0; padding: 40px 15px 15px 15px; border-radius: 5px; overflow-x: auto; font-size: 14px; border: 1px solid #636e72; position: relative; }
+        pre code { background: transparent; padding: 0; border-radius: 0; color: inherit; font-size: inherit; }
+        .copy-btn { position: absolute; right: 10px; top: 10px; background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: background 0.3s; }
+        .copy-btn:hover { background: #2980b9; }
+        .cmd-comment { color: #81ecec; }
+        .important { color: #d63031; font-weight: bold; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin-right: 5px; background: #dfe6e9; }
+        .badge-blue { background: #3498db; color: white; }
+        .badge-green { background: #2ecc71; color: white; }
+        .warning { background: #fff3cd; border-left: 5px solid #ffecb5; padding: 15px; margin: 15px 0; border-radius: 4px; color: #856404; }
+        .success { background: #d4edda; border-left: 5px solid #c3e6cb; padding: 15px; margin: 15px 0; border-radius: 4px; color: #155724; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        table th { background: #f1f2f6; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>Typecho Docker 全能部署与维护手册</h1>
+    
+    <div class="warning">
+        <strong>⚠️ 核心避坑点：</strong> 
+        原教程中挂载 <code>config.inc.php</code> 文件会导致 Docker 误将其识别为文件夹，产生 "Not a directory" 报错。本教程已通过<strong>全目录挂载</strong>修复此问题。
+    </div>
+
+    <!-- 第一部分：部署 -->
+    <div class="card">
+        <h2>一、 快速部署 (Docker Compose)</h2>
+        <p>基于 <code>/root/data/docker/typecho</code> 路径的规范化部署。</p>
+        
+        <h3>1. 环境清理与目录准备</h3>
+        <p>在开始之前，确保清理掉之前失败的容器和残留的“错误文件夹”。</p>
+        <pre><button class="copy-btn">复制代码</button><code><span class="cmd-comment"># 停止并删除旧容器</span>
+docker rm -f typecho typecho-db
+
+<span class="cmd-comment"># 准备目录</span>
+mkdir -p /root/data/docker/typecho/{typecho,db}
+cd /root/data/docker/typecho
+
+<span class="cmd-comment"># 【重要】检查并删除之前误创建的 config.inc.php 文件夹</span>
+rm -rf typecho/config.inc.php
+
+<span class="cmd-comment"># 赋予权限（防止安装程序无法写入）</span>
+chmod -R 777 /root/data/docker/typecho</code></pre>
+
+        <h3>2. 编写 docker-compose.yml</h3>
+        <pre><button class="copy-btn">复制代码</button><code>services:
+  typecho:
+    image: joyqi/typecho:nightly-php8.2-apache
+    container_name: typecho
+    restart: always
+    ports:
+      - "8383:80"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./typecho:/app  <span class="cmd-comment"># 挂载整个程序目录，包含代码和配置</span>
+    depends_on:
+      - db
+
+  db:
+    image: mariadb:10.6
+    container_name: typecho-db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=your_root_password
+      - MYSQL_DATABASE=typecho
+      - MYSQL_USER=typecho
+      - MYSQL_PASSWORD=your_typecho_password
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./db:/var/lib/mysql</code></pre>
+
+        <h3>3. 启动命令</h3>
+        <pre><button class="copy-btn">复制代码</button><code>docker compose up -d</code></pre>
+        <p class="important">注意：如果启动后 <code>./typecho</code> 目录依然为空，请执行一次手动拷贝（仅需一次）：</p>
+        <pre><button class="copy-btn">复制代码</button><code>docker cp typecho:/app/. ./typecho/ && chmod -R 777 ./typecho</code></pre>
+
+        <h3>4. Web 界面安装配置</h3>
+        <p>打开浏览器，访问：<code>http://你的服务器IP:8383</code></p>
+        <p>在数据库配置页面，<strong>务必</strong>按以下信息填写：</p>
+        <ul>
+            <li><strong>数据库类型：</strong> MySQL 或 Pdo_Mysql</li>
+            <li><strong>数据库地址：</strong> <code>db</code> <span style="color:red">(不要写 localhost)</span></li>
+            <li><strong>数据库端口：</strong> <code>3306</code></li>
+            <li><strong>数据库用户名：</strong> <code>typecho</code></li>
+            <li><strong>数据库密码：</strong> <code>your_typecho_password</code> (你在 YAML 中设置的密码)</li>
+            <li><strong>数据库名：</strong> <code>typecho</code></li>
+        </ul>
+        
+        <div class="success">
+            <strong>🎉 部署完成！</strong><br>
+            安装完成后，所有的主题（themes）、插件（plugins）和上传的图片都会保存在宿主机的 <code>/root/data/docker/typecho/typecho</code> 目录下。备份时只需打包此文件夹即可。
+        </div>
+    </div>
+
+    <!-- 第二部分：反向代理 -->
+    <div class="card">
+        <h2>二、 反向代理配置 (HTTPS)</h2>
+        <p>推荐使用 <strong>Nginx Proxy Manager (NPM)</strong> 或原生 Nginx。</p>
+        
+        <h3>1. 使用 Nginx Proxy Manager 配置</h3>
+        <table>
+            <tr><th>项目</th><th>配置内容</th></tr>
+            <tr><td>Domain Names</td><td>你的域名 (如: blog.example.com)</td></tr>
+            <tr><td>Scheme</td><td>http</td></tr>
+            <tr><td>Forward Host Name / IP</td><td>服务器公网IP 或 Docker网桥IP (172.17.0.1)</td></tr>
+            <tr><td>Forward Port</td><td>8383</td></tr>
+            <tr><td>Block Common Exploits</td><td>开启 (ON)</td></tr>
+            <tr><td>Websockets Support</td><td>开启 (ON)</td></tr>
+        </table>
+
+        <h3>2. 原生 Nginx 配置示例</h3>
+        <pre><button class="copy-btn">复制代码</button><code>server {
+    listen 80;
+    server_name blog.yourdomain.com;
+    
+    location / {
+        proxy_pass http://127.0.0.1:8383;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}</code></pre>
+    </div>
+
+    <!-- 第三部分：日常维护 -->
+    <div class="card">
+        <h2>三、 日常维护命令</h2>
+        <p>所有命令需在 <code>/root/data/docker/typecho</code> 目录下执行。</p>
+        
+        <h3>1. 基本操作</h3>
+        <ul>
+            <li><code class="badge badge-blue">查看日志</code> <code>docker compose logs -f typecho</code> (排查报错神器)</li>
+            <li><code class="badge badge-blue">重启服务</code> <code>docker compose restart</code></li>
+            <li><code class="badge badge-blue">进入容器</code> <code>docker exec -it typecho /bin/bash</code></li>
+        </ul>
+
+        <h3>2. 备份与迁移 (最重要)</h3>
+        <p>Typecho 迁移非常简单，只需备份整个文件夹：</p>
+        <pre><button class="copy-btn">复制代码</button><code><span class="cmd-comment"># 压缩备份所有数据</span>
+tar -czvf typecho_backup_$(date +%F).tar.gz /root/data/docker/typecho</code></pre>
+
+        <h3>3. 升级 Typecho 镜像</h3>
+        <pre><button class="copy-btn">复制代码</button><code>docker compose pull     <span class="cmd-comment"># 拉取新镜像</span>
+docker compose up -d    <span class="cmd-comment"># 重新创建容器</span>
+docker image prune -f   <span class="cmd-comment"># 清理旧镜像</span></code></pre>
+    </div>
+
+    <!-- 第四部分：高级配置 -->
+    <div class="card">
+        <h2>四、 进阶配置 Tips 及常见问题排查</h2>
+        <h3>1. 常见问题排查</h3>
+        <ul>
+            <li><strong>访问 500 错误：</strong> 通常是 <code>chmod -R 777 typecho</code> 没执行成功，权限不足导致。</li>
+            <li><strong>无法连接数据库：</strong> 检查数据库地址是否填写的 <code>db</code>，以及密码是否与 YAML 中一致。</li>
+            <li><strong>目录没内容：</strong> 参考第一步的 <code>docker cp</code> 命令将容器内初始文件拷贝出来。</li>
+        </ul>
+        
+        <h3>2. 解除上传附件大小限制</h3>
+        <p>如果无法上传大文件，需在 <code>./typecho</code> 目录下创建或修改 <code>.user.ini</code>：</p>
+        <pre><button class="copy-btn">复制代码</button><code>upload_max_filesize = 64M
+post_max_size = 64M</code></pre>
+
+        <h3>3. 强制 HTTPS 跳转</h3>
+        <p>在 Typecho 后台设置“站点地址”为 <code>https://...</code> 之后，如果样式乱了，在 <code>config.inc.php</code> 开头添加：</p>
+        <pre><button class="copy-btn">复制代码</button><code>define('__TYPECHO_SECURE__', true);</code></pre>
+
+    </div>
+
+    <!-- 第五部分：资源链接 -->
+    <div class="card">
+        <h2>五、 实用资源与参考</h2>
+        <ul>
+            <li><strong>Typecho 官网：</strong> <a href="https://typecho.org/" target="_blank" style="color: #3498db; text-decoration: none;">https://typecho.org/</a></li>
+            <li><strong>参考教程：</strong> <a href="https://blog.meimolihan.eu.org/p/8d1a1077/" target="_blank" style="color: #3498db; text-decoration: none;">https://blog.meimolihan.eu.org/p/8d1a1077/</a></li>
+            <li><strong>Typecho 主题下载：</strong> <a href="https://typechx.com/themes" target="_blank" style="color: #3498db; text-decoration: none;">https://typechx.com/themes</a></li>
+        </ul>
+    </div>
+
+    <div style="text-align: center; color: #95a5a6; font-size: 12px; margin-bottom: 50px;">
+        © 2024 Typecho Docker 维护手册 | 整合版
+    </div>
+
+    <script>
+        document.querySelectorAll('.copy-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const pre = button.parentElement;
+                // 获取 code 标签中的文本，直接取 innerText 即可排除 HTML 标签本身，保留文字结构
+                const codeNode = pre.querySelector('code');
+                let codeText = '';
+                if(codeNode) {
+                  codeText = codeNode.innerText;
+                } else {
+                  // 回退处理
+                  const clone = pre.cloneNode(true);
+                  clone.removeChild(clone.querySelector('.copy-btn'));
+                  codeText = clone.innerText;
+                }
+                
+                // 去前后空白
+                codeText = codeText.trim();
+                
+                navigator.clipboard.writeText(codeText).then(() => {
+                    button.textContent = '复制成功!';
+                    button.style.backgroundColor = '#2ecc71';
+                    setTimeout(() => {
+                        button.textContent = '复制代码';
+                        button.style.backgroundColor = '#3498db';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('无法复制文本: ', err);
+                    button.textContent = '复制失败';
+                    button.style.backgroundColor = '#e74c3c';
+                    setTimeout(() => {
+                        button.textContent = '复制代码';
+                        button.style.backgroundColor = '#3498db';
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
