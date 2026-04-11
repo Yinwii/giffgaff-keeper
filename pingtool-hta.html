@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>ProPingTool</title>
+    <hta:application 
+        id="oHTA" 
+        applicationname="ProPingTool" 
+        border="thin" 
+        caption="yes" 
+        showintaskbar="yes" 
+        singleinstance="yes" 
+        sysmenu="yes" 
+        windowstate="normal">
+    <style>
+        html, body { 
+            height: 100%; margin: 0; padding: 0; 
+            font-family: "Microsoft YaHei", -apple-system, sans-serif; 
+            background-color: #F3F4F6; color: #1F2937; overflow: hidden; 
+        }
+        .container { display: flex; flex-direction: column; height: 100%; padding: 20px; box-sizing: border-box; }
+        .top-section { flex-shrink: 0; }
+        
+        h2 { margin-top: 0; color: #4F46E5; display: flex; justify-content: space-between; align-items: center; font-family: Tahoma, Arial, sans-serif; font-weight: 800; font-size: 24px;}
+        h2 span { font-size: 14px; color: #6B7280; font-weight: normal; }
+        
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        input[type="text"] { padding: 10px; border: 1px solid #E5E7EB; border-radius: 6px; font-size: 14px; outline: none; box-sizing: border-box; }
+        #ipInput { flex: 2; }
+        #tagInput { flex: 1; }
+        input[type="text"]:focus { border-color: #4F46E5; }
+        
+        button { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-ping { background-color: #4F46E5; color: white; }
+        .btn-save { background-color: #10B981; color: white; }
+
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #E5E7EB; padding-bottom: 10px; }
+        .filter-tab { padding: 6px 12px; cursor: pointer; border-radius: 6px; font-size: 14px; background-color: transparent; color: #6B7280; font-weight: bold; }
+        .filter-tab.active { background-color: #4F46E5; color: white; }
+        
+        .ips-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; min-height: 32px; }
+        .ip-chip { background-color: #E0E7FF; color: #3730A3; padding: 6px 12px; border-radius: 20px; font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .ip-chip span { cursor: pointer; }
+        .ip-chip span:hover { text-decoration: underline; }
+        .ip-chip .badge { background: #3730A3; color: white; font-size: 11px; padding: 2px 6px; border-radius: 10px; }
+        .ip-chip .del { color: #EF4444; font-weight: bold; font-size: 16px; cursor: pointer; }
+
+        .log-section { flex: 1; display: flex; flex-direction: column; min-height: 0; background: #1E1E1E; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
+        
+        .log-tabs-bar { display: flex; background-color: #2D2D2D; border-bottom: 1px solid #000; overflow-x: auto; }
+        .log-tabs-bar::-webkit-scrollbar { height: 4px; }
+        .log-tab { padding: 10px 16px; cursor: pointer; border-right: 1px solid #111; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #9CA3AF; }
+        .log-tab.active { background-color: #1E1E1E; color: #10B981; font-weight: bold; border-bottom: 2px solid #10B981; }
+        .log-tab:hover:not(.active) { background-color: #3D3D3D; }
+        .log-tab .close-tab { color: #6B7280; font-size: 16px; font-weight: bold; line-height: 1; }
+        .log-tab .close-tab:hover { color: #EF4444; }
+
+        .log-panes { flex: 1; position: relative; min-height: 0; }
+        .log-pane { display: none; width: 100%; height: 100%; overflow-y: auto; padding: 15px; box-sizing: border-box; color: #10B981; font-family: Consolas, monospace; font-size: 14px; white-space: pre-wrap; line-height: 1.5; }
+        .log-pane.active { display: block; }
+        
+        .empty-state { display: flex; justify-content: center; align-items: center; height: 100%; color: #6B7280; font-size: 16px; }
+
+        .log-toolbar { position: absolute; top: 10px; right: 15px; z-index: 10; }
+        .btn-clear { background-color: #374151; color: white; padding: 6px 12px; font-size: 12px; border-radius: 4px; border: 1px solid #4B5563;}
+        .btn-clear:hover { background-color: #EF4444; border-color: #EF4444; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-section">
+        <h2>ProPingTool <span>(物理记忆版)</span></h2>
+        
+        <div class="input-group">
+            <input type="text" id="ipInput" placeholder="输入 IP 或 域名 (例如: 114.114.114.11)">
+            <input type="text" id="tagInput" placeholder="分类标签 (例如: 核心网)">
+            <button class="btn-ping" onclick="startPing()">并发 Ping</button>
+            <button class="btn-save" onclick="saveIp()">保存标签</button>
+        </div>
+
+        <div class="filter-bar" id="filterBar"></div>
+        <div class="ips-container" id="savedIps"></div>
+    </div>
+
+    <div class="log-section">
+        <div class="log-tabs-bar" id="logTabsBar"></div>
+        
+        <div class="log-panes" id="logPanes">
+            <div class="log-toolbar" id="logToolbar" style="display:none;">
+                <button class="btn-clear" onclick="clearActiveLog()">清空当前屏幕</button>
+            </div>
+            
+            <div class="empty-state" id="emptyState">
+                系统就绪。输入 IP 并点击 "并发 Ping" 生成专属通讯标签页...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var shell, fso, dataFilePath;
+    try {
+        shell = new ActiveXObject("WScript.Shell");
+        fso = new ActiveXObject("Scripting.FileSystemObject");
+        dataFilePath = shell.ExpandEnvironmentStrings("%APPDATA%") + "\\ProPingTool_Config.json";
+    } catch(e) {
+        alert("请允许 ActiveX 控件运行，否则无法调用系统底层 Ping 和保存功能！");
+    }
+
+    var savedData = [];
+    var currentFilter = "全部";
+    var openTabs = [];
+    var activeTab = null;
+    var globalLogs = {}; 
+
+    // 格式化时间函数：补零并带上年月日
+    function getFormattedTime() {
+        var d = new Date();
+        var yyyy = d.getFullYear();
+        var MM = (d.getMonth() + 1 < 10 ? '0' : '') + (d.getMonth() + 1);
+        var dd = (d.getDate() < 10 ? '0' : '') + d.getDate();
+        var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
+        var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+        var ss = (d.getSeconds() < 10 ? '0' : '') + d.getSeconds();
+        return yyyy + "-" + MM + "-" + dd + " " + hh + ":" + mm + ":" + ss;
+    }
+
+    function loadStateFromFile() {
+        try {
+            if (fso.FileExists(dataFilePath)) {
+                var file = fso.OpenTextFile(dataFilePath, 1, false, -1); 
+                var content = file.ReadAll();
+                file.Close();
+                var state = JSON.parse(content);
+                if (state) {
+                    if (state.savedData) savedData = state.savedData;
+                    if (state.openTabs) openTabs = state.openTabs;
+                    if (state.activeTab) activeTab = state.activeTab;
+                    if (state.globalLogs) globalLogs = state.globalLogs;
+                }
+            }
+        } catch(e) {}
+    }
+
+    function saveStateToFile() {
+        for (var i = 0; i < openTabs.length; i++) {
+            var pane = getPaneByIp(openTabs[i]);
+            if (pane) {
+                var content = pane.innerHTML;
+                if (content.length > 30000) content = content.substring(content.length - 30000); 
+                globalLogs[openTabs[i]] = content;
+            }
+        }
+        
+        var state = { savedData: savedData, openTabs: openTabs, activeTab: activeTab, globalLogs: globalLogs };
+        
+        try {
+            var file = fso.CreateTextFile(dataFilePath, true, true);
+            file.Write(JSON.stringify(state));
+            file.Close();
+        } catch(e) {}
+    }
+
+    window.onload = function() {
+        loadStateFromFile();
+        renderUI();
+
+        for(var i = 0; i < openTabs.length; i++) {
+            createTabDOM(openTabs[i]);
+        }
+        if (activeTab) activateTab(activeTab);
+
+        document.getElementById('ipInput').onkeypress = function(e) {
+            if ((e.keyCode || e.which) == 13) startPing();
+        };
+    };
+
+    window.onbeforeunload = function() {
+        saveStateToFile();
+    };
+
+    function renderUI() {
+        var filterBar = document.getElementById('filterBar');
+        var ipsContainer = document.getElementById('savedIps');
+        
+        var tags = ["全部"];
+        for(var i=0; i<savedData.length; i++) {
+            var tag = savedData[i].tag || "未分类";
+            if(tags.indexOf(tag) === -1) tags.push(tag);
+        }
+
+        if(tags.indexOf(currentFilter) === -1) currentFilter = "全部";
+
+        filterBar.innerHTML = '';
+        for(var j=0; j<tags.length; j++) {
+            var t = tags[j];
+            var btn = document.createElement('div');
+            btn.className = 'filter-tab' + (currentFilter === t ? ' active' : '');
+            btn.innerText = t;
+            btn.onclick = (function(val) { return function() { currentFilter = val; renderUI(); } })(t);
+            filterBar.appendChild(btn);
+        }
+
+        ipsContainer.innerHTML = '';
+        var hasItem = false;
+        for(var k=0; k<savedData.length; k++) {
+            var item = savedData[k];
+            var itemTag = item.tag || "未分类";
+            if(currentFilter === "全部" || currentFilter === itemTag) {
+                hasItem = true;
+                var html = '<div class="ip-chip">' +
+                           '<span onclick="fillAndPing(\'' + item.ip + '\')" title="点击立即Ping">' + item.ip + '</span>' +
+                           '<div class="badge">' + itemTag + '</div>' +
+                           '<div class="del" onclick="deleteIp(\'' + item.ip + '\')" title="删除">×</div>' +
+                           '</div>';
+                ipsContainer.insertAdjacentHTML('beforeend', html);
+            }
+        }
+        if(!hasItem) ipsContainer.innerHTML = '<span style="color:#9CA3AF; font-size:13px; margin-top:8px;">该分类下暂无 IP</span>';
+    }
+
+    function saveIp() {
+        var ip = document.getElementById('ipInput').value.replace(/^\s+|\s+$/g, '');
+        var tag = document.getElementById('tagInput').value.replace(/^\s+|\s+$/g, '') || "未分类";
+        if(!ip) return alert("IP不能为空！");
+
+        var exists = false;
+        for(var i=0; i<savedData.length; i++) {
+            if(savedData[i].ip === ip) { savedData[i].tag = tag; exists = true; break; }
+        }
+        if(!exists) savedData.push({ ip: ip, tag: tag });
+
+        currentFilter = tag; 
+        renderUI();
+        saveStateToFile(); 
+    }
+
+    function deleteIp(ip) {
+        var newData = [];
+        for(var i=0; i<savedData.length; i++) { if(savedData[i].ip !== ip) newData.push(savedData[i]); }
+        savedData = newData;
+        renderUI();
+        saveStateToFile();
+    }
+
+    function fillAndPing(ip) {
+        document.getElementById('ipInput').value = ip;
+        startPing();
+    }
+
+    function createTabDOM(ip) {
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('logToolbar').style.display = 'block';
+
+        var tabBar = document.getElementById('logTabsBar');
+        var tab = document.createElement('div');
+        tab.className = 'log-tab';
+        tab.setAttribute('data-ip', ip);
+        tab.innerHTML = '<span onclick="activateTab(\''+ip+'\')">📡 ' + ip + '</span> <span class="close-tab" onclick="closeTab(\''+ip+'\'); window.event.cancelBubble=true;" title="关闭">×</span>';
+        tabBar.appendChild(tab);
+
+        var panes = document.getElementById('logPanes');
+        var pane = document.createElement('div');
+        pane.className = 'log-pane';
+        pane.setAttribute('data-ip', ip);
+        
+        if (globalLogs[ip]) {
+            pane.innerHTML = globalLogs[ip];
+            setTimeout(function(){ pane.scrollTop = pane.scrollHeight; }, 50);
+        }
+        panes.appendChild(pane);
+    }
+
+    function createOrActivateTab(ip) {
+        if(openTabs.indexOf(ip) === -1) {
+            openTabs.push(ip);
+            createTabDOM(ip);
+        }
+        activateTab(ip);
+        saveStateToFile();
+        return getPaneByIp(ip);
+    }
+
+    function activateTab(ip) {
+        activeTab = ip;
+        var tabs = document.getElementById('logTabsBar').children;
+        for(var i=0; i<tabs.length; i++) {
+            tabs[i].className = (tabs[i].getAttribute('data-ip') === ip) ? 'log-tab active' : 'log-tab';
+        }
+
+        var panes = document.getElementById('logPanes').children;
+        for(var j=0; j<panes.length; j++) {
+            var dataIp = panes[j].getAttribute('data-ip');
+            if(dataIp) {
+                if(dataIp === ip) {
+                    panes[j].className = 'log-pane active';
+                    panes[j].scrollTop = panes[j].scrollHeight; 
+                } else {
+                    panes[j].className = 'log-pane';
+                }
+            }
+        }
+        saveStateToFile();
+    }
+
+    function closeTab(ip) {
+        var idx = openTabs.indexOf(ip);
+        if(idx > -1) openTabs.splice(idx, 1);
+        
+        var tabBar = document.getElementById('logTabsBar');
+        var panes = document.getElementById('logPanes');
+        
+        for(var i=tabBar.children.length-1; i>=0; i--) {
+            if(tabBar.children[i].getAttribute('data-ip') === ip) tabBar.removeChild(tabBar.children[i]);
+        }
+        for(var j=panes.children.length-1; j>=0; j--) {
+            if(panes.children[j].getAttribute('data-ip') === ip) panes.removeChild(panes.children[j]);
+        }
+
+        if(activeTab === ip) {
+            if(openTabs.length > 0) {
+                activateTab(openTabs[openTabs.length - 1]);
+            } else {
+                activeTab = null;
+                document.getElementById('emptyState').style.display = 'flex';
+                document.getElementById('logToolbar').style.display = 'none';
+            }
+        }
+        saveStateToFile();
+    }
+
+    function clearActiveLog() {
+        if(!activeTab) return;
+        var pane = getPaneByIp(activeTab);
+        if(pane) {
+            pane.innerHTML = '';
+            globalLogs[activeTab] = ''; 
+            saveStateToFile();
+        }
+    }
+
+    function getPaneByIp(ip) {
+        var panes = document.getElementById('logPanes').children;
+        for(var i=0; i<panes.length; i++) {
+            if(panes[i].getAttribute('data-ip') === ip) return panes[i];
+        }
+        return null;
+    }
+
+    function startPing() {
+        var target = document.getElementById('ipInput').value.replace(/^\s+|\s+$/g, '');
+        if(!target) return alert('请输入 IP 或 域名！');
+
+        var pane = createOrActivateTab(target);
+        
+        // 调用我们刚刚写好的全局格式化时间函数
+        var timeStr = getFormattedTime();
+        
+        pane.innerHTML += "\n--------------------------------------------------\n" +
+                          "[" + timeStr + "] 对 " + target + " 发起请求...\n" +
+                          "--------------------------------------------------\n";
+        pane.scrollTop = pane.scrollHeight;
+
+        executeAsyncPing(target, pane);
+    }
+
+    function executeAsyncPing(target, pane) {
+        var timeStamp = new Date().getTime();
+        var randNum = Math.floor(Math.random() * 10000);
+        var tempFile = shell.ExpandEnvironmentStrings("%TEMP%") + "\\ping_" + timeStamp + "_" + randNum + ".txt";
+        
+        var cmd = 'cmd /c "ping -n 4 ' + target + ' > "' + tempFile + '" & echo END_OF_PING >> "' + tempFile + '""';
+        shell.Run(cmd, 0, false); 
+        
+        var lastReadLength = 0;
+        
+        var myTimer = setInterval(function() {
+            if (!fso.FileExists(tempFile)) return;
+            try {
+                var file = fso.OpenTextFile(tempFile, 1, false, 0); 
+                var currentContent = "";
+                if (!file.AtEndOfStream) {
+                    currentContent = file.ReadAll();
+                }
+                file.Close();
+
+                if (currentContent.length > lastReadLength) {
+                    var newText = currentContent.substring(lastReadLength);
+                    var isFinished = false;
+                    
+                    if (newText.indexOf("END_OF_PING") !== -1) {
+                        newText = newText.replace("END_OF_PING", ""); 
+                        isFinished = true;
+                    }
+                    
+                    if (newText) {
+                        pane.innerHTML += newText;
+                        if(activeTab === target) pane.scrollTop = pane.scrollHeight; 
+                    }
+                    lastReadLength = currentContent.length;
+                    
+                    if (isFinished) {
+                        clearInterval(myTimer);
+                        saveStateToFile(); 
+                        setTimeout(function() { try{ fso.DeleteFile(tempFile); }catch(e){} }, 500);
+                    }
+                }
+            } catch(e) {
+            }
+        }, 200);
+    }
+</script>
+
+</body>
+</html>
