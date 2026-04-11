@@ -23,8 +23,19 @@
         .top-section { flex-shrink: 0; }
         
         h2 { margin-top: 0; color: #4F46E5; display: flex; justify-content: space-between; align-items: center; font-family: Tahoma, Arial, sans-serif; font-weight: 800; font-size: 24px;}
-        h2 span { font-size: 14px; color: #6B7280; font-weight: normal; }
+        h2 .title-left span { font-size: 14px; color: #6B7280; font-weight: normal; }
         
+        /* 动态时钟专属样式 (蓝色) */
+        #realtimeClock {
+            color: #0078D7; /* Windows 经典蓝 */
+            font-size: 15px;
+            font-weight: 600;
+            font-family: "Microsoft YaHei", Consolas, monospace;
+            background: #E0F2FE;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
         input[type="text"] { padding: 10px; border: 1px solid #E5E7EB; border-radius: 6px; font-size: 14px; outline: none; box-sizing: border-box; }
         #ipInput { flex: 2; }
@@ -72,7 +83,11 @@
 
 <div class="container">
     <div class="top-section">
-        <h2>ProPingTool <span>(物理记忆版)</span></h2>
+        <!-- 标题与时钟 -->
+        <h2>
+            <div class="title-left">ProPingTool <span>(物理记忆版)</span></div>
+            <div id="realtimeClock">载入中...</div>
+        </h2>
         
         <div class="input-group">
             <input type="text" id="ipInput" placeholder="输入 IP 或 域名 (例如: 114.114.114.11)">
@@ -116,7 +131,29 @@
     var activeTab = null;
     var globalLogs = {}; 
 
-    // 格式化时间函数：补零并带上年月日
+    // 动态时钟模块
+    function initClock() {
+        var clockEl = document.getElementById("realtimeClock");
+        var weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+        
+        function updateClock() {
+            var d = new Date();
+            var yyyy = d.getFullYear();
+            var MM = (d.getMonth() + 1 < 10 ? '0' : '') + (d.getMonth() + 1);
+            var dd = (d.getDate() < 10 ? '0' : '') + d.getDate();
+            var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
+            var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+            var ss = (d.getSeconds() < 10 ? '0' : '') + d.getSeconds();
+            var wk = weekdays[d.getDay()];
+            
+            clockEl.innerText = yyyy + "-" + MM + "-" + dd + " " + hh + ":" + mm + ":" + ss + " " + wk;
+        }
+        
+        updateClock(); // 初始化立即执行一次，防止延迟
+        setInterval(updateClock, 1000); // 每秒刷新一次
+    }
+
+    // Ping记录中使用的时间戳 (固定时刻)
     function getFormattedTime() {
         var d = new Date();
         var yyyy = d.getFullYear();
@@ -165,6 +202,7 @@
     }
 
     window.onload = function() {
+        initClock(); // 启动动态时钟
         loadStateFromFile();
         renderUI();
 
@@ -356,7 +394,6 @@
 
         var pane = createOrActivateTab(target);
         
-        // 调用我们刚刚写好的全局格式化时间函数
         var timeStr = getFormattedTime();
         
         pane.innerHTML += "\n--------------------------------------------------\n" +
