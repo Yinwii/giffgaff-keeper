@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全美身份 & 真实地址生成器 Ultimate</title>
+
+<!-- 网页 Favicon -->
+<link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3014/3014434.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+        --bg: #f3f4f6;
+        --card: #ffffff;
+        --text: #111827;
+        --accent: #6b7280;
+        --border: #e2e8f0;
+        --success: #10b981;
+        --excel: #059669; 
+        --json: #eab308;  
+        --info-bg: #eef2ff;
+        --font-mono: 'Fira Code', monospace;
+    }
+
+    [data-theme="dark"] {
+        --primary: #6366f1;
+        --primary-hover: #818cf8;
+        --bg: #111827;
+        --card: #1f2937;
+        --text: #f9fafb;
+        --accent: #9ca3af;
+        --border: #374151;
+        --info-bg: #374151;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; transition: background-color 0.3s, border-color 0.3s; }
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 30px 20px;
+        overflow-x: hidden; 
+    }
+
+    .container {
+        width: 100%;
+        max-width: 1150px;
+        background: var(--card);
+        border-radius: 24px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .header { padding: 20px 30px; background: #1e1b4b; color: white; display: flex; justify-content: space-between; align-items: center; }
+    .header h2 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+    .theme-toggle { background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+
+    .content { padding: 30px; display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 30px; }
+    @media (max-width: 1024px) { .content { grid-template-columns: 280px minmax(0, 1fr); gap: 20px; padding: 20px; } }
+    @media (max-width: 850px) { .content { grid-template-columns: minmax(0, 1fr); gap: 20px; } .controls { position: static !important; } }
+
+    /* 控制面板 */
+    .controls { background: var(--bg); padding: 25px; border-radius: 16px; border: 1px solid var(--border); height: fit-content; position: sticky; top: 20px; }
+    .control-group { margin-bottom: 18px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--accent); }
+    
+    select, input[type="range"], input[type="number"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background-color: var(--card); color: var(--text); font-family: inherit; outline: none; }
+    
+    /* 只美化左侧两个下拉框：州、性别 */
+    .controls select {
+        padding: 12px 42px 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background-color: var(--card);
+        color: var(--text);
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.08);
+        background-image:
+            linear-gradient(45deg, transparent 50%, var(--primary) 50%),
+            linear-gradient(135deg, var(--primary) 50%, transparent 50%);
+        background-position:
+            calc(100% - 18px) calc(50% - 3px),
+            calc(100% - 12px) calc(50% - 3px);
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+    }
+
+    .controls select:hover {
+        border-color: var(--primary);
+        box-shadow: 0 6px 14px rgba(79, 70, 229, 0.14);
+    }
+
+    .controls select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
+    }
+
+    .controls select option {
+        background: var(--card);
+        color: var(--text);
+    }
+
+    /* 美化下拉框样式 */
+    .custom-select { position: relative; width: 100%; user-select: none; }
+    .select-trigger {
+        background: var(--card);
+        border: 1px solid var(--border);
+        padding: 12px 15px;
+        border-radius: 12px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        font-size: 0.95rem;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.08);
+        transition: all 0.3s ease;
+    }
+    .select-trigger:hover { 
+        border-color: var(--primary); 
+        box-shadow: 0 6px 14px rgba(79, 70, 229, 0.14);
+        transform: translateY(-1px);
+    }
+    .custom-select.active .select-trigger {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
+    }
+    .select-trigger .arrow {
+        color: var(--primary);
+        transition: transform 0.3s ease;
+        font-size: 0.85rem;
+    }
+    .custom-select.active .select-trigger .arrow {
+        transform: rotate(180deg);
+    }
+    .select-options {
+        position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+        background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        z-index: 1000; max-height: 280px; overflow-y: auto; display: none;
+        animation: dropIn 0.2s ease;
+    }
+    @keyframes dropIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .select-option { padding: 12px 15px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; transition: all 0.2s ease; border-bottom: 1px solid var(--border); }
+    .select-option:last-child { border-bottom: none; }
+    .select-option:hover { background: linear-gradient(135deg, var(--info-bg), rgba(79, 70, 229, 0.05)); color: var(--primary); padding-left: 20px; }
+    .select-option.selected { background: var(--info-bg); color: var(--primary); font-weight: 600; }
+    .select-option i { width: 18px; text-align: center; color: var(--primary); }
+    /* 滚动条美化 */
+    .select-options::-webkit-scrollbar { width: 6px; }
+    .select-options::-webkit-scrollbar-track { background: var(--bg); border-radius: 3px; }
+    .select-options::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+
+    input[type="number"] { padding: 12px 15px; font-size: 1rem; font-weight: 600; }
+    .val-highlight { font-weight: bold; color: var(--primary); }
+
+    /* 开关 */
+    .toggle-container { display: flex; align-items: center; gap: 12px; background: var(--info-bg); padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px; }
+    .toggle-text { font-size: 0.9rem; font-weight: 600; color: var(--primary); }
+    .toggle-text span { font-size: 0.75rem; color: var(--success); font-weight: 500; display: block; }
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--success); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 1rem; display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; }
+    .btn-main:hover { filter: brightness(1.1); }
+    .btn-batch { background: #d946ef; } 
+    .btn-batch:hover { background: #c026d3; }
+
+    /* 信息展示区 */
+    .info-panel { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    
+    /* 批量导航栏 */
+    .batch-nav { display: none; justify-content: space-between; align-items: center; background: var(--info-bg); padding: 12px 20px; border-radius: 12px; border: 2px dashed var(--primary); margin-bottom: -5px; }
+    .batch-nav button { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s;}
+    .batch-nav button:hover { filter: brightness(1.1); }
+    .batch-nav button:disabled { background: var(--accent); cursor: not-allowed; opacity: 0.5; }
+    .batch-nav .status { font-weight: bold; color: var(--primary); font-size: 1.05rem; }
+
+    .profile-header { display: flex; align-items: center; gap: 20px; padding: 20px; background: var(--info-bg); border-radius: 16px; border: 1px solid var(--border); flex-wrap: wrap; }
+    .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); background: #cbd5e1; flex-shrink: 0; }
+    .profile-info { flex: 1; min-width: 0; }
+    .profile-info h3 { font-size: 1.5rem; margin-bottom: 5px; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 10px; }
+    .badge-idx { background: var(--primary); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; vertical-align: middle; }
+    
+    .profile-tags { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.85rem; color: var(--accent); font-weight: 500; }
+
+    .section-title { font-size: 0.9rem; font-weight: 700; color: var(--accent); margin-bottom: -10px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+    .section-title i { font-size: 1.1rem; color: var(--primary); width: 20px; text-align: center; }
+    
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    @media (max-width: 600px) { .data-grid { grid-template-columns: minmax(0, 1fr); } }
+
+    .data-box { background: var(--card); padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
+    .data-box.full { grid-column: 1 / -1; }
+    
+    .label { font-size: 0.7rem; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; display: block; }
+    .label i { color: var(--primary); margin-right: 6px; font-size: 0.75rem; width: 14px; text-align: center; opacity: 0.8; }
+    .value-container { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; width: 100%; }
+    .value { font-weight: 600; font-size: 1rem; word-break: break-all; overflow-wrap: break-word; flex: 1; min-width: 0; font-family: inherit; margin-top: 4px; }
+    .value.mono { font-family: var(--font-mono); font-size: 0.95rem; } 
+    
+    .copy-btn { background: transparent; color: var(--accent); border: none; padding: 6px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 1.1rem; flex-shrink: 0; }
+    .copy-btn:hover { color: var(--primary); background: var(--info-bg); }
+
+    .action-bar { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+    .action-bar button { flex: 1 1 auto; padding: 15px 10px; font-size: 0.95rem; }
+    
+    #map { height: 200px; width: 100%; border-radius: 12px; border: 1px solid var(--border); z-index: 1; }
+
+    .history-drawer { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
+    .history-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
+    .history-item { min-width: 150px; background: var(--info-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; font-size: 0.8rem; }
+    .history-item strong { display: block; color: var(--primary); margin-bottom: 4px; }
+    
+    .loading-text { animation: pulse 0.8s infinite alternate; color: var(--accent); font-family: var(--font-mono); }
+    @keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
+
+    [data-theme="dark"] .leaflet-layer, [data-theme="dark"] .leaflet-control-zoom-in, [data-theme="dark"] .leaflet-control-zoom-out, [data-theme="dark"] .leaflet-control-attribution { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+
+    /* Dark mode 下拉框适配 */
+    [data-theme="dark"] .select-options::-webkit-scrollbar-track { background: var(--card); }
+</style>
+</head>
+<body>
+
+<div class="container">
+<div class="header">
+    <h2><i class="fa-solid fa-id-card-clip"></i> 全美身份生成器 Ultimate</h2>
+    <button class="theme-toggle" onclick="toggleTheme()" title="切换日/夜模式"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
+</div>
+<div class="content">
+    <div class="controls">
+        <div class="toggle-container">
+            <label class="switch">
+                <input type="checkbox" id="taxFreeToggle" onchange="populateStates()">
+                <span class="slider"></span>
+            </label>
+            <div class="toggle-text">
+                仅限免税州
+                <span><i class="fa-solid fa-tag"></i> 0% 消费税完美账单</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>选择州 (State)</label>
+            <div class="custom-select" id="stateDropdown">
+                <div class="select-trigger"><span class="text">🎲 全美随机</span><i class="fa-solid fa-chevron-down arrow"></i></div>
+                <div class="select-options"></div>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>性别 (Gender)</label>
+            <div class="custom-select" id="genderDropdown">
+                <div class="select-trigger"><span class="text">🎲 随机 (Random)</span><i class="fa-solid fa-chevron-down arrow"></i></div>
+                <div class="select-options">
+                    <div class="select-option selected" data-value="random"><i class="fa-solid fa-dice"></i> 随机 (Random)</div>
+                    <div class="select-option" data-value="Male"><i class="fa-solid fa-mars"></i> 男 (Male)</div>
+                    <div class="select-option" data-value="Female"><i class="fa-solid fa-venus"></i> 女 (Female)</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>年龄范围: <span id="ageLab" class="val-highlight">22 - 45</span> 岁</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <input type="number" id="minAge" min="18" max="90" value="22" oninput="updateUI()">
+                <input type="number" id="maxAge" min="18" max="90" value="45" oninput="updateUI()">
+            </div>
+        </div>
+        
+        <div class="control-group" style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px;">
+            <label>生成数量 (Quantity - 支持批量预览与导出)</label>
+            <input type="number" id="genQty" min="1" max="5000" value="1" oninput="updateUI()" placeholder="输入需要生成的份数">
+        </div>
+        
+        <button id="mainBtn" class="btn-main" onclick="triggerGenerate()">
+            <i class="fa-solid fa-bolt"></i> 立即生成单份数据
+        </button>
+    </div>
+
+    <div class="info-panel">
+        
+        <!-- 批量预览导航栏 -->
+        <div class="batch-nav" id="batchNav">
+            <button id="btnPrev" onclick="navigateBatch(-1)"><i class="fa-solid fa-chevron-left"></i> 上一份</button>
+            <div class="status">当前预览: <span id="batchStatus">1 / 10</span></div>
+            <button id="btnNext" onclick="navigateBatch(1)">下一份 <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
+        <div class="profile-header">
+            <img id="res-avatar" class="avatar" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Avatar">
+            <div class="profile-info">
+                <h3>
+                    <span id="res-idx-badge" class="badge-idx" style="display:none;">#1</span>
+                    <span id="res-name">Identity Pro</span>
+                </h3>
+                <div class="profile-tags">
+                    <span id="res-gender"><i class="fa-solid fa-venus-mars"></i> ---</span> | 
+                    <span id="res-bday"><i class="fa-solid fa-cake-candles"></i> ---</span> | 
+                    <span id="res-age">-- yrs</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title"><i class="fa-solid fa-briefcase"></i> 工作与资产 (Employment)</div>
+        <div class="data-grid">
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-building"></i> 公司与头衔 (Company & Job)</span>
+                <div class="value-container">
+                    <span class="value" id="res-job">---</span>
+                    <button class="copy-btn" onclick="copyText('res-job', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-dollar-sign"></i> 年收入 (Annual Income)</span>
+                <div class="value-container">
+                    <span class="value mono" id="res-salary" style="color:var(--success);">---</span>
+                    <button class="copy-btn" onclick="copyText('res-salary', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="data-box full">
+                <span class="label"><i class="fa-solid fa-car"></i> 车辆信息 (Vehicle Info - 附车牌号)</span>
+                <div class="value-container">
+                    <span class="value" id="res-car">---</span>
+                    <button class="copy-btn" onclick="copyText('res-car', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title"><i class="fa-solid fa-shield-halved"></i> 账户资产 (Digital Assets)</div>
+        <div class="data-grid">
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-envelope"></i> 电子邮箱 (Email)</span>
+                <div class="value-container">
+                    <span class="value" id="res-email">---</span>
+                    <button class="copy-btn" onclick="copyText('res-email', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-key"></i> 账户密码 (Password)</span>
+                <div class="value-container">
+                    <span class="value mono" id="res-pass">---</span>
+                    <button class="copy-btn" onclick="copyText('res-pass', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-phone"></i> 美国电话 (Phone)</span>
+                <div class="value-container">
+                    <span class="value" id="res-phone">---</span>
+                    <button class="copy-btn" onclick="copyText('res-phone', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-fingerprint"></i> 社会安全码 (SSN)</span>
+                <div class="value-container">
+                    <span class="value mono" id="res-ssn">---</span>
+                    <button class="copy-btn" onclick="copyText('res-ssn', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title"><i class="fa-regular fa-credit-card"></i> 财务信息 (Finance Data)</div>
+        <div class="data-grid">
+            <div class="data-box full">
+                <span class="label"><i class="fa-solid fa-credit-card"></i> 虚拟信用卡 (Virtual Credit Card) - Luhn校验通过</span>
+                <div class="value-container">
+                    <div style="flex: 1; display: flex; flex-wrap: wrap; gap: 15px; align-items: baseline;">
+                        <span class="value mono" style="color: var(--primary); font-size: 1.1rem; flex: none;" id="res-cc">---</span>
+                        <span class="value mono" style="font-size: 0.85rem; color: var(--accent); flex: none;" id="res-cc-exp">EXP: --/--</span>
+                        <span class="value mono" style="font-size: 0.85rem; color: var(--accent); flex: none;" id="res-cc-cvv">CVV: ---</span>
+                    </div>
+                    <button class="copy-btn" onclick="copyCC(this)" title="复制完整卡片"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title"><i class="fa-solid fa-location-dot"></i> 物理地址 (Physical Address)</div>
+        <div class="data-grid">
+            <div class="data-box full">
+                <span class="label"><i class="fa-solid fa-map-marked-alt"></i> 完整账单地址 (Full Billing Address)</span>
+                <div class="value-container">
+                    <span class="value" id="res-addr">---</span>
+                    <button class="copy-btn" onclick="copyText('res-addr', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-road"></i> 街道 / 门牌 (Street)</span>
+                <div class="value-container">
+                    <span class="value" id="res-street">---</span>
+                    <button class="copy-btn" onclick="copyText('res-street', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-city"></i> 城市 (City)</span>
+                <div class="value-container">
+                    <span class="value" id="res-city">---</span>
+                    <button class="copy-btn" onclick="copyText('res-city', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-map"></i> 州省 (State)</span>
+                <div class="value-container">
+                    <span class="value" id="res-state">---</span>
+                    <button class="copy-btn" onclick="copyText('res-state', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="data-box">
+                <span class="label"><i class="fa-solid fa-mail-bulk"></i> 邮编 (Zip Code)</span>
+                <div class="value-container">
+                    <span class="value" id="res-zip">---</span>
+                    <button class="copy-btn" onclick="copyText('res-zip', this)"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="map"></div>
+
+        <div class="action-bar">
+            <button class="btn-main" style="flex: 2; background: var(--primary);" onclick="copyArchive()">
+                <i class="fa-solid fa-copy"></i> 一键复制 <span id="copyBtnTxt">当前档案</span>
+            </button>
+            <button class="btn-main" style="flex: 1; background: var(--excel);" onclick="triggerExportCSV()">
+                <i class="fa-solid fa-file-csv"></i> 导出 CSV
+            </button>
+            <button class="btn-main" style="flex: 1; background: #64748b;" onclick="triggerExportJSON()">
+                <i class="fa-solid fa-file-code"></i> 导出 JSON
+            </button>
+        </div>
+
+        <div class="history-drawer">
+            <div class="section-title" style="margin-bottom: 10px;"><i class="fa-solid fa-clock-rotate-left"></i> 最近生成 (History)</div>
+            <div class="history-list" id="history-container">
+                <div style="font-size: 0.8rem; color: var(--accent);">暂无记录...</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// --- 数据库 ---
+const states = [
+	{ name: "Alabama", abbr: "AL", zip: "35004", lat: 32.3182, lng: -86.9023, city: "Montgomery", area: "205" },
+	{ name: "Alaska", abbr: "AK", zip: "99501", lat: 61.2181, lng: -149.9003, city: "Anchorage", area: "907", taxFree: true },
+	{ name: "Arizona", abbr: "AZ", zip: "85001", lat: 33.4484, lng: -112.0740, city: "Phoenix", area: "602" },
+	{ name: "Arkansas", abbr: "AR", zip: "72201", lat: 34.7465, lng: -92.2896, city: "Little Rock", area: "501" },
+	{ name: "California", abbr: "CA", zip: "90001", lat: 34.0522, lng: -118.2437, city: "Los Angeles", area: "213" },
+	{ name: "Colorado", abbr: "CO", zip: "80201", lat: 39.7392, lng: -104.9903, city: "Denver", area: "303" },
+	{ name: "Connecticut", abbr: "CT", zip: "06101", lat: 41.7658, lng: -72.6734, city: "Hartford", area: "860" },
+	{ name: "Delaware", abbr: "DE", zip: "19901", lat: 39.1582, lng: -75.5244, city: "Dover", area: "302", taxFree: true },
+	{ name: "Florida", abbr: "FL", zip: "33101", lat: 25.7617, lng: -80.1918, city: "Miami", area: "305" },
+	{ name: "Georgia", abbr: "GA", zip: "30301", lat: 33.7490, lng: -84.3880, city: "Atlanta", area: "404" },
+	{ name: "Hawaii", abbr: "HI", zip: "96801", lat: 21.3069, lng: -157.8583, city: "Honolulu", area: "808" },
+	{ name: "Idaho", abbr: "ID", zip: "83701", lat: 43.6150, lng: -116.2023, city: "Boise", area: "208" },
+	{ name: "Illinois", abbr: "IL", zip: "60601", lat: 41.8781, lng: -87.6298, city: "Chicago", area: "312" },
+	{ name: "Indiana", abbr: "IN", zip: "46201", lat: 39.7684, lng: -86.1581, city: "Indianapolis", area: "317" },
+	{ name: "Iowa", abbr: "IA", zip: "50301", lat: 41.5868, lng: -93.6250, city: "Des Moines", area: "515" },
+	{ name: "Kansas", abbr: "KS", zip: "66101", lat: 39.1140, lng: -94.6275, city: "Kansas City", area: "913" },
+	{ name: "Kentucky", abbr: "KY", zip: "40201", lat: 38.2527, lng: -85.7585, city: "Louisville", area: "502" },
+	{ name: "Louisiana", abbr: "LA", zip: "70112", lat: 29.9511, lng: -90.0715, city: "New Orleans", area: "504" },
+	{ name: "Maine", abbr: "ME", zip: "04101", lat: 43.6591, lng: -70.2568, city: "Portland", area: "207" },
+	{ name: "Maryland", abbr: "MD", zip: "21201", lat: 39.2904, lng: -76.6122, city: "Baltimore", area: "410" },
+	{ name: "Massachusetts", abbr: "MA", zip: "02101", lat: 42.3601, lng: -71.0589, city: "Boston", area: "617" },
+	{ name: "Michigan", abbr: "MI", zip: "48201", lat: 42.3314, lng: -83.0458, city: "Detroit", area: "313" },
+	{ name: "Minnesota", abbr: "MN", zip: "55401", lat: 44.9778, lng: -93.2650, city: "Minneapolis", area: "612" },
+	{ name: "Mississippi", abbr: "MS", zip: "39201", lat: 32.2988, lng: -90.1848, city: "Jackson", area: "601" },
+	{ name: "Missouri", abbr: "MO", zip: "63101", lat: 38.6270, lng: -90.1994, city: "St. Louis", area: "314" },
+	{ name: "Montana", abbr: "MT", zip: "59601", lat: 46.5891, lng: -112.0391, city: "Helena", area: "406", taxFree: true },
+	{ name: "Nebraska", abbr: "NE", zip: "68101", lat: 41.2565, lng: -95.9345, city: "Omaha", area: "402" },
+	{ name: "Nevada", abbr: "NV", zip: "89101", lat: 36.1699, lng: -115.1398, city: "Las Vegas", area: "702" },
+	{ name: "New Hampshire", abbr: "NH", zip: "03301", lat: 42.9956, lng: -71.4548, city: "Manchester", area: "603", taxFree: true },
+	{ name: "New Jersey", abbr: "NJ", zip: "07101", lat: 40.7357, lng: -74.1724, city: "Newark", area: "973" },
+	{ name: "New Mexico", abbr: "NM", zip: "87101", lat: 35.0844, lng: -106.6504, city: "Albuquerque", area: "505" },
+	{ name: "New York", abbr: "NY", zip: "10001", lat: 40.7128, lng: -74.0060, city: "New York", area: "212" },
+	{ name: "North Carolina", abbr: "NC", zip: "27601", lat: 35.2271, lng: -80.8431, city: "Charlotte", area: "704" },
+	{ name: "North Dakota", abbr: "ND", zip: "58501", lat: 46.8083, lng: -100.7837, city: "Bismarck", area: "701" },
+	{ name: "Ohio", abbr: "OH", zip: "43201", lat: 39.9612, lng: -82.9988, city: "Columbus", area: "614" },
+	{ name: "Oklahoma", abbr: "OK", zip: "73101", lat: 35.4676, lng: -97.5164, city: "Oklahoma City", area: "405" },
+	{ name: "Oregon", abbr: "OR", zip: "97201", lat: 45.5152, lng: -122.6784, city: "Portland", area: "503", taxFree: true },
+	{ name: "Pennsylvania", abbr: "PA", zip: "19101", lat: 39.9526, lng: -75.1652, city: "Philadelphia", area: "215" },
+	{ name: "Rhode Island", abbr: "RI", zip: "02901", lat: 41.8240, lng: -71.4128, city: "Providence", area: "401" },
+	{ name: "South Carolina", abbr: "SC", zip: "29201", lat: 34.0007, lng: -81.0348, city: "Columbia", area: "803" },
+	{ name: "South Dakota", abbr: "SD", zip: "57101", lat: 43.5473, lng: -96.7283, city: "Sioux Falls", area: "605" },
+	{ name: "Tennessee", abbr: "TN", zip: "37201", lat: 36.1627, lng: -86.7816, city: "Nashville", area: "615" },
+	{ name: "Texas", abbr: "TX", zip: "73301", lat: 30.2672, lng: -97.7431, city: "Austin", area: "512" },
+	{ name: "Utah", abbr: "UT", zip: "84101", lat: 40.7608, lng: -111.8910, city: "Salt Lake City", area: "801" },
+	{ name: "Vermont", abbr: "VT", zip: "05601", lat: 44.4759, lng: -73.2121, city: "Burlington", area: "802" },
+	{ name: "Virginia", abbr: "VA", zip: "23201", lat: 37.5407, lng: -77.4360, city: "Richmond", area: "804" },
+	{ name: "Washington", abbr: "WA", zip: "98101", lat: 47.6062, lng: -122.3321, city: "Seattle", area: "206" },
+	{ name: "West Virginia", abbr: "WV", zip: "25301", lat: 38.3498, lng: -81.6326, city: "Charleston", area: "304" },
+	{ name: "Wisconsin", abbr: "WI", zip: "53201", lat: 43.0389, lng: -87.9065, city: "Milwaukee", area: "414" },
+	{ name: "Wyoming", abbr: "WY", zip: "82001", lat: 41.1400, lng: -104.8202, city: "Cheyenne", area: "307" }
+];
+
+const maleNames = ["James", "Robert", "John", "Michael", "David", "William", "Richard", "Joseph", "Thomas", "Charles", "Daniel", "Matthew", "Anthony", "Donald", "Paul", "Mark", "George", "Steven", "Kenneth", "Andrew"];
+const femaleNames = ["Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen", "Nancy", "Lisa", "Betty", "Margaret", "Sandra", "Ashley", "Kimberly", "Emily", "Donna", "Michelle"];
+const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson"];
+const streetNames = ["Maple St", "Oak Ave", "Washington Blvd", "Lakeview Dr", "Park Way", "Broadway", "Main St", "Sunset Blvd", "River Rd", "Chestnut St", "Pine Ln", "Cedar Ct", "Elm St", "Highland Ave", "Victoria Pl"];
+const emailDomains = ["gmail.com", "outlook.com", "yahoo.com", "hotmail.com", "icloud.com"];
+const jobs = ["Software Engineer", "Accountant", "Registered Nurse", "Project Manager", "Sales Associate", "Teacher", "Marketing Director", "Data Analyst", "Consultant", "HR Manager", "Graphic Designer", "Financial Analyst", "Operations Manager"];
+const compPrefix = ["Apex", "Nova", "Global", "Tech", "Prime", "Summit", "Nexus", "Pinnacle", "Dynamic", "Stellar", "Quantum"];
+const compSuffix = ["Solutions", "Corp", "Inc", "LLC", "Enterprises", "Group", "Partners", "Technologies"];
+const carMakes = ["Toyota Camry", "Honda Accord", "Ford F-150", "Chevrolet Silverado", "Tesla Model 3", "BMW 3 Series", "Nissan Altima", "Audi A4", "Hyundai Sonata", "Subaru Outback"];
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+// --- 全局变量 ---
+let map, marker, currentData = null, historyList = [];
+let batchData = [];
+let currentBatchIndex = 0;
+
+// --- 下拉框驱动 ---
+function setupSelect(id, onChg) {
+    const el = document.getElementById(id);
+    const trigger = el.querySelector('.select-trigger');
+    const options = el.querySelector('.select-options');
+    trigger.onclick = (e) => { e.stopPropagation(); closeAll(el); el.classList.toggle('active'); options.style.display = el.classList.contains('active') ? 'block' : 'none'; };
+    el.addEventListener('click', (e) => {
+        const opt = e.target.closest('.select-option');
+        if (opt) {
+            trigger.querySelector('.text').innerHTML = opt.innerHTML;
+            el.dataset.value = opt.dataset.value;
+            // 更新选中状态
+            el.querySelectorAll('.select-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            el.classList.remove('active'); options.style.display = 'none';
+            if (onChg) onChg(opt.dataset.value);
+        }
+    });
+}
+function closeAll(exc) { document.querySelectorAll('.custom-select').forEach(s => { if(s!==exc){s.classList.remove('active'); s.querySelector('.select-options').style.display='none'; } }); }
+document.addEventListener('click', () => closeAll());
+
+function init() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('themeIcon').className = savedTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+
+    const savedHistory = localStorage.getItem('identityHistory');
+    if (savedHistory) {
+        historyList = JSON.parse(savedHistory);
+        renderHistory();
+    }
+
+    // 初始化下拉框
+    setupSelect('stateDropdown');
+    setupSelect('genderDropdown', updateUI);
+    populateStates();
+    
+    map = L.map('map').setView([37.0902, -95.7129], 3);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+
+    triggerGenerate();
+}
+
+function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    const newTheme = isDark ? 'light' : 'dark';
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.getElementById('themeIcon').className = newTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+}
+
+function populateStates() {
+    const dropdown = document.getElementById('stateDropdown');
+    const optionsCont = dropdown.querySelector('.select-options');
+    const triggerText = dropdown.querySelector('.text');
+    const isTaxFree = document.getElementById('taxFreeToggle').checked;
+    optionsCont.innerHTML = '';
+    const defVal = isTaxFree ? 'random_tax_free' : 'random_all';
+    const defTxt = isTaxFree ? '🎯 随机免税州' : '🎲 全美随机';
+    dropdown.dataset.value = defVal; 
+    triggerText.innerHTML = defTxt;
+    optionsCont.innerHTML += `<div class="select-option selected" data-value="${defVal}"><i class="fa-solid fa-bullseye"></i> ${defTxt}</div>`;
+    states.forEach((s, i) => { 
+        if (!isTaxFree || s.taxFree) {
+            const icon = s.taxFree ? '<i class="fa-solid fa-tag" style="color: var(--success);"></i>' : '<i class="fa-solid fa-map-marker-alt"></i>';
+            optionsCont.innerHTML += `<div class="select-option" data-value="${i}">${icon} ${s.name} (${s.abbr})</div>`; 
+        }
+    });
+}
+
+function updateUI() {
+    let min = parseInt(document.getElementById('minAge').value) || 18;
+    let max = parseInt(document.getElementById('maxAge').value) || 45;
+    if(min > max) { document.getElementById('maxAge').value = min; max = min; }
+    document.getElementById('ageLab').innerText = `${min} - ${max}`;
+
+    let qtyInput = document.getElementById('genQty');
+    let qty = parseInt(qtyInput.value);
+    
+    const btn = document.getElementById('mainBtn');
+    if(qty > 1) {
+        btn.innerHTML = `<i class="fa-solid fa-rocket"></i> 批量生成 ${qty} 份并导出 CSV`;
+        btn.className = "btn-main btn-batch";
+    } else {
+        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> 立即生成单份数据`;
+        btn.className = "btn-main";
+    }
+}
+
+function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function rndNum(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pad(n) { return n < 10 ? '0'+n : n; }
+
+function generateCC() {
+    const isVisa = Math.random() > 0.5;
+    let partial = isVisa ? "4" : rnd(["51","52","53","54","55"]);
+    while(partial.length < 15) partial += Math.floor(Math.random() * 10);
+    let sum = 0, alt = true;
+    for(let i = 14; i >= 0; i--) {
+        let n = parseInt(partial.charAt(i));
+        if(alt) { n *= 2; if(n > 9) n -= 9; }
+        sum += n; alt = !alt;
+    }
+    let check = (10 - (sum % 10)) % 10;
+    return (partial + check).match(/.{1,4}/g).join(' ');
+}
+
+function genPassword() {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let pwd = rnd("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")) + rnd("abcdefghijklmnopqrstuvwxyz".split("")) + rnd("0123456789".split("")) + rnd("!@#$%^&*".split(""));
+    for(let i=0; i<8; i++) pwd += rnd(chars.split(""));
+    return pwd.split('').sort(()=>0.5-Math.random()).join(''); 
+}
+
+function createProfile(index = 1) {
+    const stateVal = document.getElementById('stateDropdown').dataset.value;
+    let state = (stateVal === 'random_all') ? rnd(states) : 
+                (stateVal === 'random_tax_free') ? rnd(states.filter(s=>s.taxFree)) : states[stateVal];
+
+    let minAge = parseInt(document.getElementById('minAge').value) || 18;
+    let maxAge = parseInt(document.getElementById('maxAge').value) || 45;
+    if (minAge > maxAge) { let temp = minAge; minAge = maxAge; maxAge = temp; }
+    
+    const genderChoice = document.getElementById('genderDropdown').dataset.value;
+
+    let gender = (genderChoice === "random") ? (Math.random() > 0.5 ? "Male" : "Female") : genderChoice;
+    let firstName = (gender === "Male") ? rnd(maleNames) : rnd(femaleNames);
+    let lastName = rnd(lastNames);
+    const fullName = `${firstName} ${lastName}`;
+    
+    const age = rndNum(minAge, maxAge);
+    const bdayObj = new Date();
+    bdayObj.setFullYear(bdayObj.getFullYear() - age);
+    bdayObj.setMonth(rndNum(0,11));
+    bdayObj.setDate(rndNum(1,28));
+    const bdayStr = `${bdayObj.getFullYear()}-${pad(bdayObj.getMonth()+1)}-${pad(bdayObj.getDate())}`;
+
+    const jobTitle = rnd(jobs);
+    const company = `${rnd(compPrefix)} ${rnd(compSuffix)}`;
+    const salary = `$${rndNum(45, 150)},000 / year`;
+    
+    const plate = `${rnd(letters.split(''))}${rnd(letters.split(''))}${rnd(letters.split(''))}-${rndNum(1000,9999)}`;
+    const car = `${rndNum(2010, 2024)} ${rnd(carMakes)} (Plate: ${plate})`;
+
+    const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${bdayObj.getFullYear()}@${rnd(emailDomains)}`;
+    const password = genPassword();
+    const phone = `(${state.area}) ${rndNum(200,999)}-${rndNum(1000,9999)}`;
+    const ssn = `${rndNum(101,899)}-${pad(rndNum(1,99))}-${rndNum(1001,9999)}`;
+    const cc = generateCC();
+    const exp = `${pad(rndNum(1,12))}/${rndNum(25,32)}`;
+    const cvv = rndNum(100, 999);
+
+    const streetNum = rndNum(100, 9999);
+    let street = `${streetNum} ${rnd(streetNames)}`;
+    if(Math.random() < 0.3) street += (Math.random()>0.5) ? ` Apt ${rndNum(1,99)}${rnd(["A","B","C"])}` : ` Ste ${rndNum(100,500)}`;
+    const zip = state.zip;
+    const fullAddr = `${street}, ${state.city}, ${state.abbr} ${zip}`;
+
+    const avatarUrl = `https://randomuser.me/api/portraits/${gender==='Male'?'men':'women'}/${rndNum(1,99)}.jpg`;
+
+    return {
+        _idx: index,
+        avatar: avatarUrl, name: fullName, gender: gender, age: age, bday: bdayStr,
+        job: `${jobTitle} @ ${company}`, salary: salary, car: car,
+        email: email, pass: password, phone: phone, ssn: ssn,
+        cc: cc, exp: exp, cvv: cvv,
+        fullAddr: fullAddr, street: street, city: state.city, state: state.name, abbr: state.abbr, zip: zip,
+        lat: state.lat + (Math.random() - 0.5) * 0.05, lng: state.lng + (Math.random() - 0.5) * 0.05
+    };
+}
+
+function triggerGenerate() {
+    let qtyInput = document.getElementById('genQty');
+    let qty = parseInt(qtyInput.value) || 1;
+    if (qty < 1) { qty = 1; qtyInput.value = 1; updateUI(); }
+    
+    if (qty === 1) {
+        batchData = []; // 清空批量模式
+        document.getElementById('batchNav').style.display = 'none';
+        document.getElementById('res-idx-badge').style.display = 'none';
+        
+        const els = document.querySelectorAll('.value');
+        els.forEach(el => { el.innerText = "0101101..."; el.classList.add('loading-text'); });
+        setTimeout(() => {
+            els.forEach(el => el.classList.remove('loading-text'));
+            currentData = createProfile(1);
+            renderUI(currentData);
+            saveHistory(currentData);
+        }, 400);
+    } else {
+        batchData = [];
+        for(let i=0; i<qty; i++) {
+            batchData.push(createProfile(i + 1));
+        }
+        
+        // 激活批量导航模式
+        currentBatchIndex = 0;
+        document.getElementById('batchNav').style.display = 'flex';
+        document.getElementById('res-idx-badge').style.display = 'inline-block';
+        updateBatchNavUI();
+        
+        currentData = batchData[0];
+        renderUI(currentData);
+        
+        // 批量导出使用强健的 Blob 模式
+        triggerExportCSV(true);
+        alert(`✅ 成功批量生成 ${qty} 份全美真实身份数据！\n文件已自动开始下载。`);
+    }
+}
+
+// 批量导航控制器
+function navigateBatch(step) {
+    let newIndex = currentBatchIndex + step;
+    if(newIndex >= 0 && newIndex < batchData.length) {
+        currentBatchIndex = newIndex;
+        currentData = batchData[currentBatchIndex];
+        updateBatchNavUI();
+        renderUI(currentData);
+    }
+}
+
+function updateBatchNavUI() {
+    document.getElementById('batchStatus').innerText = `${currentBatchIndex + 1} / ${batchData.length}`;
+    document.getElementById('btnPrev').disabled = (currentBatchIndex === 0);
+    document.getElementById('btnNext').disabled = (currentBatchIndex === batchData.length - 1);
+    
+    // 更新序号小标签
+    const badge = document.getElementById('res-idx-badge');
+    badge.innerText = `#${currentBatchIndex + 1}`;
+}
+
+function renderUI(d) {
+    document.getElementById('res-avatar').src = d.avatar;
+    document.getElementById('res-name').innerText = d.name;
+    document.getElementById('res-gender').innerHTML = d.gender === 'Male' ? '<i class="fa-solid fa-mars"></i> Male' : '<i class="fa-solid fa-venus"></i> Female';
+    document.getElementById('res-bday').innerText = d.bday;
+    document.getElementById('res-age').innerText = `${d.age} 岁`;
+
+    document.getElementById('res-job').innerText = d.job;
+    document.getElementById('res-salary').innerText = d.salary;
+    document.getElementById('res-car').innerText = d.car;
+
+    document.getElementById('res-email').innerText = d.email;
+    document.getElementById('res-pass').innerText = d.pass;
+    document.getElementById('res-phone').innerText = d.phone;
+    document.getElementById('res-ssn').innerText = d.ssn;
+
+    document.getElementById('res-cc').innerText = d.cc;
+    document.getElementById('res-cc-exp').innerText = `EXP: ${d.exp}`;
+    document.getElementById('res-cc-cvv').innerText = `CVV: ${d.cvv}`;
+
+    document.getElementById('res-addr').innerText = d.fullAddr;
+    document.getElementById('res-street').innerText = d.street;
+    document.getElementById('res-city').innerText = d.city;
+    document.getElementById('res-state').innerText = `${d.state} (${d.abbr})`;
+    document.getElementById('res-zip').innerText = d.zip;
+
+    if(marker) map.removeLayer(marker);
+    map.setView([d.lat, d.lng], 13);
+    marker = L.marker([d.lat, d.lng]).addTo(map).bindPopup(`<b>${d.name}</b><br>${d.fullAddr}`).openPopup();
+}
+
+function saveHistory(d) {
+    historyList.unshift(d);
+    if(historyList.length > 5) historyList.pop();
+    localStorage.setItem('identityHistory', JSON.stringify(historyList));
+    renderHistory();
+}
+
+function renderHistory() {
+    const container = document.getElementById('history-container');
+    if(historyList.length === 0) return;
+    container.innerHTML = '';
+    historyList.forEach((h, i) => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `<strong>${h.name}</strong>${h.abbr} - ${h.city}`;
+        div.onclick = () => { 
+            currentData = h; 
+            // 退出批量模式以防混乱
+            document.getElementById('batchNav').style.display = 'none';
+            document.getElementById('res-idx-badge').style.display = 'none';
+            batchData = []; 
+            renderUI(h); 
+        };
+        container.appendChild(div);
+    });
+}
+
+function copyText(elementId, btn) {
+    const text = document.getElementById(elementId).innerText;
+    if (text === '---' || text.includes('...')) return;
+    execCopy(text, btn);
+}
+
+function copyCC(btn) {
+    if(!currentData) return;
+    execCopy(`${currentData.cc} | ${currentData.exp} | ${currentData.cvv}`, btn);
+}
+
+function copyArchive() {
+    if(!currentData) return;
+    const d = currentData;
+    const text = `【全美身份档案 Ultimate】
+姓名: ${d.name} (${d.gender}, ${d.age}岁)
+生日: ${d.bday}
+SSN: ${d.ssn}
+
+-- 资产与职业 --
+公司职位: ${d.job}
+年收入: ${d.salary}
+登记车辆: ${d.car}
+
+-- 账户与联系方式 --
+邮箱: ${d.email}
+密码: ${d.pass}
+电话: ${d.phone}
+
+-- 虚拟信用卡 --
+卡号: ${d.cc}
+有效期: ${d.exp}
+安全码: ${d.cvv}
+
+-- 真实账单地址 --
+完整地址: ${d.fullAddr}`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        const icon = document.querySelector('.action-bar button i.fa-copy');
+        icon.className = 'fa-solid fa-check';
+        setTimeout(() => icon.className = 'fa-solid fa-copy', 1500);
+    }).catch(err => alert("复制失败"));
+}
+
+function execCopy(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+        const icon = btn.querySelector('i');
+        const origClass = icon.className;
+        icon.className = 'fa-solid fa-check';
+        icon.style.color = 'var(--success)'; 
+        setTimeout(() => { icon.className = origClass; icon.style.color = ''; }, 1500);
+    });
+}
+
+// === 核心数据导出机制重构 (Blob) 防止 URL 长度截断和 # 号吃字符问题 ===
+
+function triggerExportCSV(forceBatch = false) {
+    if (batchData.length > 1) {
+        exportBlobCSV(batchData, `US_Identities_Batch_${batchData.length}.csv`);
+    } else {
+        if (!currentData) return;
+        exportBlobCSV([currentData], `Identity_${currentData.name.replace(/ /g, "_")}.csv`);
+    }
+}
+
+function triggerExportJSON() {
+    if (batchData.length > 1) {
+        exportBlobJSON(batchData, `US_Identities_Batch_${batchData.length}.json`);
+    } else {
+        if (!currentData) return;
+        exportBlobJSON(currentData, `Identity_${currentData.name.replace(/ /g, "_")}.json`);
+    }
+}
+
+function exportBlobCSV(dataArray, filename) {
+    // 增加了一列 "序号(No.)"
+    const headers = ['序号(No.)', '姓名(Name)', '性别(Gender)', '年龄(Age)', '生日(Birthday)', '邮箱(Email)', '密码(Password)', '电话(Phone)', 'SSN', '信用卡号(Credit Card)', '有效期(EXP)', '安全码(CVV)', '职业(Job)', '年薪(Salary)', '车辆(Vehicle)', '街道(Street)', '城市(City)', '州(State)', '邮编(Zip)', '完整地址(Full Address)'];
+    
+    let csvRows = [headers.join(',')];
+    dataArray.forEach(d => {
+        const row = [
+            d._idx, d.name, d.gender, d.age, d.bday, d.email, `"${d.pass}"`, // 密码包裹引号防特殊字符出错
+            d.phone, d.ssn, d.cc, d.exp, d.cvv, 
+            `"${d.job}"`, `"${d.salary}"`, `"${d.car}"`, `"${d.street}"`, d.city, d.state, d.zip, `"${d.fullAddr}"`
+        ];
+        csvRows.push(row.join(','));
+    });
+
+    const csvContent = "\uFEFF" + csvRows.join('\n'); // 增加 Excel UTF-8 BOM 头
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, filename);
+}
+
+function exportBlobJSON(data, filename) {
+    const jsonStr = JSON.stringify(data, null, 4);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    downloadBlob(blob, filename);
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url); // 释放内存
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
