@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monolith 完整部署教程</title>
+  <style>
+    :root {
+      --bg:#0b1020; --bg2:#111827; --card:#121a2b; --text:#e8eefc; --muted:#aab7d4; --accent:#6ea8fe;
+      --ok:#4ade80; --warn:#fbbf24; --danger:#fb7185; --prebg:#0a1220; --pretext:#d7e4ff; --line:#ffffff14;
+      --btnbg:#16233b; --btntext:#eaf2ff; --shadow:0 12px 40px rgba(0,0,0,.12);
+    }
+    body.light {
+      --bg:#eef4ff; --bg2:#dfeaff; --card:#ffffff; --text:#0f1f3d; --muted:#44567c; --accent:#1d4ed8;
+      --ok:#15803d; --warn:#b45309; --danger:#dc2626; --prebg:#f4f7ff; --pretext:#10284a; --line:#00000016;
+      --btnbg:#edf3ff; --btntext:#10284a; --shadow:0 10px 30px rgba(37,99,235,.08);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);line-height:1.7;transition:background .2s ease,color .2s ease}
+    .wrap{max-width:1120px;margin:0 auto;padding:32px 20px 90px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;margin:18px 0;box-shadow:var(--shadow);transition:background .2s ease,border-color .2s ease,color .2s ease}
+    .hero{padding:28px;position:relative}
+    h1,h2,h3{line-height:1.25;color:var(--text)} h1{font-size:2rem;margin:0 0 10px} h2{margin-top:0} h3{color:var(--text)}
+    p,li{color:var(--muted)} strong{color:var(--text)} a{color:var(--accent)}
+    code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .code-wrap{position:relative;margin:12px 0}
+    pre{background:var(--prebg);border:1px solid var(--line);padding:14px 16px;border-radius:12px;overflow:auto;color:var(--pretext);white-space:pre-wrap;word-break:break-word;transition:background .2s ease,color .2s ease,border-color .2s ease}
+    .copy-btn,.theme-btn,.float-btn{border:1px solid var(--line);background:var(--btnbg);color:var(--btntext);border-radius:10px;padding:6px 10px;font-size:12px;cursor:pointer;transition:all .18s ease}
+    .copy-btn{position:absolute;top:10px;right:10px}
+    .copy-btn:hover,.theme-btn:hover,.float-btn:hover{transform:translateY(-1px)}
+    .copy-btn.success{background:#166534;border-color:#22c55e;color:#ecfdf5}
+    .theme-btn{position:absolute;right:24px;top:24px;font-size:14px;padding:8px 12px}
+    .tag{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(110,168,254,.15);color:var(--accent);margin-right:8px;font-size:.9rem}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)}
+    .toc a{text-decoration:none} .toc li{margin:6px 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+    .plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:18px}
+    .plan{border-radius:18px;padding:18px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02))}
+    body.light .plan{background:linear-gradient(180deg,rgba(29,78,216,.04),rgba(29,78,216,.02))}
+    .plan.default{outline:2px solid rgba(74,222,128,.35)} .plan.alt{outline:2px solid rgba(110,168,254,.25)} .plan.switch{outline:2px solid rgba(251,191,36,.35)} .plan.direct{outline:2px solid rgba(251,113,133,.28)}
+    .plan h3{margin:0 0 8px}
+    .badge{display:inline-block;font-size:12px;padding:4px 8px;border-radius:999px;margin-bottom:8px}
+    .b-ok{background:rgba(74,222,128,.14);color:#bdf7ce}.b-alt{background:rgba(110,168,254,.14);color:#c9ddff}.b-warn{background:rgba(251,191,36,.14);color:#ffe4a3}.b-danger{background:rgba(251,113,133,.14);color:#ffc5d0}
+    body.light .b-ok{color:#166534} body.light .b-alt{color:#1d4ed8} body.light .b-warn{color:#92400e} body.light .b-danger{color:#be123c}
+    .mini-list{padding-left:18px;margin:10px 0}
+    .compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+    .callout{padding:14px 16px;border-radius:14px;border:1px solid var(--line);margin:12px 0}
+    .callout.warn{background:rgba(251,191,36,.08)} .callout.ok{background:rgba(74,222,128,.08)} .callout.info{background:rgba(110,168,254,.08)}
+    .floating-nav{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px;z-index:999;align-items:flex-end}
+    .float-panel{position:absolute;right:56px;bottom:0;width:200px;max-height:52vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:var(--shadow);display:none;z-index:1000}
+    .float-panel.show{display:block}
+    .float-panel h4{margin:0 0 8px;color:var(--text);font-size:14px}
+    .float-panel a{display:block;padding:6px 8px;border-radius:8px;color:var(--accent);text-decoration:none;font-size:13px}
+    .float-panel a.active{background:rgba(110,168,254,.14);color:var(--text);font-weight:600}
+    .section-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    .section-links a{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--btnbg);color:var(--btntext);text-decoration:none;font-size:13px}
+    @media (max-width: 800px){ .theme-btn{position:static;margin-top:14px} .hero{padding-top:24px} .floating-nav{right:12px;bottom:12px} .float-panel{right:52px;left:auto;width:180px;max-height:46vh} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card hero" id="top">
+      <span class="tag">Monolith</span>
+      <span class="tag">本地常驻部署</span>
+      <span class="tag">OpenClaw 实操版</span>
+      <button class="theme-btn" id="themeToggle">🔘 亮色模式</button>
+      <h1>Monolith 完整部署教程</h1>
+      <p>这是一份针对 <strong>Monolith</strong> 项目的完整部署说明，重点覆盖：<strong>项目结构</strong>、<strong>环境要求</strong>、<strong>本地常驻部署（默认：nohup）</strong>、<strong>systemd 备选方案</strong>、<strong>4 切 5 的操作</strong>、<strong>直接使用 5 的操作</strong>、<strong>后台访问</strong>、<strong>日志与排障</strong>、<strong>生产化建议</strong>。</p>
+      <div class="callout info"><strong>一眼看懂：</strong> 默认推荐先用 <strong>4（nohup）</strong> 快速跑通；想长期稳定运行，再切到 <strong>5（systemd）</strong>。</div>
+      <div class="section-links">
+        <a href="#steps">默认方案 4：nohup 后台常驻</a>
+        <a href="#systemd">备选方案 5：systemd 常驻服务</a>
+        <a href="#switch">4 切 5：从 nohup 切到 systemd</a>
+        <a href="#direct5">直接用 5：跳过 4 直接 systemd</a>
+        <a href="#access">后台入口与访问地址</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>部署方案总览</h2>
+      <div class="plan-grid">
+        <div class="plan default"><div class="badge b-ok">默认推荐</div><h3>4：nohup 后台常驻</h3><p>最快跑起来，不占当前终端窗口，适合先验证项目能不能跑。</p><ul class="mini-list"><li>优点：简单、直接、上手快</li><li>缺点：不开机自启，不自动拉起</li><li>适合：第一次部署 / 快速试跑</li></ul></div>
+        <div class="plan alt"><div class="badge b-alt">备选方案</div><h3>5：systemd 常驻服务</h3><p>更正式的托管方式，适合长期运行。</p><ul class="mini-list"><li>优点：开机自启、崩了自动拉起</li><li>缺点：比 nohup 多一步 service 配置</li><li>适合：稳定长期运行</li></ul></div>
+        <div class="plan switch"><div class="badge b-warn">迁移路径</div><h3>4 切 5</h3><p>先用 4 跑通，再停掉 4，切换到 5。</p><ul class="mini-list"><li>关键点：先停 4，再启 5</li><li>不要同时运行，避免端口冲突</li></ul></div>
+        <div class="plan direct"><div class="badge b-danger">直接上长期方案</div><h3>直接使用 5</h3><p>跳过 4，直接用 systemd 部署。</p><ul class="mini-list"><li>适合：你一开始就要长期运行</li><li>前提：你接受稍复杂一点的配置</li></ul></div>
+      </div>
+    </div>
+
+    <div class="card toc">
+      <h2>目录</h2>
+      <ol>
+        <li><a href="#overview">项目说明</a></li><li><a href="#paths">当前服务器部署位置</a></li><li><a href="#requirements">环境要求</a></li><li><a href="#steps">完整部署步骤（4：默认方案 nohup）</a></li><li><a href="#systemd">5：备选方案 systemd</a></li><li><a href="#switch">4 切 5：从 nohup 切换到 systemd</a></li><li><a href="#direct5">直接使用 5：不走 4，直接 systemd 部署</a></li><li><a href="#access">访问地址与后台入口</a></li><li><a href="#logs">日志、PID、停止与重启</a></li><li><a href="#issues">常见问题</a></li><li><a href="#production">生产化建议</a></li>
+      </ol>
+    </div>
+
+    <div class="card" id="overview"><h2>1. 项目说明</h2><p>Monolith 原生是一个 <strong>Cloudflare Pages + Cloudflare Workers</strong> 架构的博客系统。官方推荐方式并不是传统 Docker 长驻服务，但可以通过 <strong>本地开发模式长期后台运行</strong> 的方式，在 VPS 上实现可持续访问。</p><div class="grid"><div><strong>前端</strong><br><span>Vite + React，默认端口 5173</span></div><div><strong>后端</strong><br><span>Wrangler dev / Hono，默认端口 8787</span></div><div><strong>数据库</strong><br><span>本地 D1（Wrangler local）</span></div><div><strong>运行方式</strong><br><span>4=nohup；5=systemd</span></div></div></div>
+
+    <div class="card" id="paths"><h2>2. 当前服务器部署位置</h2><div class="code-wrap"><button class="copy-btn">复制</button><pre>/root/docker/Monolith</pre></div><p>当前已使用的关键文件/目录：</p><div class="code-wrap"><button class="copy-btn">复制</button><pre>/root/docker/Monolith/client
+/root/docker/Monolith/server
+/root/docker/Monolith/server/.dev.vars
+/root/docker/Monolith/runlogs/server.log
+/root/docker/Monolith/runlogs/client.log
+/root/docker/Monolith/runlogs/server.pid
+/root/docker/Monolith/runlogs/client.pid</pre></div></div>
+
+    <div class="card" id="requirements"><h2>3. 环境要求</h2><ul><li>Node.js 18+（推荐更高版本）</li><li>npm</li><li>能够访问外网拉取 npm 包</li><li>服务器开放前端访问端口（当前是 5173）</li></ul><div class="callout warn"><strong>注意：</strong>这是本地常驻部署，不是官方 Cloudflare 生产部署方案。</div></div>
+
+    <div class="card" id="steps"><h2>4. 完整部署步骤（默认方案：nohup 后台常驻）</h2><div class="callout ok"><strong>默认路线：</strong>如果你只是先把项目跑起来，优先走 4。最省事。</div><h3>步骤 1：克隆项目</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cd /root
+git clone https://github.com/one-ea/Monolith docker/Monolith</pre></div><h3>步骤 2：安装依赖</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cd /root/docker/Monolith
+npm install</pre></div><h3>步骤 3：创建本地开发环境变量</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cd /root/docker/Monolith/server
+cat > .dev.vars <<'EOF'
+ADMIN_PASSWORD=admin123456
+JWT_SECRET=monolith_local_jwt_secret_2026
+EOF</pre></div><h3>步骤 4：初始化本地数据库</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cd /root/docker/Monolith/server
+npm run db:migrate:local
+npm run db:seed:local</pre></div><h3>步骤 5：后台启动后端</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>mkdir -p /root/docker/Monolith/runlogs
+cd /root/docker/Monolith/server
+nohup npm run dev > /root/docker/Monolith/runlogs/server.log 2>&1 &
+echo $! > /root/docker/Monolith/runlogs/server.pid</pre></div><h3>步骤 6：后台启动前端</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cd /root/docker/Monolith/client
+nohup npm run dev -- --host 0.0.0.0 > /root/docker/Monolith/runlogs/client.log 2>&1 &
+echo $! > /root/docker/Monolith/runlogs/client.pid</pre></div><h3>步骤 7：验证服务</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>curl -I http://127.0.0.1:5173
+curl -I http://127.0.0.1:8787</pre></div><div class="callout warn"><strong>重要提示：</strong>4 和 5 可以在文件层面共存，但<strong>不要同时运行</strong>。否则会抢占同一个端口（5173 / 8787）。</div></div>
+
+    <div class="card" id="systemd"><h2>5. 备选方案：systemd 常驻服务</h2><div class="callout info"><strong>适合长期运行：</strong>如果你更看重开机自启、自动恢复、标准化托管，就选 5。</div><h3>5.1 创建后端 service</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cat > /etc/systemd/system/monolith-server.service <<'EOF'
+[Unit]
+Description=Monolith Server (Wrangler Dev)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/docker/Monolith/server
+ExecStart=/usr/bin/npm run dev -- --ip 0.0.0.0 --port 8787
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=development
+
+[Install]
+WantedBy=multi-user.target
+EOF</pre></div><h3>5.2 创建前端 service</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cat > /etc/systemd/system/monolith-client.service <<'EOF'
+[Unit]
+Description=Monolith Client (Vite Dev)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/docker/Monolith/client
+ExecStart=/usr/bin/npm run dev -- --host 0.0.0.0 --port 5173
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=development
+
+[Install]
+WantedBy=multi-user.target
+EOF</pre></div><h3>5.3 重新加载并启动</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>systemctl daemon-reload
+systemctl enable monolith-server monolith-client
+systemctl start monolith-server monolith-client</pre></div></div>
+
+    <div class="card" id="switch"><h2>6. 4 切 5：从 nohup 切换到 systemd</h2><div class="callout warn"><strong>推荐迁移方式：</strong>先用 4 跑通，再切到 5。迁移时记住一句话：<strong>先停 4，再启 5</strong>。</div><h3>6.1 先停止 4（nohup）</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>kill $(cat /root/docker/Monolith/runlogs/server.pid) || true
+kill $(cat /root/docker/Monolith/runlogs/client.pid) || true</pre></div><h3>6.2 确认端口释放</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>ss -lntp | grep -E ':5173|:8787' || true</pre></div><h3>6.3 按第 5 节创建 systemd service 文件</h3><p>也就是先执行 <strong>5.1 + 5.2</strong>。</p><h3>6.4 启用并启动 5（systemd）</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>systemctl daemon-reload
+systemctl enable monolith-server monolith-client
+systemctl start monolith-server monolith-client</pre></div><h3>6.5 检查状态</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>systemctl status monolith-server
+systemctl status monolith-client</pre></div></div>
+
+    <div class="card" id="direct5"><h2>7. 直接使用 5：不走 4，直接 systemd 部署</h2><div class="callout ok"><strong>适合你从一开始就要长期运行：</strong>直接用 5，少一次后续迁移。</div><h3>7.1 克隆项目并安装依赖</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cd /root
+git clone https://github.com/one-ea/Monolith docker/Monolith
+cd /root/docker/Monolith
+npm install</pre></div><h3>7.2 创建环境变量并初始化数据库</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cd /root/docker/Monolith/server
+cat > .dev.vars <<'EOF'
+ADMIN_PASSWORD=admin123456
+JWT_SECRET=monolith_local_jwt_secret_2026
+EOF
+npm run db:migrate:local
+npm run db:seed:local</pre></div><h3>7.3 创建 service 文件</h3><p>直接执行下面两段命令，分别创建后端和前端的 systemd service：</p><p><strong>后端 service（monolith-server.service）</strong></p><div class="code-wrap"><button class="copy-btn">复制</button><pre>cat > /etc/systemd/system/monolith-server.service <<'EOF'
+[Unit]
+Description=Monolith Server (Wrangler Dev)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/docker/Monolith/server
+ExecStart=/usr/bin/npm run dev -- --ip 0.0.0.0 --port 8787
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=development
+
+[Install]
+WantedBy=multi-user.target
+EOF</pre></div><p><strong>前端 service（monolith-client.service）</strong></p><div class="code-wrap"><button class="copy-btn">复制</button><pre>cat > /etc/systemd/system/monolith-client.service <<'EOF'
+[Unit]
+Description=Monolith Client (Vite Dev)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/docker/Monolith/client
+ExecStart=/usr/bin/npm run dev -- --host 0.0.0.0 --port 5173
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=development
+
+[Install]
+WantedBy=multi-user.target
+EOF</pre></div><h3>7.4 启动 systemd 服务</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>systemctl daemon-reload
+systemctl enable monolith-server monolith-client
+systemctl start monolith-server monolith-client</pre></div><h3>7.5 验证</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>systemctl status monolith-server
+systemctl status monolith-client
+curl -I http://127.0.0.1:5173
+curl -I http://127.0.0.1:8787</pre></div></div>
+
+    <div class="card" id="access"><h2>8. 访问地址与后台入口</h2><div class="compare"><div><p>前端访问地址：</p><div class="code-wrap"><button class="copy-btn">复制</button><pre>http://192.3.179.10:5173/</pre></div></div><div><p>后台入口：</p><div class="code-wrap"><button class="copy-btn">复制</button><pre>http://192.3.179.10:5173/admin</pre></div></div></div><p>管理员密码：</p><div class="code-wrap"><button class="copy-btn">复制</button><pre>admin123456</pre></div><p>后端接口：</p><div class="code-wrap"><button class="copy-btn">复制</button><pre>http://127.0.0.1:8787</pre></div></div>
+
+    <div class="card" id="logs"><h2>9. 日志、PID、停止与重启</h2><h3>查看 nohup 日志</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>tail -f /root/docker/Monolith/runlogs/server.log
+tail -f /root/docker/Monolith/runlogs/client.log</pre></div><h3>查看 PID</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>cat /root/docker/Monolith/runlogs/server.pid
+cat /root/docker/Monolith/runlogs/client.pid</pre></div><h3>停止 nohup 服务</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>kill $(cat /root/docker/Monolith/runlogs/server.pid)
+kill $(cat /root/docker/Monolith/runlogs/client.pid)</pre></div><h3>查看 systemd 日志</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>journalctl -u monolith-server -f
+journalctl -u monolith-client -f</pre></div><h3>重启 systemd 服务</h3><div class="code-wrap"><button class="copy-btn">复制</button><pre>systemctl restart monolith-server monolith-client</pre></div></div>
+
+    <div class="card" id="issues"><h2>10. 常见问题</h2><h3>Q1：4 和 5 可以共存吗？</h3><p><strong>配置文件和教程步骤可以共存</strong>，但<strong>运行中的服务不要共存</strong>。因为它们会抢同一组端口。</p><h3>Q2：什么时候用 4？什么时候用 5？</h3><p>想快速试跑，用 4。想长期运行、开机自启、自动恢复，用 5。</p><h3>Q3：如果我已经在跑 4，还能切到 5 吗？</h3><p>可以，按第 6 节操作：<strong>先停 4，再启 5</strong>。</p></div>
+
+    <div class="card" id="production"><h2>11. 生产化建议</h2><ul><li>长期运行优先用 <strong>systemd</strong></li><li>用 <strong>Nginx / Caddy</strong> 反代前端和 API</li><li>给前端加域名，例如 <code>blog.example.com</code></li><li>限制后台入口访问来源，增强安全</li><li>将默认密码改成强密码</li></ul></div>
+
+    <div class="card" id="bottom"><h2>快速跳转</h2><div class="section-links"><a href="#top">回顶部</a><a href="#steps">默认方案 4：nohup 后台常驻</a><a href="#systemd">备选方案 5：systemd 常驻服务</a><a href="#switch">4 切 5：从 nohup 切到 systemd</a><a href="#direct5">直接用 5：跳过 4 直接 systemd</a><a href="#access">后台入口与访问地址</a><a href="#logs">日志 / PID / 重启</a><a href="#issues">FAQ / 常见问题</a></div></div>
+  </div>
+
+  <div class="floating-nav">
+    <div class="float-panel" id="floatPanel">
+      <h4>快速跳转</h4>
+      <a href="#top">顶部</a>
+      <a href="#steps">4：nohup 后台常驻</a>
+      <a href="#systemd">5：systemd 常驻服务</a>
+      <a href="#switch">4 切 5：切换到 systemd</a>
+      <a href="#direct5">直接用 5：直接 systemd</a>
+      <a href="#access">访问地址与后台入口</a>
+      <a href="#logs">日志 / PID / 重启</a>
+      <a href="#issues">FAQ / 常见问题</a>
+      <a href="#bottom">底部导航</a>
+    </div>
+    <button class="float-btn" id="navToggle">章节</button>
+    <button class="float-btn" id="toTop">顶部</button>
+    <button class="float-btn" id="toBottom">底部</button>
+  </div>
+
+  <script>
+    const themeToggle = document.getElementById('themeToggle');
+    const savedTheme = localStorage.getItem('monolith-guide-theme');
+    if (savedTheme === 'light') {
+      document.body.classList.add('light');
+      if (themeToggle) themeToggle.textContent = '🔘 暗色模式';
+    }
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('light');
+        const isLight = document.body.classList.contains('light');
+        localStorage.setItem('monolith-guide-theme', isLight ? 'light' : 'dark');
+        themeToggle.textContent = isLight ? '🔘 暗色模式' : '🔘 亮色模式';
+      });
+    }
+
+    function fallbackCopyText(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pre = btn.parentElement.querySelector('pre');
+        const text = pre.innerText;
+        const old = btn.textContent;
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            btn.textContent = '已复制';
+            btn.classList.add('success');
+          } else {
+            const ok = fallbackCopyText(text);
+            btn.textContent = ok ? '已复制' : '手动复制';
+            if (ok) btn.classList.add('success');
+          }
+        } catch (e) {
+          const ok = fallbackCopyText(text);
+          btn.textContent = ok ? '已复制' : '手动复制';
+          if (ok) btn.classList.add('success');
+        }
+        setTimeout(() => { btn.textContent = old; btn.classList.remove('success'); }, 1500);
+      });
+    });
+
+    const panel = document.getElementById('floatPanel');
+    const navToggle = document.getElementById('navToggle');
+    navToggle.addEventListener('click', () => panel.classList.toggle('show'));
+    document.getElementById('toTop').addEventListener('click', () => window.scrollTo({top:0,behavior:'smooth'}));
+    document.getElementById('toBottom').addEventListener('click', () => window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}));
+    panel.querySelectorAll('a').forEach(a => a.addEventListener('click', () => panel.classList.remove('show')));
+    document.addEventListener('click', (e) => {
+      if (!panel.contains(e.target) && !navToggle.contains(e.target)) panel.classList.remove('show');
+    });
+
+    const sectionMap = [
+      ['#top','top'], ['#steps','steps'], ['#systemd','systemd'], ['#switch','switch'], ['#direct5','direct5'], ['#access','access'], ['#logs','logs'], ['#issues','issues'], ['#bottom','bottom']
+    ];
+    const linkMap = new Map(Array.from(panel.querySelectorAll('a')).map(a => [a.getAttribute('href').slice(1), a]));
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter(e => e.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio);
+      if (!visible.length) return;
+      const id = visible[0].target.id;
+      panel.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+      const active = linkMap.get(id);
+      if (active) active.classList.add('active');
+    }, { rootMargin: '-20% 0px -60% 0px', threshold: [0.1, 0.3, 0.6] });
+    sectionMap.forEach(([,id]) => { const el = document.getElementById(id); if (el) observer.observe(el); });
+  </script>
+</body>
+</html>
