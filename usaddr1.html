@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全美身份 & 真实地址生成器 Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    :root {
+        --primary: #4f46e5;
+        --bg: #f3f4f6;
+        --card: #ffffff;
+        --text: #111827;
+        --accent: #6b7280;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 900px;
+        background: var(--card);
+        border-radius: 24px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .header {
+        padding: 25px;
+        background: #1e1b4b;
+        color: white;
+        text-align: center;
+    }
+
+    .content { padding: 30px; display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px; }
+    @media (max-width: 768px) { .content { grid-template-columns: 1fr; } }
+
+    /* 控制面板 */
+    .controls {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .control-group { margin-bottom: 20px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--accent); }
+    
+    select, input[type="range"] {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        font-family: inherit;
+    }
+
+    .age-val { font-weight: bold; color: var(--primary); }
+
+    /* 信息展示 */
+    .info-card { display: flex; flex-direction: column; gap: 15px; }
+    .data-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    .data-box {
+        background: #fff;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .data-box.full { grid-column: span 2; }
+    .label { font-size: 0.7rem; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; display: block;}
+    .value { font-weight: 600; font-size: 1rem; word-break: break-all; }
+
+    #map { height: 250px; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 10px; }
+
+    button {
+        width: 100%;
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 15px;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        margin-top: 10px;
+    }
+    button:hover { filter: brightness(1.2); }
+</style>
+</head>
+<body>
+
+<div class="container">
+<div class="header">
+<h2><i class="fa-solid fa-flag-usa"></i> 高级美国身份生成器</h2>
+</div>
+<div class="content">
+    <div class="controls">
+        <div class="control-group">
+            <label>选择州 (State)</label>
+            <select id="stateSelect"></select>
+        </div>
+        <!-- 新增性别选择 -->
+        <div class="control-group">
+            <label>性别 (Gender)</label>
+            <select id="genderSelect">
+                <option value="random">随机 (Random)</option>
+                <option value="Male">男 (Male)</option>
+                <option value="Female">女 (Female)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>最小年龄: <span id="minAgeLab" class="age-val">18</span></label>
+            <input type="range" id="minAge" min="1" max="90" value="18" oninput="updateAge()">
+        </div>
+        <div class="control-group">
+            <label>最大年龄: <span id="maxAgeLab" class="age-val">65</span></label>
+            <input type="range" id="maxAge" min="1" max="90" value="65" oninput="updateAge()">
+        </div>
+        <button onclick="generate()">
+            <i class="fa-solid fa-dice"></i> 立即生成
+        </button>
+    </div>
+
+    <div class="info-card">
+        <div class="data-row">
+            <div class="data-box">
+                <span class="label">姓名</span>
+                <span class="value" id="res-name">---</span>
+            </div>
+            <div class="data-box">
+                <span class="label">性别</span>
+                <span class="value" id="res-gender">---</span>
+            </div>
+        </div>
+        <div class="data-row">
+            <div class="data-box">
+                <span class="label">生日</span>
+                <span class="value" id="res-bday">---</span>
+            </div>
+            <div class="data-box">
+                <span class="label">电话 (虚拟)</span>
+                <span class="value" id="res-phone">---</span>
+            </div>
+        </div>
+        <div class="data-box full">
+            <span class="label">真实地理位置</span>
+            <span class="value" id="res-addr">---</span>
+        </div>
+        <div id="map"></div>
+    </div>
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const states = [
+	{ name: "Alabama", abbr: "AL", zip: "35004", lat: 32.3182, lng: -86.9023 },
+	{ name: "Alaska", abbr: "AK", zip: "99501", lat: 61.3707, lng: -152.4044 },
+	{ name: "Arizona", abbr: "AZ", zip: "85001", lat: 33.7298, lng: -111.4312 },
+	{ name: "Arkansas", abbr: "AR", zip: "72201", lat: 34.9697, lng: -92.3731 },
+	{ name: "California", abbr: "CA", zip: "90001", lat: 36.1162, lng: -119.6816 },
+	{ name: "Colorado", abbr: "CO", zip: "80201", lat: 39.0598, lng: -105.3111 },
+	{ name: "Connecticut", abbr: "CT", zip: "06101", lat: 41.5978, lng: -72.7554 },
+	{ name: "Delaware", abbr: "DE", zip: "19901", lat: 38.9108, lng: -75.5277 },
+	{ name: "Florida", abbr: "FL", zip: "33101", lat: 27.7663, lng: -81.6868 },
+	{ name: "Georgia", abbr: "GA", zip: "30301", lat: 33.0406, lng: -83.6431 },
+	{ name: "Hawaii", abbr: "HI", zip: "96801", lat: 21.0943, lng: -157.4983 },
+	{ name: "Idaho", abbr: "ID", zip: "83701", lat: 44.2405, lng: -114.4788 },
+	{ name: "Illinois", abbr: "IL", zip: "60601", lat: 40.3495, lng: -88.9861 },
+	{ name: "Indiana", abbr: "IN", zip: "46201", lat: 39.8494, lng: -86.2583 },
+	{ name: "Iowa", abbr: "IA", zip: "50301", lat: 42.0115, lng: -93.2105 },
+	{ name: "Kansas", abbr: "KS", zip: "66101", lat: 38.5266, lng: -96.7265 },
+	{ name: "Kentucky", abbr: "KY", zip: "40201", lat: 37.6681, lng: -84.6701 },
+	{ name: "Louisiana", abbr: "LA", zip: "70112", lat: 31.1695, lng: -91.8678 },
+	{ name: "Maine", abbr: "ME", zip: "04101", lat: 44.6939, lng: -69.3819 },
+	{ name: "Maryland", abbr: "MD", zip: "21201", lat: 39.0639, lng: -76.8021 },
+	{ name: "Massachusetts", abbr: "MA", zip: "02101", lat: 42.2302, lng: -71.5301 },
+	{ name: "Michigan", abbr: "MI", zip: "48201", lat: 43.3266, lng: -84.5361 },
+	{ name: "Minnesota", abbr: "MN", zip: "55401", lat: 45.6945, lng: -93.9002 },
+	{ name: "Mississippi", abbr: "MS", zip: "39201", lat: 32.7416, lng: -89.6787 },
+	{ name: "Missouri", abbr: "MO", zip: "63101", lat: 38.4561, lng: -92.2884 },
+	{ name: "Montana", abbr: "MT", zip: "59601", lat: 46.9219, lng: -110.4544 },
+	{ name: "Nebraska", abbr: "NE", zip: "68101", lat: 41.1254, lng: -98.2681 },
+	{ name: "Nevada", abbr: "NV", zip: "89101", lat: 38.3135, lng: -117.0554 },
+	{ name: "New Hampshire", abbr: "NH", zip: "03301", lat: 43.4525, lng: -71.5639 },
+	{ name: "New Jersey", abbr: "NJ", zip: "07101", lat: 40.2989, lng: -74.5210 },
+	{ name: "New Mexico", abbr: "NM", zip: "87101", lat: 34.8405, lng: -106.2485 },
+	{ name: "New York", abbr: "NY", zip: "10001", lat: 42.1657, lng: -74.9481 },
+	{ name: "North Carolina", abbr: "NC", zip: "27601", lat: 35.6301, lng: -79.8064 },
+	{ name: "North Dakota", abbr: "ND", zip: "58501", lat: 47.5289, lng: -99.7840 },
+	{ name: "Ohio", abbr: "OH", zip: "43201", lat: 40.3888, lng: -82.7649 },
+	{ name: "Oklahoma", abbr: "OK", zip: "73101", lat: 35.5653, lng: -96.9289 },
+	{ name: "Oregon", abbr: "OR", zip: "97201", lat: 44.5720, lng: -122.0709 },
+	{ name: "Pennsylvania", abbr: "PA", zip: "19101", lat: 40.5908, lng: -77.2098 },
+	{ name: "Rhode Island", abbr: "RI", zip: "02901", lat: 41.6809, lng: -71.5118 },
+	{ name: "South Carolina", abbr: "SC", zip: "29201", lat: 33.8569, lng: -80.9450 },
+	{ name: "South Dakota", abbr: "SD", zip: "57101", lat: 44.2998, lng: -99.4388 },
+	{ name: "Tennessee", abbr: "TN", zip: "37201", lat: 35.7478, lng: -86.6923 },
+	{ name: "Texas", abbr: "TX", zip: "73301", lat: 31.0545, lng: -97.5635 },
+	{ name: "Utah", abbr: "UT", zip: "84101", lat: 40.1500, lng: -111.8624 },
+	{ name: "Vermont", abbr: "VT", zip: "05601", lat: 44.0459, lng: -72.7107 },
+	{ name: "Virginia", abbr: "VA", zip: "23201", lat: 37.7693, lng: -78.1700 },
+	{ name: "Washington", abbr: "WA", zip: "98101", lat: 47.4009, lng: -121.4905 },
+	{ name: "West Virginia", abbr: "WV", zip: "25301", lat: 38.4912, lng: -80.9545 },
+	{ name: "Wisconsin", abbr: "WI", zip: "53201", lat: 44.2685, lng: -89.6165 },
+	{ name: "Wyoming", abbr: "WY", zip: "82001", lat: 42.7560, lng: -107.3025 }
+];
+
+// 分别定义男女性名字
+const maleFirstNames = ["James", "Robert", "John", "Michael", "William", "David", "Richard", "Joseph", "Thomas", "Charles", "Christopher", "Daniel", "Matthew", "Anthony", "Mark"];
+const femaleFirstNames = ["Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen", "Nancy", "Lisa", "Betty", "Margaret", "Sandra"];
+const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin"];
+const streetNames = ["Maple St", "Oak Ave", "Washington Blvd", "Lakeview Dr", "Park Way", "Broadway", "Main St", "Sunset Blvd", "River Rd", "Chestnut St"];
+
+let map, marker;
+
+function init() {
+    const select = document.getElementById('stateSelect');
+    states.forEach((s, index) => {
+        let opt = document.createElement('option');
+        opt.value = index;
+        opt.innerHTML = s.name;
+        select.appendChild(opt);
+    });
+
+    map = L.map('map').setView([37.0902, -95.7129], 3);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+}
+
+function updateAge() {
+    let min = parseInt(document.getElementById('minAge').value);
+    let max = parseInt(document.getElementById('maxAge').value);
+    if(min > max) {
+        document.getElementById('maxAge').value = min;
+        max = min;
+    }
+    document.getElementById('minAgeLab').innerText = min;
+    document.getElementById('maxAgeLab').innerText = max;
+}
+
+function generate() {
+    const stateIdx = document.getElementById('stateSelect').value;
+    const state = states[stateIdx];
+    const minAge = parseInt(document.getElementById('minAge').value);
+    const maxAge = parseInt(document.getElementById('maxAge').value);
+    const genderChoice = document.getElementById('genderSelect').value;
+
+    // 1. 确定最终性别
+    let gender;
+    if (genderChoice === "random") {
+        gender = Math.random() > 0.5 ? "Male" : "Female";
+    } else {
+        gender = genderChoice;
+    }
+
+    // 2. 根据性别选择名字
+    let firstName;
+    if (gender === "Male") {
+        firstName = maleFirstNames[Math.floor(Math.random() * maleFirstNames.length)];
+    } else {
+        firstName = femaleFirstNames[Math.floor(Math.random() * femaleFirstNames.length)];
+    }
+    const name = firstName + " " + lastNames[Math.floor(Math.random() * lastNames.length)];
+    
+    // 生成年龄
+    const age = Math.floor(Math.random() * (maxAge - minAge + 1)) + minAge;
+    const bday = new Date();
+    bday.setFullYear(bday.getFullYear() - age);
+    bday.setMonth(Math.floor(Math.random()*12));
+    bday.setDate(Math.floor(Math.random()*28));
+
+    // 地址与坐标
+    const streetNum = Math.floor(Math.random() * 8000) + 100;
+    const street = streetNames[Math.floor(Math.random()*streetNames.length)];
+    const fullAddr = `${streetNum} ${street}, ${state.name}, ${state.abbr} ${state.zip}`;
+    
+    const lat = state.lat + (Math.random() - 0.5) * 0.5;
+    const lng = state.lng + (Math.random() - 0.5) * 0.5;
+
+    const phone = `(${Math.floor(Math.random()*800)+200}) ${Math.floor(Math.random()*800)+200}-${Math.floor(Math.random()*8000)+1000}`;
+
+    // 更新界面
+    document.getElementById('res-name').innerText = name;
+    document.getElementById('res-gender').innerText = gender;
+    document.getElementById('res-bday').innerText = bday.toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+    document.getElementById('res-phone').innerText = phone;
+    document.getElementById('res-addr').innerText = fullAddr;
+
+    // 更新地图
+    if(marker) map.removeLayer(marker);
+    map.setView([lat, lng], 13);
+    marker = L.marker([lat, lng]).addTo(map).bindPopup(fullAddr).openPopup();
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
