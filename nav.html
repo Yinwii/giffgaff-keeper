@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giffgaff Keeper - 控制台</title>
+    
+    <!-- 网页标签栏图标 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>" type="image/svg+xml">
+
+    <style>
+        /* CSS 变量定义：默认亮色主题 */
+        :root {
+            --bg-color: #f1f5f9;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-hover: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: rgba(0, 0, 0, 0.06);
+            --search-bg: rgba(255, 255, 255, 0.6);
+            --search-border: rgba(0, 0, 0, 0.1);
+            --bg-gradient: 
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.2), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.2), transparent 25%),
+                radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.2), transparent 30%);
+        }
+
+        /* 深色主题变量 */
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --text-main: #ffffff;
+            --text-sub: rgba(255, 255, 255, 0.75);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-hover: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: rgba(0, 0, 0, 0.3);
+            --search-bg: rgba(0, 0, 0, 0.3);
+            --search-border: rgba(255, 255, 255, 0.2);
+            --bg-gradient: 
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.1), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.1), transparent 25%),
+                radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.08), transparent 30%);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            background-image: var(--bg-gradient);
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* 右上角控制台 */
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px var(--glass-shadow);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .control-btn:hover {
+            background: var(--glass-hover);
+            transform: translateY(-2px);
+        }
+
+        /* 顶部时钟与标题区 */
+        .header-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8vh 20px 4vh;
+        }
+
+        .main-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 15px 0;
+            letter-spacing: 1px;
+            color: var(--text-main);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.15); /* 加强阴影保证在复杂背景图片下也能看清 */
+        }
+
+        .clock-area {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .time { 
+            font-size: 56px; 
+            font-weight: 500; 
+            letter-spacing: 1px;
+            font-variant-numeric: tabular-nums; 
+        }
+        .date { 
+            font-size: 16px; 
+            font-weight: 500;
+            color: var(--text-main); /* 在图片背景下使用主色更清晰 */
+            opacity: 0.9;
+        }
+
+        /* 搜索框 */
+        .search-container {
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto 50px;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 16px 28px;
+            font-size: 16px;
+            color: var(--text-main);
+            background: var(--search-bg);
+            border: 1px solid var(--search-border);
+            border-radius: 40px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            outline: none;
+            transition: all 0.3s;
+            box-sizing: border-box;
+            box-shadow: 0 4px 20px var(--glass-shadow);
+        }
+
+        .search-bar::placeholder { color: var(--text-sub); }
+        .search-bar:focus {
+            background: var(--glass-hover);
+            border-color: var(--text-main);
+            box-shadow: 0 8px 30px var(--glass-shadow);
+        }
+
+        /* 导航内容区 */
+        .content-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+        }
+
+        .group-section { margin-bottom: 45px; }
+
+        .group-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 1px 5px rgba(0,0,0,0.1);
+        }
+        
+        .group-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 16px;
+            background: #3b82f6;
+            border-radius: 4px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        /* 书签卡片 */
+        .app-card {
+            display: flex;
+            align-items: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 16px 20px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px var(--glass-shadow);
+        }
+
+        .app-card:hover {
+            background: var(--glass-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 25px var(--glass-shadow);
+            border-color: var(--text-sub);
+        }
+
+        .app-icon {
+            width: 42px;
+            height: 42px;
+            margin-right: 16px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            filter: drop-shadow(0 2px 4px var(--glass-shadow));
+        }
+
+        .app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .app-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .app-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 6px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .app-desc {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .no-result {
+            text-align: center;
+            padding: 50px;
+            color: var(--text-main);
+            font-size: 16px;
+            display: none;
+        }
+
+        /* 弹窗样式 */
+        dialog {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            color: var(--text-main);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 320px;
+        }
+        dialog::backdrop { background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
+        .dialog-title { margin-top: 0; font-size: 18px; margin-bottom: 20px; }
+        .radio-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;}
+        .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 15px;}
+        .custom-input { 
+            width: 100%; padding: 10px; border-radius: 8px; 
+            border: 1px solid var(--search-border); background: var(--search-bg); 
+            color: var(--text-main); box-sizing: border-box; outline: none; margin-top: 10px;
+            display: none; /* 默认隐藏 */
+        }
+        .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .dialog-btn { 
+            padding: 8px 16px; border-radius: 8px; border: 1px solid var(--glass-border); 
+            background: rgba(0,0,0,0.1); color: var(--text-main); cursor: pointer; 
+        }
+        .dialog-btn.primary { background: #3b82f6; color: white; border-color: #3b82f6; }
+        .dialog-btn:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+    <!-- 右上角设置控制区 -->
+    <div class="controls">
+        <button class="control-btn" onclick="openBgModal()">
+            <span>🖼️</span> <span>背景设置</span>
+        </button>
+        <button class="control-btn" id="secBtn" onclick="toggleSeconds()">
+            <span>⏱️</span> <span id="secText">隐藏秒数</span>
+        </button>
+        <button class="control-btn" id="themeBtn" onclick="toggleTheme()">
+            <span id="themeIcon">🌙</span> <span id="themeText">深色模式</span>
+        </button>
+    </div>
+
+    <!-- 背景设置弹窗 -->
+    <dialog id="bgModal">
+        <h3 class="dialog-title">壁纸与背景设置</h3>
+        <div class="radio-group">
+            <label class="radio-label">
+                <input type="radio" name="bgType" value="default" onchange="toggleCustomInput()"> 🎨 默认极光渐变 (纯色)
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="bgType" value="bing" onchange="toggleCustomInput()"> 🌍 必应每日壁纸 (自动更新)
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="bgType" value="custom" onchange="toggleCustomInput()"> 🔗 自定义图片链接
+            </label>
+            <input type="text" id="customBgUrl" class="custom-input" placeholder="输入以 http/https 开头的图片地址...">
+        </div>
+        <div class="dialog-actions">
+            <button class="dialog-btn" onclick="closeBgModal()">取消</button>
+            <button class="dialog-btn primary" onclick="saveBg()">保存并应用</button>
+        </div>
+    </dialog>
+
+    <div class="header-section">
+        <h1 class="main-title">Giffgaff Keeper</h1>
+        <div class="clock-area">
+            <div class="time" id="clock-time">00:00:00</div>
+            <div class="date" id="clock-date">--月--日 星期--</div>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <input type="text" class="search-bar" id="searchInput" placeholder="🔍 输入想要查找的应用名称或描述..." onkeyup="renderData()">
+    </div>
+
+    <div class="content-container" id="board">
+        <!-- 卡片渲染区 -->
+    </div>
+    <div class="no-result" id="noResult">没有找到匹配的书签 ~</div>
+
+    <script>
+        // ==========================================
+        // 🚨 链接配置区
+        // ==========================================
+        const siteData = [
+            {
+                group: "核心业务页面",
+                links: [
+                    { name: "OVH Mail (主)", desc: "主要邮件系统访问入口", url: "./OVH-mail.html", icon: "https://api.iconify.design/logos:google-gmail.svg" },
+                    { name: "OVH Mail 1", desc: "备用邮件系统节点 1", url: "./OVH-mail1.html", icon: "📧" },
+                    { name: "OVH Mail 2", desc: "备用邮件系统节点 2", url: "./OVH-mail2.html", icon: "📨" },
+                    { name: "OpenClawHub", desc: "ClawHub 管理控制台", url: "./OpenClawHub.html", icon: "☁️" }
+                ]
+            },
+            {
+                group: "US 地址库",
+                links: [
+                    { name: "US Address (主)", desc: "主地址生成与管理库", url: "./usaddr.html", icon: "🗽" },
+                    { name: "US Address 1", desc: "地址库分卷 1", url: "./usaddr1.html", icon: "📍" },
+                    { name: "US Address 2", desc: "地址库分卷 2", url: "./usaddr2.html", icon: "📍" },
+                    { name: "US Address 3", desc: "地址库分卷 3", url: "./usaddr3.html", icon: "📍" },
+                    { name: "US Address 4", desc: "地址库分卷 4", url: "./usaddr4.html", icon: "📍" }
+                ]
+            },
+            {
+                group: "系统与工具应用",
+                links: [
+                    { name: "PVE UEFI", desc: "虚拟机 UEFI 引导配置", url: "./PVE-UEFI.html", icon: "🖥️" },
+                    { name: "Bitsflow", desc: "比特流数据处理工具", url: "./bitsflow.html", icon: "🌊" },
+                    { name: "Ping 工具 (HTA)", desc: "网络连通性测试脚本", url: "./pingtool-hta.html", icon: "⚡" },
+                    { name: "部署指南", desc: "Monolith 系统部署文档", url: "./monolith_deploy_guide.html", icon: "🏗️" },
+                    { name: "Realm 转发", desc: "端口转发与流量代理", url: "./realm.html", icon: "https://api.iconify.design/flat-color-icons:data-configuration.svg" },
+                    { name: "Typecho 博客", desc: "轻量级博客系统部署", url: "./typecho.html", icon: "📝" },
+                    { name: "XanMod 手册", desc: "自定义内核优化指南", url: "./xanmod_manual.html", icon: "🐧" }
+                ]
+            },
+            {
+                group: "报表与其他",
+                links: [
+                    { name: "KPI 报表", desc: "业务绩效考核数据面板", url: "./kpireport.html", icon: "📈" },
+                    { name: "OOO Leave", desc: "员工休假与离线状态记录", url: "./oooleave.html", icon: "🏖️" },
+                    { name: "Payload TXT", desc: "纯文本载荷测试数据", url: "./payload.txt", icon: "📄" },
+                    { name: "README", desc: "仓库全局说明文档", url: "./README.md", icon: "📘" }
+                ]
+            }
+        ];
+
+        // 全局状态
+        let showSeconds = true; // 默认开启秒数
+        let isDarkMode = false; 
+        let bgConfig = { type: 'default', url: '' };
+
+        // 初始化所有设置
+        function initSettings() {
+            // 主题设置
+            const savedTheme = localStorage.getItem('giffgaff_theme');
+            if (savedTheme === 'dark') {
+                isDarkMode = true;
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+
+            // 秒数设置 (只有明确存了 'false' 才关闭，否则默认开启)
+            const savedSec = localStorage.getItem('giffgaff_seconds');
+            if (savedSec === 'false') {
+                showSeconds = false;
+            }
+
+            // 背景设置
+            const savedBg = localStorage.getItem('giffgaff_bg');
+            if (savedBg) {
+                bgConfig = JSON.parse(savedBg);
+            }
+            
+            updateUIConfig();
+            applyBackground();
+        }
+
+        // ================= 背景设置逻辑 =================
+        function applyBackground() {
+            const body = document.body;
+            if (bgConfig.type === 'bing') {
+                // 使用公共稳定的必应每日壁纸 API
+                body.style.backgroundImage = "url('https://api.dujin.org/bing/1920.php')";
+            } else if (bgConfig.type === 'custom' && bgConfig.url) {
+                body.style.backgroundImage = `url('${bgConfig.url}')`;
+            } else {
+                body.style.backgroundImage = "var(--bg-gradient)";
+            }
+        }
+
+        function openBgModal() {
+            document.getElementById('bgModal').showModal();
+            // 回显数据
+            document.querySelector(`input[name="bgType"][value="${bgConfig.type}"]`).checked = true;
+            document.getElementById('customBgUrl').value = bgConfig.url;
+            toggleCustomInput();
+        }
+
+        function closeBgModal() {
+            document.getElementById('bgModal').close();
+        }
+
+        function toggleCustomInput() {
+            const type = document.querySelector('input[name="bgType"]:checked').value;
+            const input = document.getElementById('customBgUrl');
+            input.style.display = type === 'custom' ? 'block' : 'none';
+        }
+
+        function saveBg() {
+            const type = document.querySelector('input[name="bgType"]:checked').value;
+            const url = document.getElementById('customBgUrl').value.trim();
+            
+            if (type === 'custom' && !url) {
+                alert('请输入自定义图片链接！');
+                return;
+            }
+
+            bgConfig = { type: type, url: url };
+            localStorage.setItem('giffgaff_bg', JSON.stringify(bgConfig));
+            applyBackground();
+            closeBgModal();
+        }
+
+        // ================= 其他控制逻辑 =================
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            localStorage.setItem('giffgaff_theme', isDarkMode ? 'dark' : 'light');
+            updateUIConfig();
+        }
+
+        function toggleSeconds() {
+            showSeconds = !showSeconds;
+            localStorage.setItem('giffgaff_seconds', showSeconds);
+            updateUIConfig();
+            updateClock();
+        }
+
+        function updateUIConfig() {
+            document.getElementById('themeIcon').innerText = isDarkMode ? '☀️' : '🌙';
+            document.getElementById('themeText').innerText = isDarkMode ? '亮色模式' : '深色模式';
+            document.getElementById('secText').innerText = showSeconds ? '隐藏秒数' : '显示秒数';
+        }
+
+        // 渲染书签数据
+        function renderData() {
+            const board = document.getElementById('board');
+            const noResult = document.getElementById('noResult');
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            board.innerHTML = '';
+            let hasResult = false;
+
+            siteData.forEach(group => {
+                const filteredLinks = group.links.filter(link => 
+                    link.name.toLowerCase().includes(keyword) || 
+                    link.desc.toLowerCase().includes(keyword) ||
+                    link.url.toLowerCase().includes(keyword)
+                );
+
+                if (keyword && filteredLinks.length === 0 && !group.group.toLowerCase().includes(keyword)) {
+                    return;
+                }
+
+                hasResult = true;
+
+                const section = document.createElement('div');
+                section.className = 'group-section';
+                
+                let linksHtml = filteredLinks.map(link => {
+                    let iconContent = link.icon || '🔗';
+                    if (iconContent.includes('http') || iconContent.includes('.')) {
+                        iconContent = `<img src="${iconContent}" alt="icon" loading="lazy">`;
+                    }
+
+                    return `
+                    <a href="${link.url}" class="app-card" target="_blank" title="${link.url}">
+                        <div class="app-icon">${iconContent}</div>
+                        <div class="app-info">
+                            <h3 class="app-title">${link.name}</h3>
+                            <p class="app-desc">${link.desc || link.url}</p>
+                        </div>
+                    </a>
+                `}).join('');
+
+                section.innerHTML = `
+                    <div class="group-title">${group.group}</div>
+                    <div class="grid-container">
+                        ${linksHtml || '<p style="color:var(--text-sub); padding-left:10px; font-size:14px;">该组暂无匹配书签</p>'}
+                    </div>
+                `;
+                board.appendChild(section);
+            });
+
+            noResult.style.display = hasResult ? 'none' : 'block';
+        }
+
+        // 时钟功能
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            let timeString = `${hours}:${minutes}`;
+            if (showSeconds) {
+                timeString += `:${seconds}`;
+            }
+            
+            document.getElementById('clock-time').innerText = timeString;
+            
+            const month = now.getMonth() + 1;
+            const date = now.getDate();
+            const days = ['日', '一', '二', '三', '四', '五', '六'];
+            const day = days[now.getDay()];
+            document.getElementById('clock-date').innerText = `${month}月${date}日 星期${day}`;
+        }
+
+        // 页面初始化
+        window.onload = () => {
+            initSettings(); 
+            renderData();
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+    </script>
+</body>
+</html>
