@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Giffgaff Keeper 终极编辑器 v6.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f1f5f9; font-family: "SF Pro Display", system-ui, -apple-system, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .input-box { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; width: 100%; outline: none; transition: all 0.2s; background: #fff; }
+        .input-box:focus { border-color: #3b82f6; ring: 3px solid rgba(59, 130, 246, 0.1); }
+        .btn { padding: 10px 20px; border-radius: 10px; font-weight: 600; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-blue { background: #3b82f6; color: white; }
+        .btn-blue:hover { background: #2563eb; transform: translateY(-1px); }
+        .btn-indigo { background: #6366f1; color: white; }
+        .btn-indigo:hover { background: #4f46e5; }
+        .btn-emerald { background: #10b981; color: white; }
+        .btn-emerald:hover { background: #059669; }
+        .btn-gray { background: #fff; color: #475569; border: 1px solid #e2e8f0; }
+        .btn-gray:hover { background: #f8fafc; }
+        dialog::backdrop { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">导航站编辑器 <span class="text-indigo-600">v6.0</span></h1>
+                <p class="text-slate-500 mt-1 font-medium text-sm">支持可视化编辑、代码导入及一键导出 HTML 文件</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <button onclick="openImportModal()" class="btn btn-gray shadow-sm">📥 导入旧 HTML</button>
+                <button onclick="copyToClipboard()" class="btn btn-blue shadow-lg">📋 复制完整代码</button>
+                <button onclick="downloadHTMLFile()" class="btn btn-indigo shadow-lg">💾 导出 HTML 文件</button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- 全局配置 -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="card p-6 border-l-4 border-indigo-500">
+                    <h2 class="font-bold text-slate-400 mb-5 text-xs uppercase tracking-widest">全局配置</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Favicon (Emoji)</label>
+                            <input type="text" id="faviconUrl" class="input-box text-sm" placeholder="🧭">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 仓库名</label>
+                            <input type="text" id="repoName" class="input-box text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 仓库链接</label>
+                            <input type="text" id="repoUrl" class="input-box text-sm">
+                        </div>
+                        <hr class="opacity-50">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 预览名</label>
+                            <input type="text" id="liveName" class="input-box text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 预览链接</label>
+                            <input type="text" id="liveUrl" class="input-box text-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 编辑区 -->
+            <div class="lg:col-span-3 space-y-6">
+                <div id="groupsContainer" class="space-y-8"></div>
+                <button onclick="addGroup()" class="w-full py-8 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all font-bold flex flex-col items-center justify-center gap-2 group">
+                    <span class="text-3xl">+</span>
+                    <span>添加新分组板块</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入弹窗 -->
+    <dialog id="importModal" class="card w-full max-w-2xl p-0 overflow-hidden shadow-2xl">
+        <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
+            <h3 class="font-bold text-lg text-slate-800">导入 HTML</h3>
+            <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+        </div>
+        <div class="p-8 space-y-6">
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-emerald-400 transition-colors bg-emerald-50/10">
+                <input type="file" id="fileInput" accept=".html" class="hidden" onchange="handleFileImport(event)">
+                <label for="fileInput" class="cursor-pointer">
+                    <div class="text-3xl mb-2">📄</div>
+                    <div class="font-bold text-emerald-700">点击选择 index.html 文件</div>
+                </label>
+            </div>
+            <textarea id="importArea" class="w-full h-48 p-4 border rounded-xl font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50" placeholder="或者在此粘贴代码内容..."></textarea>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeImportModal()" class="btn btn-gray">取消</button>
+                <button onclick="doImportFromText()" class="btn btn-emerald px-10">开始解析</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        let siteConfig = {
+            favicon: "🧭",
+            repoName: "Giffgaff Keeper",
+            repoUrl: "https://github.com/Yinwii/giffgaff-keeper",
+            liveName: "Live Site",
+            liveUrl: "https://yinwii.github.io/giffgaff-keeper",
+            siteData: []
+        };
+
+        function renderAll() {
+            document.getElementById('faviconUrl').value = siteConfig.favicon;
+            document.getElementById('repoName').value = siteConfig.repoName;
+            document.getElementById('repoUrl').value = siteConfig.repoUrl;
+            document.getElementById('liveName').value = siteConfig.liveName;
+            document.getElementById('liveUrl').value = siteConfig.liveUrl;
+
+            const container = document.getElementById('groupsContainer');
+            container.innerHTML = '';
+
+            siteConfig.siteData.forEach((group, gIdx) => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'card border border-slate-100 overflow-hidden';
+                groupDiv.innerHTML = `
+                    <div class="px-6 py-4 bg-slate-50 border-b flex justify-between items-center">
+                        <input type="text" class="font-bold text-slate-800 outline-none border-b-2 border-transparent focus:border-blue-500 bg-transparent" value="${group.group}" onchange="updateGroupName(${gIdx}, this.value)">
+                        <div class="flex gap-2">
+                            <button onclick="moveGroup(${gIdx}, -1)" class="w-8 h-8 flex items-center justify-center rounded bg-white border">↑</button>
+                            <button onclick="moveGroup(${gIdx}, 1)" class="w-8 h-8 flex items-center justify-center rounded bg-white border">↓</button>
+                            <button onclick="deleteGroup(${gIdx})" class="text-xs text-red-500 px-2">删除组</button>
+                        </div>
+                    </div>
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${group.links.map((link, lIdx) => `
+                            <div class="flex gap-4 p-4 bg-white rounded-xl border border-slate-100 relative group">
+                                <div class="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center text-2xl border flex-shrink-0 overflow-hidden">
+                                    ${(link.icon.includes('http') || link.icon.includes('.')) ? `<img src="${link.icon}" class="w-full h-full object-contain">` : link.icon}
+                                </div>
+                                <div class="flex-grow space-y-1">
+                                    <div class="flex gap-2">
+                                        <input type="text" placeholder="名称" class="input-box text-xs py-1 px-2 font-bold" value="${link.name}" onchange="updateLink(${gIdx}, ${lIdx}, 'name', this.value)">
+                                        <input type="text" placeholder="图标" class="input-box text-xs py-1 px-2 w-20" value="${link.icon}" onchange="updateLink(${gIdx}, ${lIdx}, 'icon', this.value)">
+                                    </div>
+                                    <input type="text" placeholder="URL" class="input-box text-[10px] py-1 px-2" value="${link.url}" onchange="updateLink(${gIdx}, ${lIdx}, 'url', this.value)">
+                                    <input type="text" placeholder="描述" class="input-box text-[10px] py-1 px-2 text-slate-500" value="${link.desc}" onchange="updateLink(${gIdx}, ${lIdx}, 'desc', this.value)">
+                                </div>
+                                <button onclick="deleteLink(${gIdx}, ${lIdx})" class="absolute -top-1 -right-1 w-5 h-5 bg-slate-800 text-white rounded-full text-[10px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">✕</button>
+                            </div>
+                        `).join('')}
+                        <button onclick="addLink(${gIdx})" class="border-2 border-dashed border-slate-100 rounded-xl flex items-center justify-center py-6 text-slate-300 hover:text-blue-400 hover:bg-blue-50 transition-all">+</button>
+                    </div>
+                `;
+                container.appendChild(groupDiv);
+            });
+        }
+
+        function parseAndApply(html) {
+            try {
+                const dataMatch = html.match(/const siteData\s*=\s*(\[[\s\S]*?\]);/);
+                if (dataMatch) siteConfig.siteData = new Function("return " + dataMatch[1])();
+                const favMatch = html.match(/<link rel="icon" href="([^"]+)"/);
+                if (favMatch) {
+                    const val = favMatch[1];
+                    if(val.includes('viewBox')) {
+                        const emoji = val.match(/font-size=%2290%22>(.*?)<\/text>/);
+                        siteConfig.favicon = emoji ? emoji[1] : "🧭";
+                    } else siteConfig.favicon = val;
+                }
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const footerLinks = doc.querySelectorAll('.site-footer a');
+                if(footerLinks.length >= 2) {
+                    siteConfig.repoUrl = footerLinks[0].getAttribute('href');
+                    siteConfig.repoName = footerLinks[0].textContent.trim();
+                    siteConfig.liveUrl = footerLinks[1].getAttribute('href');
+                    siteConfig.liveName = footerLinks[1].textContent.trim();
+                }
+                renderAll(); closeImportModal(); alert('🎉 导入解析成功！');
+            } catch (e) { alert('❌ 解析失败，请检查代码。'); }
+        }
+
+        // --- 功能函数 ---
+        function updateGroupName(g, v) { siteConfig.siteData[g].group = v; }
+        function addGroup() { siteConfig.siteData.push({ group: "新版块", links: [] }); renderAll(); }
+        function deleteGroup(g) { if(confirm('确定删除？')) { siteConfig.siteData.splice(g, 1); renderAll(); } }
+        function moveGroup(idx, dir) { [siteConfig.siteData[idx], siteConfig.siteData[idx+dir]] = [siteConfig.siteData[idx+dir], siteConfig.siteData[idx]]; renderAll(); }
+        function addLink(g) { siteConfig.siteData[g].links.push({ name: "书签", desc: "描述", url: "./", icon: "🔗" }); renderAll(); }
+        function updateLink(g, l, k, v) { siteConfig.siteData[g].links[l][k] = v; renderAll(); }
+        function deleteLink(g, l) { siteConfig.siteData[g].links.splice(l, 1); renderAll(); }
+        function openImportModal() { document.getElementById('importModal').showModal(); }
+        function closeImportModal() { document.getElementById('importModal').close(); }
+        function handleFileImport(e) { const r = new FileReader(); r.onload = (ev) => parseAndApply(ev.target.result); r.readAsText(e.target.files[0]); }
+        function doImportFromText() { parseAndApply(document.getElementById('importArea').value); }
+
+        // --- 生成 HTML 核心逻辑 ---
+        function generateFinalHTML() {
+            siteConfig.favicon = document.getElementById('faviconUrl').value;
+            siteConfig.repoName = document.getElementById('repoName').value;
+            siteConfig.repoUrl = document.getElementById('repoUrl').value;
+            siteConfig.liveName = document.getElementById('liveName').value;
+            siteConfig.liveUrl = document.getElementById('liveUrl').value;
+            const favLink = siteConfig.favicon.length < 5 ? `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${siteConfig.favicon}</text></svg>` : siteConfig.favicon;
+
+            return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${siteConfig.repoName} - 控制台</title>
+    <link rel="icon" href="${favLink}" type="image/svg+xml">
+    <style>
+        :root { --bg-color: #f1f5f9; --text-main: #1e293b; --text-sub: #64748b; --glass-bg: rgba(255, 255, 255, 0.65); --glass-hover: rgba(255, 255, 255, 0.9); --glass-border: rgba(255, 255, 255, 0.8); --glass-shadow: rgba(0, 0, 0, 0.06); --search-bg: rgba(255, 255, 255, 0.6); --search-border: rgba(0, 0, 0, 0.1); --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.2), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.2), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.2), transparent 30%); }
+        [data-theme="dark"] { --bg-color: #0f172a; --text-main: #ffffff; --text-sub: rgba(255, 255, 255, 0.75); --glass-bg: rgba(255, 255, 255, 0.1); --glass-hover: rgba(255, 255, 255, 0.15); --glass-border: rgba(255, 255, 255, 0.15); --glass-shadow: rgba(0, 0, 0, 0.3); --search-bg: rgba(0, 0, 0, 0.3); --search-border: rgba(255, 255, 255, 0.2); --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.1), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.1), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.08), transparent 30%); }
+        body, html { margin: 0; padding: 0; font-family: "SF Pro Display", sans-serif; color: var(--text-main); min-height: 100vh; background-color: var(--bg-color); background-image: var(--bg-gradient); background-attachment: fixed; background-size: cover; display: flex; flex-direction: column; transition: 0.4s; }
+        .controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 100; }
+        .control-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; backdrop-filter: blur(12px); display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px var(--glass-shadow); }
+        .header-section { display: flex; flex-direction: column; align-items: center; padding: 8vh 20px 4vh; }
+        .main-title { font-size: 32px; font-weight: 700; margin-bottom: 15px; }
+        .clock-area { display: flex; align-items: baseline; gap: 12px; }
+        .time { font-size: 56px; font-weight: 500; font-variant-numeric: tabular-nums; }
+        .date { font-size: 16px; opacity: 0.9; }
+        .search-container { width: 100%; max-width: 650px; margin: 0 auto 50px; padding: 0 20px; box-sizing: border-box; }
+        .search-bar { width: 100%; padding: 16px 28px; font-size: 16px; color: var(--text-main); background: var(--search-bg); border: 1px solid var(--search-border); border-radius: 40px; backdrop-filter: blur(20px); outline: none; box-shadow: 0 4px 20px var(--glass-shadow); }
+        .content-container { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; }
+        .group-section { margin-bottom: 45px; }
+        .group-title { font-size: 16px; font-weight: 600; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+        .group-title::before { content: ''; width: 6px; height: 16px; background: #3b82f6; border-radius: 4px; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .app-card { display: flex; align-items: center; background: var(--glass-bg); backdrop-filter: blur(25px); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px 20px; text-decoration: none; color: var(--text-main); transition: 0.3s; box-shadow: 0 4px 15px var(--glass-shadow); }
+        .app-card:hover { background: var(--glass-hover); transform: translateY(-4px); }
+        .app-icon { width: 42px; height: 42px; margin-right: 16px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 32px; }
+        .app-icon img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+        .app-info { overflow: hidden; width: 100%; }
+        .app-title { font-size: 16px; font-weight: 600; margin: 0 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .app-desc { font-size: 12px; color: var(--text-sub); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        dialog { background: var(--glass-bg); backdrop-filter: blur(25px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; color: var(--text-main); width: 320px; }
+        .site-footer { padding: 30px 0; display: flex; justify-content: center; align-items: center; gap: 15px; font-size: 13px; }
+        .site-footer a { color: var(--text-main); opacity: 0.6; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: 0.3s; }
+        .site-footer a:hover { opacity: 1; color: #3b82f6; }
+        .site-footer .footer-sep { width: 1px; height: 12px; background: var(--text-sub); opacity: 0.3; }
+        svg { fill: currentColor; width: 16px; height: 16px; }
+    </style>
+</head>
+<body>
+    <div class="controls"><button class="control-btn" onclick="openBgModal()">🖼️ 背景</button><button class="control-btn" id="secBtn" onclick="toggleSeconds()">⏱️ <span id="secText">隐藏秒数</span></button><button class="control-btn" id="themeBtn" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">深色</span></button></div>
+    <dialog id="bgModal"><h3 style="margin-top:0">壁纸设置</h3><div style="display:flex;flex-direction:column;gap:12px;margin:20px 0"><label><input type="radio" name="bgType" value="default"> 🎨 默认渐变</label><label><input type="radio" name="bgType" value="bing"> 🌍 必应壁纸</label><label><input type="radio" name="bgType" value="custom"> 🔗 自定义链接</label><input type="text" id="customBgUrl" placeholder="http://" style="width:100%;padding:8px;border-radius:5px;border:1px solid #ccc;background:rgba(255,255,255,0.2);color:inherit"></div><button onclick="saveBg()" style="width:100%;padding:10px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer">保存</button></dialog>
+    <div class="header-section"><h1 class="main-title">Giffgaff Keeper</h1><div class="clock-area"><div class="time" id="clock-time">00:00:00</div><div class="date" id="clock-date">--月--日</div></div></div>
+    <div class="search-container"><input type="text" class="search-bar" id="searchInput" placeholder="🔍 搜索应用..." onkeyup="renderData()"></div>
+    <div class="content-container" id="board"></div>
+    <footer class="site-footer">
+        <a href="${siteConfig.repoUrl}" target="_blank"><svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg> ${siteConfig.repoName}</a>
+        <div class="footer-sep"></div>
+        <a href="${siteConfig.liveUrl}" target="_blank"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg> ${siteConfig.liveName}</a>
+    </footer>
+    <script>
+        const siteData = ${JSON.stringify(siteConfig.siteData, null, 4)};
+        let showSeconds = true, isDarkMode = false, bgConfig = { type: 'default', url: '' };
+        function initSettings() {
+            if (localStorage.getItem('giffgaff_theme') === 'dark') { isDarkMode = true; document.documentElement.setAttribute('data-theme', 'dark'); }
+            if (localStorage.getItem('giffgaff_seconds') === 'false') showSeconds = false;
+            const savedBg = localStorage.getItem('giffgaff_bg'); if (savedBg) bgConfig = JSON.parse(savedBg);
+            updateUIConfig(); applyBackground();
+        }
+        function applyBackground() { const b = document.body; if (bgConfig.type === 'bing') b.style.backgroundImage = "url('https://api.dujin.org/bing/1920.php')"; else if (bgConfig.type === 'custom' && bgConfig.url) b.style.backgroundImage = "url('" + bgConfig.url + "')"; else b.style.backgroundImage = "var(--bg-gradient)"; }
+        function openBgModal() { document.getElementById('bgModal').showModal(); }
+        function saveBg() { const t = document.querySelector('input[name="bgType"]:checked').value, u = document.getElementById('customBgUrl').value; bgConfig = {type:t, url:u}; localStorage.setItem('giffgaff_bg', JSON.stringify(bgConfig)); applyBackground(); document.getElementById('bgModal').close(); }
+        function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light'); localStorage.setItem('giffgaff_theme', isDarkMode ? 'dark' : 'light'); updateUIConfig(); }
+        function toggleSeconds() { showSeconds = !showSeconds; localStorage.setItem('giffgaff_seconds', showSeconds); updateUIConfig(); updateClock(); }
+        function updateUIConfig() { document.getElementById('themeIcon').innerText = isDarkMode ? '☀️' : '🌙'; document.getElementById('secText').innerText = showSeconds ? '隐藏秒数' : '显示秒数'; }
+        function renderData() {
+            const board = document.getElementById('board'), kw = document.getElementById('searchInput').value.toLowerCase(); board.innerHTML = '';
+            siteData.forEach(g => {
+                const links = g.links.filter(l => l.name.toLowerCase().includes(kw) || l.desc.toLowerCase().includes(kw));
+                if (links.length === 0) return;
+                const sec = document.createElement('div'); sec.className = 'group-section';
+                sec.innerHTML = '<div class="group-title">' + g.group + '</div><div class="grid-container">' + links.map(l => '<a href="' + l.url + '" class="app-card" target="_blank"><div class="app-icon">' + (l.icon.includes('http') || l.icon.includes('.') ? '<img src="'+l.icon+'">' : l.icon) + '</div><div class="app-info"><h3 class="app-title">' + l.name + '</h3><p class="app-desc">' + l.desc + '</p></div></a>').join('') + '</div>';
+                board.appendChild(sec);
+            });
+        }
+        function updateClock() {
+            const n = new Date(), h = String(n.getHours()).padStart(2,'0'), m = String(n.getMinutes()).padStart(2,'0'), s = String(n.getSeconds()).padStart(2,'0');
+            document.getElementById('clock-time').innerText = showSeconds ? h+':'+m+':'+s : h+':'+m;
+            document.getElementById('clock-date').innerText = (n.getMonth()+1)+'月'+n.getDate()+'日 星期' + ['日','一','二','三','四','五','六'][n.getDay()];
+        }
+        window.onload = () => { initSettings(); renderData(); updateClock(); setInterval(updateClock, 1000); }
+    <\/script>
+</body>
+</html>`;
+        }
+
+        // --- 导出方式 1: 复制 ---
+        function copyToClipboard() {
+            const el = document.createElement('textarea');
+            el.value = generateFinalHTML();
+            document.body.appendChild(el); el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert('✅ 代码已复制到剪贴板！');
+        }
+
+        // --- 导出方式 2: 下载文件 ---
+        function downloadHTMLFile() {
+            const blob = new Blob([generateFinalHTML()], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'index.html';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        renderAll();
+    </script>
+</body>
+</html>
