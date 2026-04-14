@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Giffgaff Keeper 终极编辑器 v6.0</title>
+    <title>Giffgaff Keeper 终极编辑器 v7.0</title>
+    <!-- 网页标签栏图标 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #f1f5f9; font-family: "SF Pro Display", system-ui, -apple-system, sans-serif; }
@@ -11,13 +13,9 @@
         .input-box:focus { border-color: #3b82f6; ring: 3px solid rgba(59, 130, 246, 0.1); }
         .btn { padding: 10px 20px; border-radius: 10px; font-weight: 600; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
         .btn-blue { background: #3b82f6; color: white; }
-        .btn-blue:hover { background: #2563eb; transform: translateY(-1px); }
         .btn-indigo { background: #6366f1; color: white; }
-        .btn-indigo:hover { background: #4f46e5; }
         .btn-emerald { background: #10b981; color: white; }
-        .btn-emerald:hover { background: #059669; }
         .btn-gray { background: #fff; color: #475569; border: 1px solid #e2e8f0; }
-        .btn-gray:hover { background: #f8fafc; }
         dialog::backdrop { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
     </style>
 </head>
@@ -26,8 +24,8 @@
     <div class="max-w-6xl mx-auto">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">导航站编辑器 <span class="text-indigo-600">v6.0</span></h1>
-                <p class="text-slate-500 mt-1 font-medium text-sm">支持可视化编辑、代码导入及一键导出 HTML 文件</p>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">导航站编辑器 <span class="text-indigo-600">v7.0</span></h1>
+                <p class="text-slate-500 mt-1 font-medium text-sm">已修复：支持完整 CSS/JS 导出，功能无损</p>
             </div>
             <div class="flex flex-wrap gap-3">
                 <button onclick="openImportModal()" class="btn btn-gray shadow-sm">📥 导入旧 HTML</button>
@@ -37,78 +35,40 @@
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <!-- 全局配置 -->
             <div class="lg:col-span-1 space-y-6">
                 <div class="card p-6 border-l-4 border-indigo-500">
                     <h2 class="font-bold text-slate-400 mb-5 text-xs uppercase tracking-widest">全局配置</h2>
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">Favicon (Emoji)</label>
-                            <input type="text" id="faviconUrl" class="input-box text-sm" placeholder="🧭">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 仓库名</label>
-                            <input type="text" id="repoName" class="input-box text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 仓库链接</label>
-                            <input type="text" id="repoUrl" class="input-box text-sm">
-                        </div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">Favicon (Emoji)</label><input type="text" id="faviconUrl" class="input-box text-sm"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 仓库名</label><input type="text" id="repoName" class="input-box text-sm"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 仓库链接</label><input type="text" id="repoUrl" class="input-box text-sm"></div>
                         <hr class="opacity-50">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 预览名</label>
-                            <input type="text" id="liveName" class="input-box text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 预览链接</label>
-                            <input type="text" id="liveUrl" class="input-box text-sm">
-                        </div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 预览名</label><input type="text" id="liveName" class="input-box text-sm"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">页脚 - 预览链接</label><input type="text" id="liveUrl" class="input-box text-sm"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 编辑区 -->
             <div class="lg:col-span-3 space-y-6">
                 <div id="groupsContainer" class="space-y-8"></div>
-                <button onclick="addGroup()" class="w-full py-8 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all font-bold flex flex-col items-center justify-center gap-2 group">
-                    <span class="text-3xl">+</span>
-                    <span>添加新分组板块</span>
-                </button>
+                <button onclick="addGroup()" class="w-full py-8 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all font-bold flex flex-col items-center justify-center gap-2">+ 添加新分组</button>
             </div>
         </div>
     </div>
 
-    <!-- 导入弹窗 -->
     <dialog id="importModal" class="card w-full max-w-2xl p-0 overflow-hidden shadow-2xl">
-        <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
-            <h3 class="font-bold text-lg text-slate-800">导入 HTML</h3>
-            <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
-        </div>
+        <div class="p-6 bg-slate-50 border-b flex justify-between items-center"><h3 class="font-bold text-lg text-slate-800">导入 HTML</h3><button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600 text-xl">✕</button></div>
         <div class="p-8 space-y-6">
-            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-emerald-400 transition-colors bg-emerald-50/10">
-                <input type="file" id="fileInput" accept=".html" class="hidden" onchange="handleFileImport(event)">
-                <label for="fileInput" class="cursor-pointer">
-                    <div class="text-3xl mb-2">📄</div>
-                    <div class="font-bold text-emerald-700">点击选择 index.html 文件</div>
-                </label>
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center bg-emerald-50/10 hover:border-emerald-400 transition-colors">
+                <input type="file" id="fileInput" accept=".html" class="hidden" onchange="handleFileImport(event)"><label for="fileInput" class="cursor-pointer"><div class="text-3xl mb-2">📄</div><div class="font-bold text-emerald-700">点击选择 index.html 文件</div></label>
             </div>
-            <textarea id="importArea" class="w-full h-48 p-4 border rounded-xl font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50" placeholder="或者在此粘贴代码内容..."></textarea>
-            <div class="flex justify-end gap-3">
-                <button onclick="closeImportModal()" class="btn btn-gray">取消</button>
-                <button onclick="doImportFromText()" class="btn btn-emerald px-10">开始解析</button>
-            </div>
+            <textarea id="importArea" class="w-full h-48 p-4 border rounded-xl font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50" placeholder="或者粘贴代码..."></textarea>
+            <div class="flex justify-end gap-3"><button onclick="closeImportModal()" class="btn btn-gray">取消</button><button onclick="doImportFromText()" class="btn btn-emerald px-10">解析</button></div>
         </div>
     </dialog>
 
     <script>
-        let siteConfig = {
-            favicon: "🧭",
-            repoName: "Giffgaff Keeper",
-            repoUrl: "https://github.com/Yinwii/giffgaff-keeper",
-            liveName: "Live Site",
-            liveUrl: "https://yinwii.github.io/giffgaff-keeper",
-            siteData: []
-        };
+        let siteConfig = { favicon: "🧭", repoName: "Giffgaff Keeper", repoUrl: "https://github.com/Yinwii/giffgaff-keeper", liveName: "Live Site", liveUrl: "https://yinwii.github.io/giffgaff-keeper", siteData: [] };
 
         function renderAll() {
             document.getElementById('faviconUrl').value = siteConfig.favicon;
@@ -116,42 +76,11 @@
             document.getElementById('repoUrl').value = siteConfig.repoUrl;
             document.getElementById('liveName').value = siteConfig.liveName;
             document.getElementById('liveUrl').value = siteConfig.liveUrl;
-
-            const container = document.getElementById('groupsContainer');
-            container.innerHTML = '';
-
+            const container = document.getElementById('groupsContainer'); container.innerHTML = '';
             siteConfig.siteData.forEach((group, gIdx) => {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'card border border-slate-100 overflow-hidden';
-                groupDiv.innerHTML = `
-                    <div class="px-6 py-4 bg-slate-50 border-b flex justify-between items-center">
-                        <input type="text" class="font-bold text-slate-800 outline-none border-b-2 border-transparent focus:border-blue-500 bg-transparent" value="${group.group}" onchange="updateGroupName(${gIdx}, this.value)">
-                        <div class="flex gap-2">
-                            <button onclick="moveGroup(${gIdx}, -1)" class="w-8 h-8 flex items-center justify-center rounded bg-white border">↑</button>
-                            <button onclick="moveGroup(${gIdx}, 1)" class="w-8 h-8 flex items-center justify-center rounded bg-white border">↓</button>
-                            <button onclick="deleteGroup(${gIdx})" class="text-xs text-red-500 px-2">删除组</button>
-                        </div>
-                    </div>
-                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${group.links.map((link, lIdx) => `
-                            <div class="flex gap-4 p-4 bg-white rounded-xl border border-slate-100 relative group">
-                                <div class="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center text-2xl border flex-shrink-0 overflow-hidden">
-                                    ${(link.icon.includes('http') || link.icon.includes('.')) ? `<img src="${link.icon}" class="w-full h-full object-contain">` : link.icon}
-                                </div>
-                                <div class="flex-grow space-y-1">
-                                    <div class="flex gap-2">
-                                        <input type="text" placeholder="名称" class="input-box text-xs py-1 px-2 font-bold" value="${link.name}" onchange="updateLink(${gIdx}, ${lIdx}, 'name', this.value)">
-                                        <input type="text" placeholder="图标" class="input-box text-xs py-1 px-2 w-20" value="${link.icon}" onchange="updateLink(${gIdx}, ${lIdx}, 'icon', this.value)">
-                                    </div>
-                                    <input type="text" placeholder="URL" class="input-box text-[10px] py-1 px-2" value="${link.url}" onchange="updateLink(${gIdx}, ${lIdx}, 'url', this.value)">
-                                    <input type="text" placeholder="描述" class="input-box text-[10px] py-1 px-2 text-slate-500" value="${link.desc}" onchange="updateLink(${gIdx}, ${lIdx}, 'desc', this.value)">
-                                </div>
-                                <button onclick="deleteLink(${gIdx}, ${lIdx})" class="absolute -top-1 -right-1 w-5 h-5 bg-slate-800 text-white rounded-full text-[10px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">✕</button>
-                            </div>
-                        `).join('')}
-                        <button onclick="addLink(${gIdx})" class="border-2 border-dashed border-slate-100 rounded-xl flex items-center justify-center py-6 text-slate-300 hover:text-blue-400 hover:bg-blue-50 transition-all">+</button>
-                    </div>
-                `;
+                groupDiv.innerHTML = `<div class="px-6 py-4 bg-slate-50 border-b flex justify-between items-center"><input type="text" class="font-bold text-slate-800 outline-none bg-transparent" value="${group.group}" onchange="updateGroupName(${gIdx}, this.value)"><div class="flex gap-2"><button onclick="moveGroup(${gIdx}, -1)" class="w-8 h-8 flex items-center justify-center rounded bg-white border">↑</button><button onclick="moveGroup(${gIdx}, 1)" class="w-8 h-8 flex items-center justify-center rounded bg-white border">↓</button><button onclick="deleteGroup(${gIdx})" class="text-xs text-red-500 px-2">删除</button></div></div><div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">${group.links.map((link, lIdx) => `<div class="flex gap-4 p-4 bg-white rounded-xl border border-slate-100 relative group"><div class="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center text-2xl border flex-shrink-0 overflow-hidden">${(link.icon.includes('http') || link.icon.includes('.')) ? `<img src="${link.icon}" class="w-full h-full object-contain">` : link.icon}</div><div class="flex-grow space-y-1"><div class="flex gap-2"><input type="text" class="input-box text-xs py-1 px-2 font-bold" value="${link.name}" onchange="updateLink(${gIdx}, ${lIdx}, 'name', this.value)"><input type="text" class="input-box text-xs py-1 px-2 w-20" value="${link.icon}" onchange="updateLink(${gIdx}, ${lIdx}, 'icon', this.value)"></div><input type="text" class="input-box text-[10px] py-1 px-2" value="${link.url}" onchange="updateLink(${gIdx}, ${lIdx}, 'url', this.value)"><input type="text" class="input-box text-[10px] py-1 px-2 text-slate-500" value="${link.desc}" onchange="updateLink(${gIdx}, ${lIdx}, 'desc', this.value)"></div><button onclick="deleteLink(${gIdx}, ${lIdx})" class="absolute -top-1 -right-1 w-5 h-5 bg-slate-800 text-white rounded-full text-[10px] opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">✕</button></div>`).join('')}<button onclick="addLink(${gIdx})" class="border-2 border-dashed border-slate-100 rounded-xl flex items-center justify-center py-6 text-slate-300 hover:text-blue-400 hover:bg-blue-50 transition-all">+</button></div>`;
                 container.appendChild(groupDiv);
             });
         }
@@ -163,28 +92,19 @@
                 const favMatch = html.match(/<link rel="icon" href="([^"]+)"/);
                 if (favMatch) {
                     const val = favMatch[1];
-                    if(val.includes('viewBox')) {
-                        const emoji = val.match(/font-size=%2290%22>(.*?)<\/text>/);
-                        siteConfig.favicon = emoji ? emoji[1] : "🧭";
-                    } else siteConfig.favicon = val;
+                    if(val.includes('viewBox')) { const emoji = val.match(/font-size=%2290%22>(.*?)<\/text>/); siteConfig.favicon = emoji ? emoji[1] : "🧭"; }
+                    else siteConfig.favicon = val;
                 }
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const footerLinks = doc.querySelectorAll('.site-footer a');
-                if(footerLinks.length >= 2) {
-                    siteConfig.repoUrl = footerLinks[0].getAttribute('href');
-                    siteConfig.repoName = footerLinks[0].textContent.trim();
-                    siteConfig.liveUrl = footerLinks[1].getAttribute('href');
-                    siteConfig.liveName = footerLinks[1].textContent.trim();
-                }
-                renderAll(); closeImportModal(); alert('🎉 导入解析成功！');
-            } catch (e) { alert('❌ 解析失败，请检查代码。'); }
+                const parser = new DOMParser(); const doc = parser.parseFromString(html, 'text/html');
+                const flinks = doc.querySelectorAll('.site-footer a');
+                if(flinks.length >= 2) { siteConfig.repoUrl = flinks[0].getAttribute('href'); siteConfig.repoName = flinks[0].textContent.trim(); siteConfig.liveUrl = flinks[1].getAttribute('href'); siteConfig.liveName = flinks[1].textContent.trim(); }
+                renderAll(); closeImportModal(); alert('🎉 导入成功！');
+            } catch (e) { alert('❌ 解析失败。'); }
         }
 
-        // --- 功能函数 ---
         function updateGroupName(g, v) { siteConfig.siteData[g].group = v; }
         function addGroup() { siteConfig.siteData.push({ group: "新版块", links: [] }); renderAll(); }
-        function deleteGroup(g) { if(confirm('确定删除？')) { siteConfig.siteData.splice(g, 1); renderAll(); } }
+        function deleteGroup(g) { siteConfig.siteData.splice(g, 1); renderAll(); }
         function moveGroup(idx, dir) { [siteConfig.siteData[idx], siteConfig.siteData[idx+dir]] = [siteConfig.siteData[idx+dir], siteConfig.siteData[idx]]; renderAll(); }
         function addLink(g) { siteConfig.siteData[g].links.push({ name: "书签", desc: "描述", url: "./", icon: "🔗" }); renderAll(); }
         function updateLink(g, l, k, v) { siteConfig.siteData[g].links[l][k] = v; renderAll(); }
@@ -194,29 +114,41 @@
         function handleFileImport(e) { const r = new FileReader(); r.onload = (ev) => parseAndApply(ev.target.result); r.readAsText(e.target.files[0]); }
         function doImportFromText() { parseAndApply(document.getElementById('importArea').value); }
 
-        // --- 生成 HTML 核心逻辑 ---
         function generateFinalHTML() {
             siteConfig.favicon = document.getElementById('faviconUrl').value;
             siteConfig.repoName = document.getElementById('repoName').value;
             siteConfig.repoUrl = document.getElementById('repoUrl').value;
             siteConfig.liveName = document.getElementById('liveName').value;
             siteConfig.liveUrl = document.getElementById('liveUrl').value;
-            const favLink = siteConfig.favicon.length < 5 ? `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${siteConfig.favicon}</text></svg>` : siteConfig.favicon;
-
+            const fav = siteConfig.favicon.length < 5 ? `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${siteConfig.favicon}</text></svg>` : siteConfig.favicon;
+            
+            // 下面是完整的 index.html 模板代码，不再做任何阉割
             return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${siteConfig.repoName} - 控制台</title>
-    <link rel="icon" href="${favLink}" type="image/svg+xml">
+    <link rel="icon" href="${fav}" type="image/svg+xml">
     <style>
-        :root { --bg-color: #f1f5f9; --text-main: #1e293b; --text-sub: #64748b; --glass-bg: rgba(255, 255, 255, 0.65); --glass-hover: rgba(255, 255, 255, 0.9); --glass-border: rgba(255, 255, 255, 0.8); --glass-shadow: rgba(0, 0, 0, 0.06); --search-bg: rgba(255, 255, 255, 0.6); --search-border: rgba(0, 0, 0, 0.1); --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.2), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.2), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.2), transparent 30%); }
-        [data-theme="dark"] { --bg-color: #0f172a; --text-main: #ffffff; --text-sub: rgba(255, 255, 255, 0.75); --glass-bg: rgba(255, 255, 255, 0.1); --glass-hover: rgba(255, 255, 255, 0.15); --glass-border: rgba(255, 255, 255, 0.15); --glass-shadow: rgba(0, 0, 0, 0.3); --search-bg: rgba(0, 0, 0, 0.3); --search-border: rgba(255, 255, 255, 0.2); --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.1), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.1), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.08), transparent 30%); }
-        body, html { margin: 0; padding: 0; font-family: "SF Pro Display", sans-serif; color: var(--text-main); min-height: 100vh; background-color: var(--bg-color); background-image: var(--bg-gradient); background-attachment: fixed; background-size: cover; display: flex; flex-direction: column; transition: 0.4s; }
+        :root {
+            --bg-color: #f1f5f9; --text-main: #1e293b; --text-sub: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.65); --glass-hover: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.8); --glass-shadow: rgba(0, 0, 0, 0.06);
+            --search-bg: rgba(255, 255, 255, 0.6); --search-border: rgba(0, 0, 0, 0.1);
+            --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.2), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.2), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.2), transparent 30%);
+        }
+        [data-theme="dark"] {
+            --bg-color: #0f172a; --text-main: #ffffff; --text-sub: rgba(255, 255, 255, 0.75);
+            --glass-bg: rgba(255, 255, 255, 0.1); --glass-hover: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.15); --glass-shadow: rgba(0, 0, 0, 0.3);
+            --search-bg: rgba(0, 0, 0, 0.3); --search-border: rgba(255, 255, 255, 0.2);
+            --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.1), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.1), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.08), transparent 30%);
+        }
+        body, html { margin: 0; padding: 0; font-family: "SF Pro Display", sans-serif; color: var(--text-main); min-height: 100vh; background-color: var(--bg-color); background-image: var(--bg-gradient); background-attachment: fixed; background-size: cover; background-position: center; display: flex; flex-direction: column; transition: 0.4s; }
         .controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 100; }
         .control-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; backdrop-filter: blur(12px); display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px var(--glass-shadow); }
         .header-section { display: flex; flex-direction: column; align-items: center; padding: 8vh 20px 4vh; }
-        .main-title { font-size: 32px; font-weight: 700; margin-bottom: 15px; }
+        .main-title { font-size: 32px; font-weight: 700; margin-bottom: 15px; text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .clock-area { display: flex; align-items: baseline; gap: 12px; }
         .time { font-size: 56px; font-weight: 500; font-variant-numeric: tabular-nums; }
         .date { font-size: 16px; opacity: 0.9; }
@@ -235,6 +167,7 @@
         .app-title { font-size: 16px; font-weight: 600; margin: 0 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .app-desc { font-size: 12px; color: var(--text-sub); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         dialog { background: var(--glass-bg); backdrop-filter: blur(25px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; color: var(--text-main); width: 320px; }
+        dialog::backdrop { background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
         .site-footer { padding: 30px 0; display: flex; justify-content: center; align-items: center; gap: 15px; font-size: 13px; }
         .site-footer a { color: var(--text-main); opacity: 0.6; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: 0.3s; }
         .site-footer a:hover { opacity: 1; color: #3b82f6; }
@@ -243,9 +176,25 @@
     </style>
 </head>
 <body>
-    <div class="controls"><button class="control-btn" onclick="openBgModal()">🖼️ 背景</button><button class="control-btn" id="secBtn" onclick="toggleSeconds()">⏱️ <span id="secText">隐藏秒数</span></button><button class="control-btn" id="themeBtn" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">深色</span></button></div>
-    <dialog id="bgModal"><h3 style="margin-top:0">壁纸设置</h3><div style="display:flex;flex-direction:column;gap:12px;margin:20px 0"><label><input type="radio" name="bgType" value="default"> 🎨 默认渐变</label><label><input type="radio" name="bgType" value="bing"> 🌍 必应壁纸</label><label><input type="radio" name="bgType" value="custom"> 🔗 自定义链接</label><input type="text" id="customBgUrl" placeholder="http://" style="width:100%;padding:8px;border-radius:5px;border:1px solid #ccc;background:rgba(255,255,255,0.2);color:inherit"></div><button onclick="saveBg()" style="width:100%;padding:10px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer">保存</button></dialog>
-    <div class="header-section"><h1 class="main-title">Giffgaff Keeper</h1><div class="clock-area"><div class="time" id="clock-time">00:00:00</div><div class="date" id="clock-date">--月--日</div></div></div>
+    <div class="controls">
+        <button class="control-btn" onclick="openBgModal()">🖼️ 背景设置</button>
+        <button class="control-btn" id="secBtn" onclick="toggleSeconds()">⏱️ <span id="secText">隐藏秒数</span></button>
+        <button class="control-btn" id="themeBtn" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">深色模式</span></button>
+    </div>
+    <dialog id="bgModal">
+        <h3 style="margin-top:0">壁纸与背景设置</h3>
+        <div style="display:flex;flex-direction:column;gap:12px;margin:20px 0">
+            <label><input type="radio" name="bgType" value="default"> 🎨 默认极光渐变</label>
+            <label><input type="radio" name="bgType" value="bing"> 🌍 必应每日壁纸</label>
+            <label><input type="radio" name="bgType" value="custom"> 🔗 自定义图片链接</label>
+            <input type="text" id="customBgUrl" placeholder="http://" style="width:100%;padding:8px;border-radius:5px;border:1px solid #ccc;background:rgba(255,255,255,0.2);color:inherit">
+        </div>
+        <button onclick="saveBg()" style="width:100%;padding:10px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer">保存并应用</button>
+    </dialog>
+    <div class="header-section">
+        <h1 class="main-title">Giffgaff Keeper</h1>
+        <div class="clock-area"><div class="time" id="clock-time">00:00:00</div><div class="date" id="clock-date">--月--日</div></div>
+    </div>
     <div class="search-container"><input type="text" class="search-bar" id="searchInput" placeholder="🔍 搜索应用..." onkeyup="renderData()"></div>
     <div class="content-container" id="board"></div>
     <footer class="site-footer">
@@ -267,7 +216,7 @@
         function saveBg() { const t = document.querySelector('input[name="bgType"]:checked').value, u = document.getElementById('customBgUrl').value; bgConfig = {type:t, url:u}; localStorage.setItem('giffgaff_bg', JSON.stringify(bgConfig)); applyBackground(); document.getElementById('bgModal').close(); }
         function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light'); localStorage.setItem('giffgaff_theme', isDarkMode ? 'dark' : 'light'); updateUIConfig(); }
         function toggleSeconds() { showSeconds = !showSeconds; localStorage.setItem('giffgaff_seconds', showSeconds); updateUIConfig(); updateClock(); }
-        function updateUIConfig() { document.getElementById('themeIcon').innerText = isDarkMode ? '☀️' : '🌙'; document.getElementById('secText').innerText = showSeconds ? '隐藏秒数' : '显示秒数'; }
+        function updateUIConfig() { document.getElementById('themeIcon').innerText = isDarkMode ? '☀️' : '🌙'; document.getElementById('themeText').innerText = isDarkMode ? '亮色模式' : '深色模式'; document.getElementById('secText').innerText = showSeconds ? '隐藏秒数' : '显示秒数'; }
         function renderData() {
             const board = document.getElementById('board'), kw = document.getElementById('searchInput').value.toLowerCase(); board.innerHTML = '';
             siteData.forEach(g => {
@@ -289,24 +238,16 @@
 </html>`;
         }
 
-        // --- 导出方式 1: 复制 ---
         function copyToClipboard() {
-            const el = document.createElement('textarea');
-            el.value = generateFinalHTML();
-            document.body.appendChild(el); el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            alert('✅ 代码已复制到剪贴板！');
+            const el = document.createElement('textarea'); el.value = generateFinalHTML();
+            document.body.appendChild(el); el.select(); document.execCommand('copy');
+            document.body.removeChild(el); alert('✅ 代码已完整复制！');
         }
 
-        // --- 导出方式 2: 下载文件 ---
         function downloadHTMLFile() {
             const blob = new Blob([generateFinalHTML()], { type: 'text/html' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'index.html';
-            a.click();
-            URL.revokeObjectURL(a.href);
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = 'index.html'; a.click(); URL.revokeObjectURL(a.href);
         }
 
         renderAll();
