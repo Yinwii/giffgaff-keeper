@@ -56,6 +56,8 @@
             background-position: center;
             background-repeat: no-repeat;
             transition: background-color 0.4s ease, color 0.4s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         /* 右上角控制台 */
@@ -104,7 +106,7 @@
             margin: 0 0 15px 0;
             letter-spacing: 1px;
             color: var(--text-main);
-            text-shadow: 0 2px 10px rgba(0,0,0,0.15); /* 加强阴影保证在复杂背景图片下也能看清 */
+            text-shadow: 0 2px 10px rgba(0,0,0,0.15);
         }
 
         .clock-area {
@@ -123,7 +125,7 @@
         .date { 
             font-size: 16px; 
             font-weight: 500;
-            color: var(--text-main); /* 在图片背景下使用主色更清晰 */
+            color: var(--text-main);
             opacity: 0.9;
         }
 
@@ -161,9 +163,12 @@
 
         /* 导航内容区 */
         .content-container {
+            flex: 1;
+            width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px 60px;
+            padding: 0 20px 40px;
+            box-sizing: border-box;
         }
 
         .group-section { margin-bottom: 45px; }
@@ -289,7 +294,7 @@
             width: 100%; padding: 10px; border-radius: 8px; 
             border: 1px solid var(--search-border); background: var(--search-bg); 
             color: var(--text-main); box-sizing: border-box; outline: none; margin-top: 10px;
-            display: none; /* 默认隐藏 */
+            display: none;
         }
         .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
         .dialog-btn { 
@@ -298,11 +303,49 @@
         }
         .dialog-btn.primary { background: #3b82f6; color: white; border-color: #3b82f6; }
         .dialog-btn:hover { opacity: 0.8; }
+
+        /* 页脚样式优化 */
+        .site-footer {
+            width: 100%;
+            padding: 30px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            font-size: 13px;
+        }
+        .site-footer a {
+            color: var(--text-main);
+            opacity: 0.6;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-weight: 500;
+        }
+        .site-footer a:hover {
+            opacity: 1;
+            transform: translateY(-2px);
+            color: #3b82f6;
+        }
+        .site-footer .footer-sep {
+            width: 1px;
+            height: 12px;
+            background: var(--text-sub);
+            opacity: 0.3;
+        }
+        .site-footer svg {
+            fill: currentColor;
+            width: 16px;
+            height: 16px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- 右上角设置控制区 -->
+    <!-- 右上角控制台 -->
     <div class="controls">
         <button class="control-btn" onclick="openBgModal()">
             <span>🖼️</span> <span>背景设置</span>
@@ -320,10 +363,10 @@
         <h3 class="dialog-title">壁纸与背景设置</h3>
         <div class="radio-group">
             <label class="radio-label">
-                <input type="radio" name="bgType" value="default" onchange="toggleCustomInput()"> 🎨 默认极光渐变 (纯色)
+                <input type="radio" name="bgType" value="default" onchange="toggleCustomInput()"> 🎨 默认极光渐变
             </label>
             <label class="radio-label">
-                <input type="radio" name="bgType" value="bing" onchange="toggleCustomInput()"> 🌍 必应每日壁纸 (自动更新)
+                <input type="radio" name="bgType" value="bing" onchange="toggleCustomInput()"> 🌍 必应每日壁纸
             </label>
             <label class="radio-label">
                 <input type="radio" name="bgType" value="custom" onchange="toggleCustomInput()"> 🔗 自定义图片链接
@@ -353,10 +396,27 @@
     </div>
     <div class="no-result" id="noResult">没有找到匹配的书签 ~</div>
 
+    <!-- 页脚部分 -->
+    <footer class="site-footer">
+        <!-- 源码仓库链接 -->
+        <a href="https://github.com/Yinwii/giffgaff-keeper" target="_blank" rel="noopener noreferrer" title="查看源代码">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            Repository
+        </a>
+        <div class="footer-sep"></div>
+        <!-- 预览链接 -->
+        <a href="https://yinwii.github.io/giffgaff-keeper" target="_blank" rel="noopener noreferrer" title="访问在线预览地址">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            Live Site
+        </a>
+    </footer>
+
     <script>
-        // ==========================================
-        // 🚨 链接配置区
-        // ==========================================
+        // 书签数据保持不变
         const siteData = [
             {
                 group: "核心业务页面",
@@ -400,41 +460,27 @@
             }
         ];
 
-        // 全局状态
-        let showSeconds = true; // 默认开启秒数
+        let showSeconds = true; 
         let isDarkMode = false; 
         let bgConfig = { type: 'default', url: '' };
 
-        // 初始化所有设置
         function initSettings() {
-            // 主题设置
             const savedTheme = localStorage.getItem('giffgaff_theme');
             if (savedTheme === 'dark') {
                 isDarkMode = true;
                 document.documentElement.setAttribute('data-theme', 'dark');
             }
-
-            // 秒数设置 (只有明确存了 'false' 才关闭，否则默认开启)
             const savedSec = localStorage.getItem('giffgaff_seconds');
-            if (savedSec === 'false') {
-                showSeconds = false;
-            }
-
-            // 背景设置
+            if (savedSec === 'false') { showSeconds = false; }
             const savedBg = localStorage.getItem('giffgaff_bg');
-            if (savedBg) {
-                bgConfig = JSON.parse(savedBg);
-            }
-            
+            if (savedBg) { bgConfig = JSON.parse(savedBg); }
             updateUIConfig();
             applyBackground();
         }
 
-        // ================= 背景设置逻辑 =================
         function applyBackground() {
             const body = document.body;
             if (bgConfig.type === 'bing') {
-                // 使用公共稳定的必应每日壁纸 API
                 body.style.backgroundImage = "url('https://api.dujin.org/bing/1920.php')";
             } else if (bgConfig.type === 'custom' && bgConfig.url) {
                 body.style.backgroundImage = `url('${bgConfig.url}')`;
@@ -445,38 +491,28 @@
 
         function openBgModal() {
             document.getElementById('bgModal').showModal();
-            // 回显数据
             document.querySelector(`input[name="bgType"][value="${bgConfig.type}"]`).checked = true;
             document.getElementById('customBgUrl').value = bgConfig.url;
             toggleCustomInput();
         }
 
-        function closeBgModal() {
-            document.getElementById('bgModal').close();
-        }
+        function closeBgModal() { document.getElementById('bgModal').close(); }
 
         function toggleCustomInput() {
             const type = document.querySelector('input[name="bgType"]:checked').value;
-            const input = document.getElementById('customBgUrl');
-            input.style.display = type === 'custom' ? 'block' : 'none';
+            document.getElementById('customBgUrl').style.display = type === 'custom' ? 'block' : 'none';
         }
 
         function saveBg() {
             const type = document.querySelector('input[name="bgType"]:checked').value;
             const url = document.getElementById('customBgUrl').value.trim();
-            
-            if (type === 'custom' && !url) {
-                alert('请输入自定义图片链接！');
-                return;
-            }
-
+            if (type === 'custom' && !url) { alert('请输入自定义图片链接！'); return; }
             bgConfig = { type: type, url: url };
             localStorage.setItem('giffgaff_bg', JSON.stringify(bgConfig));
             applyBackground();
             closeBgModal();
         }
 
-        // ================= 其他控制逻辑 =================
         function toggleTheme() {
             isDarkMode = !isDarkMode;
             document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
@@ -497,7 +533,6 @@
             document.getElementById('secText').innerText = showSeconds ? '隐藏秒数' : '显示秒数';
         }
 
-        // 渲染书签数据
         function renderData() {
             const board = document.getElementById('board');
             const noResult = document.getElementById('noResult');
@@ -511,72 +546,42 @@
                     link.desc.toLowerCase().includes(keyword) ||
                     link.url.toLowerCase().includes(keyword)
                 );
-
-                if (keyword && filteredLinks.length === 0 && !group.group.toLowerCase().includes(keyword)) {
-                    return;
-                }
-
+                if (keyword && filteredLinks.length === 0 && !group.group.toLowerCase().includes(keyword)) return;
                 hasResult = true;
-
                 const section = document.createElement('div');
                 section.className = 'group-section';
-                
                 let linksHtml = filteredLinks.map(link => {
                     let iconContent = link.icon || '🔗';
                     if (iconContent.includes('http') || iconContent.includes('.')) {
                         iconContent = `<img src="${iconContent}" alt="icon" loading="lazy">`;
                     }
-
-                    return `
-                    <a href="${link.url}" class="app-card" target="_blank" title="${link.url}">
+                    return `<a href="${link.url}" class="app-card" target="_blank" title="${link.url}">
                         <div class="app-icon">${iconContent}</div>
                         <div class="app-info">
                             <h3 class="app-title">${link.name}</h3>
                             <p class="app-desc">${link.desc || link.url}</p>
                         </div>
-                    </a>
-                `}).join('');
-
-                section.innerHTML = `
-                    <div class="group-title">${group.group}</div>
-                    <div class="grid-container">
-                        ${linksHtml || '<p style="color:var(--text-sub); padding-left:10px; font-size:14px;">该组暂无匹配书签</p>'}
-                    </div>
-                `;
+                    </a>`
+                }).join('');
+                section.innerHTML = `<div class="group-title">${group.group}</div><div class="grid-container">${linksHtml}</div>`;
                 board.appendChild(section);
             });
-
             noResult.style.display = hasResult ? 'none' : 'block';
         }
 
-        // 时钟功能
         function updateClock() {
             const now = new Date();
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            
-            let timeString = `${hours}:${minutes}`;
-            if (showSeconds) {
-                timeString += `:${seconds}`;
-            }
-            
-            document.getElementById('clock-time').innerText = timeString;
-            
+            document.getElementById('clock-time').innerText = showSeconds ? `${hours}:${minutes}:${seconds}` : `${hours}:${minutes}`;
             const month = now.getMonth() + 1;
             const date = now.getDate();
             const days = ['日', '一', '二', '三', '四', '五', '六'];
-            const day = days[now.getDay()];
-            document.getElementById('clock-date').innerText = `${month}月${date}日 星期${day}`;
+            document.getElementById('clock-date').innerText = `${month}月${date}日 星期${days[now.getDay()]}`;
         }
 
-        // 页面初始化
-        window.onload = () => {
-            initSettings(); 
-            renderData();
-            updateClock();
-            setInterval(updateClock, 1000);
-        }
+        window.onload = () => { initSettings(); renderData(); updateClock(); setInterval(updateClock, 1000); }
     </script>
 </body>
 </html>
