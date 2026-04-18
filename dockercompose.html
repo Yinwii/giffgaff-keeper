@@ -934,7 +934,7 @@
                     </button>
                 </div>
             </div>
-            <div class="output theme-dark" id="outputContainer">
+            <div class="output theme-light" id="outputContainer">
                 <pre class="language-yaml"><code id="outputCode"># 生成的 Docker Compose 配置将显示在这里</code></pre>
             </div>
         </div>
@@ -1077,8 +1077,8 @@
                 setTheme(!isCurrentlyLight);
             };
 
-            // 载入持久化主题
-            var savedTheme = localStorage.getItem('output_theme') || 'dark';
+            // 载入持久化主题 (默认浅色)
+            var savedTheme = localStorage.getItem('output_theme') || 'light';
             setTheme(savedTheme === 'light');
 
             resetAllBtn.onclick = function () {
