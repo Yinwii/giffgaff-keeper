@@ -2,23 +2,11 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Nav - 控制台</title>
+    <title>Repository - 控制台</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>" type="image/svg+xml">
     <style>
-        :root {
-            --bg-color: #f1f5f9; --text-main: #1e293b; --text-sub: #64748b;
-            --glass-bg: rgba(255, 255, 255, 0.65); --glass-hover: rgba(255, 255, 255, 0.9);
-            --glass-border: rgba(255, 255, 255, 0.8); --glass-shadow: rgba(0, 0, 0, 0.06);
-            --search-bg: rgba(255, 255, 255, 0.6); --search-border: rgba(0, 0, 0, 0.1);
-            --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.2), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.2), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.2), transparent 30%);
-        }
-        [data-theme="dark"] {
-            --bg-color: #0f172a; --text-main: #ffffff; --text-sub: rgba(255, 255, 255, 0.75);
-            --glass-bg: rgba(255, 255, 255, 0.1); --glass-hover: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.15); --glass-shadow: rgba(0, 0, 0, 0.3);
-            --search-bg: rgba(0, 0, 0, 0.3); --search-border: rgba(255, 255, 255, 0.2);
-            --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.1), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.1), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.08), transparent 30%);
-        }
+        :root { --bg-color: #f1f5f9; --text-main: #1e293b; --text-sub: #64748b; --glass-bg: rgba(255, 255, 255, 0.65); --glass-hover: rgba(255, 255, 255, 0.9); --glass-border: rgba(255, 255, 255, 0.8); --glass-shadow: rgba(0, 0, 0, 0.06); --search-bg: rgba(255, 255, 255, 0.6); --search-border: rgba(0, 0, 0, 0.1); --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.2), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.2), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.2), transparent 30%); }
+        [data-theme="dark"] { --bg-color: #0f172a; --text-main: #ffffff; --text-sub: rgba(255, 255, 255, 0.75); --glass-bg: rgba(255, 255, 255, 0.1); --glass-hover: rgba(255, 255, 255, 0.15); --glass-border: rgba(255, 255, 255, 0.15); --glass-shadow: rgba(0, 0, 0, 0.3); --search-bg: rgba(0, 0, 0, 0.3); --search-border: rgba(255, 255, 255, 0.2); --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.1), transparent 25%), radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.1), transparent 25%), radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.08), transparent 30%); }
         body, html { margin: 0; padding: 0; font-family: "SF Pro Display", sans-serif; color: var(--text-main); min-height: 100vh; background-color: var(--bg-color); background-image: var(--bg-gradient); background-attachment: fixed; background-size: cover; background-position: center; display: flex; flex-direction: column; transition: 0.4s; }
         .controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 100; }
         .control-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; backdrop-filter: blur(12px); display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px var(--glass-shadow); }
@@ -51,17 +39,13 @@
     </style>
 </head>
 <body>
-    <div class="controls">
-        <button class="control-btn" onclick="openBgModal()">🖼️ 背景设置</button>
-        <button class="control-btn" id="secBtn" onclick="toggleSeconds()">⏱️ <span id="secText">隐藏秒数</span></button>
-        <button class="control-btn" id="themeBtn" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">深色模式</span></button>
-    </div>
+    <div class="controls"><button class="control-btn" onclick="openBgModal()">🖼️ 背景设置</button><button class="control-btn" id="secBtn" onclick="toggleSeconds()">⏱️ <span id="secText">隐藏秒数</span></button><button class="control-btn" id="themeBtn" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">深色模式</span></button></div>
     <dialog id="bgModal">
-        <h3 style="margin-top:0">壁纸与背景设置</h3>
+        <h3 style="margin-top:0">壁纸设置</h3>
         <div style="display:flex;flex-direction:column;gap:12px;margin:20px 0">
-            <label><input type="radio" name="bgType" value="default"> 🎨 默认极光渐变</label>
-            <label><input type="radio" name="bgType" value="bing"> 🌍 必应每日壁纸</label>
-            <label><input type="radio" name="bgType" value="custom"> 🔗 自定义图片链接</label>
+            <label><input type="radio" name="bgType" value="default"> 🎨 默认渐变</label>
+            <label><input type="radio" name="bgType" value="bing"> 🌍 必应壁纸</label>
+            <label><input type="radio" name="bgType" value="custom"> 🔗 自定义链接</label>
             <input type="text" id="customBgUrl" placeholder="http://" style="width:100%;padding:8px;border-radius:5px;border:1px solid #ccc;background:rgba(255,255,255,0.2);color:inherit">
         </div>
         <button onclick="saveBg()" style="width:100%;padding:10px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer">保存并应用</button>
@@ -187,6 +171,12 @@
                 "desc": "自定义内核优化指南",
                 "url": "./xanmod_manual.html",
                 "icon": "🐧"
+            },
+            {
+                "name": "Docker-Composer",
+                "desc": "Docker-Compose-Tool",
+                "url": "./dockercompose.html",
+                "icon": "🐋"
             }
         ]
     },
