@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Compose 配置转换工具</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 512'><path fill='%232496ed' d='M349.9 236.3h-66.1v-59.4h66.1v59.4zm0-204.3h-66.1v60.7h66.1V32zm78.2 144.8H362v59.4h66.1v-59.4zm-156.3-72.1h-66.1v60.1h66.1v-60.1zm78.1 0h-66.1v60.1h66.1v-60.1zm276.8 100c-14.4-9.7-47.6-13.2-73.1-8.4-3.3-24-16.7-44.9-41.1-63.7l-14-9.3-9.3 14c-18.4 27.8-23.4 73.6-3.7 103.8-8.7 4.7-25.8 11.1-48.4 10.7H2.4c-7.6 42.6-1 99.4 25.9 143.2 29.2 47.6 81.8 71.5 152.8 71.5 133.2 0 241.9-66.8 294.4-210.6 19.1.3 60.4.5 81.6-40.5.5-.9 1.7-3.2 5.5-11.2l2-4.4-13.7-9.2zM124.1 236.3H58v59.4h66.1v-59.4zm78.1 0h-66.1v59.4h66.1v-59.4zm78.1 0h-66.1v59.4h66.1v-59.4zm-78.1-72.1H136v60.1h66.1v-60.1z'/></svg>" type="image/svg+xml">
+    <!-- 引入 Prism.js 高亮主题 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-color: #2496ed;
+            --secondary-color: #f8f9fa;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --font-code: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            background-color: #f0f2f5;
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1600px;
+            width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 8px 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .docker-logo {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 22px;
+            white-space: nowrap;
+        }
+
+        header .sep {
+            color: #ccc;
+            font-size: 22px;
+            margin: 0 2px;
+        }
+
+        header p {
+            margin: 0;
+            font-size: 15px;
+            color: #888;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .panel>h2 {
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--primary-color);
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .panel-header h2 {
+            color: var(--primary-color);
+            margin: 0;
+            padding: 0;
+            border: none;
+            font-size: 18px;
+        }
+
+        .copy-output-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+            background: #f0f2f5;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .copy-output-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .copy-output-btn.copied {
+            background: var(--success-color) !important;
+            color: white !important;
+            border-color: var(--success-color) !important;
+        }
+
+        .output-header-tools .copy-output-btn {
+            background: #e7f3ff;
+            color: #006edc;
+            border-color: #b3d7ff;
+        }
+
+        .output-header-tools .copy-output-btn:hover {
+            background: #006edc;
+            color: white;
+            border-color: #006edc;
+        }
+
+        .copy-output-btn svg,
+        .export-btn svg {
+            flex-shrink: 0;
+        }
+
+        .export-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e7e34;
+            background: #e6ffec;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .export-btn:hover {
+            background: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+
+        .input-group {
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .input-group.flex-grow {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 16px;
+        }
+
+        textarea {
+            resize: vertical;
+            flex: 1;
+            min-height: 80px;
+            font-family: monospace;
+            font-size: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 6px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .checkbox-item label {
+            font-weight: normal;
+            margin-bottom: 0;
+            font-size: 15px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .reset-btn {
+            background-color: #727b84;
+            width: auto;
+            font-size: 16px;
+        }
+
+        .reset-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-row {
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* 输出面板双主题配色系统 */
+        .output {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 14px;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s, border-color 0.3s;
+            margin-top: 5px;
+        }
+
+        .theme-dark {
+            background-color: #2d2d2d !important;
+            border-color: #444 !important;
+        }
+
+        .theme-light {
+            background-color: #f8f9fa !important;
+            border-color: #dee2e6 !important;
+        }
+
+        pre[class*="language-"] {
+            margin: 0;
+            padding: 0;
+            background: transparent !important;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: none;
+        }
+
+        code[class*="language-"] {
+            font-family: var(--font-code) !important;
+            font-size: 14px;
+            text-shadow: none;
+            line-height: 1.6;
+            padding: 0 !important;
+            display: block;
+            flex: 1;
+            overflow: auto;
+            transition: color 0.3s;
+        }
+
+        /* Prism 风格强覆盖以支持亮暗切换 */
+        .theme-dark code[class*="language-"] {
+            color: #ccc !important;
+        }
+
+        .theme-light code[class*="language-"] {
+            color: #333 !important;
+        }
+
+        /* 亮色模式下的 Token 颜色微调确保可读性 */
+        .theme-light .token.atrule,
+        .theme-light .token.attr-value,
+        .theme-light .token.keyword {
+            color: #07a;
+        }
+
+        .theme-light .token.property,
+        .theme-light .token.tag,
+        .theme-light .token.boolean,
+        .theme-light .token.number {
+            color: #905;
+        }
+
+        .theme-light .token.string,
+        .theme-light .token.char,
+        .theme-light .token.attr-name {
+            color: #690;
+        }
+
+        .output-header-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2496ed;
+            background: #eaf1f8;
+            border: 1px solid #adcdea;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .theme-toggle-btn:hover {
+            background: #2496ed;
+            color: white;
+            border-color: #2496ed;
+        }
+
+        .success {
+            color: #88cc99;
+        }
+
+        .error {
+            color: var(--error-color);
+            font-family: var(--font-code);
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        .hint {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 3.5px;
+            line-height: 1.6;
+        }
+
+        .hint code {
+            font-family: var(--font-code);
+            background: #eee;
+            padding: 0 3.5px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        /* 标题图标美化 */
+        h2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        h2 i,
+        h2 svg {
+            color: var(--primary-color);
+            flex-shrink: 0;
+        }
+
+        .preview-tip {
+            font-size: 12px;
+            color: var(--primary-color);
+            background: rgba(36, 150, 237, 0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 4px;
+            margin-top: 5px;
+            width: fit-content;
+            border: 1px solid rgba(36, 150, 237, 0.2);
+        }
+
+        /* 清除按钮与代码样式增强 */
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        textarea,
+        input[type="text"] {
+            font-family: var(--font-code) !important;
+            font-size: 14px;
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            border: none;
+            color: #666;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 5;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .input-wrapper:hover .clear-btn {
+            display: flex;
+        }
+
+        #volumePrefix {
+            padding-right: 35px;
+        }
+
+        .import-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-color);
+            background: #fff;
+            border: 1px solid var(--primary-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .import-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .paste-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6f42c1;
+            background: #f3f0ff;
+            border: 1px solid #dcd3ff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .paste-btn:hover {
+            background: #6f42c1;
+            border-color: #6f42c1;
+            color: white;
+        }
+
+        .paste-btn:hover svg {
+            color: white;
+        }
+
+        .paste-btn svg {
+            color: #6f42c1;
+        }
+
+        @media (max-width: 768px) {
+
+            html,
+            body {
+                height: auto;
+                overflow: auto;
+            }
+
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                flex: none;
+                gap: 8px;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 4px;
+                padding: 10px 12px;
+                text-align: center;
+            }
+
+            header h1 {
+                font-size: 16px;
+                white-space: normal;
+                line-height: 1.3;
+            }
+
+            header .sep {
+                display: none;
+            }
+
+            header p {
+                font-size: 12px;
+            }
+
+            .docker-logo {
+                width: 28px;
+                height: 28px;
+            }
+
+            .panel {
+                padding: 12px;
+                overflow: visible;
+                min-height: auto;
+            }
+
+            .panel-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .panel-header h2 {
+                font-size: 15px;
+            }
+
+            .copy-output-btn {
+                align-self: flex-end;
+                font-size: 12px;
+                padding: 4px 10px;
+                margin-top: -2px;
+            }
+
+            .input-group.flex-grow {
+                flex: none;
+            }
+
+            textarea {
+                flex: none;
+                min-height: 160px;
+                height: 160px;
+            }
+
+            .output {
+                flex: none;
+                min-height: 250px;
+                font-size: 13px;
+                padding: 10px;
+            }
+
+            .panel>h2 {
+                font-size: 15px;
+            }
+
+            label {
+                font-size: 14px;
+            }
+
+            input[type="text"],
+            textarea {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            #volumePrefix {
+                font-size: 13px;
+            }
+
+            .checkbox-item label {
+                font-size: 13px;
+            }
+
+            .checkbox-item input[type="checkbox"] {
+                width: 15px;
+                height: 15px;
+            }
+
+            .hint {
+                font-size: 11px;
+            }
+
+            button {
+                font-size: 15px;
+                padding: 10px 16px;
+                width: 100%;
+                margin-top: 6px;
+            }
+        }
+
+        /* 变量同步面板样式 */
+        .sync-panel {
+            background: #f8f9fa;
+            border: 1px dashed var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .sync-panel.active {
+            display: block;
+        }
+
+        .sync-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sync-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+        }
+
+        .sync-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sync-item label {
+            font-size: 12px;
+            color: #888;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sync-item input {
+            padding: 4px 8px;
+            font-size: 13px !important;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .sync-item input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(36, 150, 237, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <svg class="docker-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
+                <path fill="#2496ed"
+                    d="M349.9 236.3h-66.1v-59.4h66.1v59.4zm0-204.3h-66.1v60.7h66.1V32zm78.2 144.8H362v59.4h66.1v-59.4zm-156.3-72.1h-66.1v60.1h66.1v-60.1zm78.1 0h-66.1v60.1h66.1v-60.1zm276.8 100c-14.4-9.7-47.6-13.2-73.1-8.4-3.3-24-16.7-44.9-41.1-63.7l-14-9.3-9.3 14c-18.4 27.8-23.4 73.6-3.7 103.8-8.7 4.7-25.8 11.1-48.4 10.7H2.4c-7.6 42.6-1 99.4 25.9 143.2 29.2 47.6 81.8 71.5 152.8 71.5 133.2 0 241.9-66.8 294.4-210.6 19.1.3 60.4.5 81.6-40.5.5-.9 1.7-3.2 5.5-11.2l2-4.4-13.7-9.2zM124.1 236.3H58v59.4h66.1v-59.4zm78.1 0h-66.1v59.4h66.1v-59.4zm78.1 0h-66.1v59.4h66.1v-59.4zm-78.1-72.1H136v60.1h66.1v-60.1z" />
+            </svg>
+            <h1>Docker Compose 配置转换工具</h1>
+            <span class="sep">|</span>
+            <p>将 Docker Run 命令或 Docker Compose 配置转换为标准 YAML 文件</p>
+        </header>
+        <div class="panel">
+            <div class="panel-header">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    输入配置信息
+                </h2>
+                <div style="display: flex; gap: 8px;">
+                    <button class="paste-btn" id="pasteCommandBtn" title="一键粘贴剪贴板内容">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        </svg>
+                        <span>粘贴</span>
+                    </button>
+                    <button class="import-btn" id="importYmlBtn" title="从本地 .yml 文件导入">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>导入 YAML</span>
+                    </button>
+                </div>
+                <input type="file" id="fileInput" accept=".yml,.yaml" style="display:none;">
+            </div>
+            <div class="input-group flex-grow">
+                <div class="input-wrapper">
+                    <textarea id="dockerCommand" placeholder="# 请输入 Docker Run 命令或 Docker Compose YAML 配置"></textarea>
+                    <button class="clear-btn" id="clearCommandBtn" title="清空输入内容">&times;</button>
+                </div>
+                <div id="containerNamePreview" class="preview-tip">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    建议容器名: <span id="previewValue"></span>
+                </div>
+                <div id="paramSyncPanel" class="sync-panel">
+                    <div class="sync-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        活性参数同步编辑 (修改即生效)
+                    </div>
+                    <div id="syncGrid" class="sync-grid"></div>
+                </div>
+                <div class="hint">支持 Docker Run 命令（含 docker pull）、多行命令（带 \ 或漏写 \）、或完整的 Docker Compose YAML 配置</div>
+            </div>
+            <div class="input-group">
+                <label for="volumePrefix">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        style="display:inline; margin-right:4px; vertical-align:text-bottom;">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    自定义卷映射绝对路径
+                </label>
+                <div class="input-wrapper">
+                    <input type="text" id="volumePrefix" list="volumePathList">
+                    <button class="clear-btn" id="clearPrefixBtn" title="清空路径内容">&times;</button>
+                </div>
+                <datalist id="volumePathList"></datalist>
+                <div class="hint">
+                    · 留空则不做任何替换<br>
+                    · <code>$(pwd)</code> 等 shell 变量会被自动去掉<br>
+                    · <code>{container_name}</code> 会自动替换为实际容器名<br>
+                    · 默认提供常用路径建议，输入新路径将自动保存
+                </div>
+            </div>
+            <div class="input-group">
+                <label>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        style="display:inline; margin-right:4px; vertical-align:text-bottom;">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1V10a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2v.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
+                    常用选项
+                </label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item" style="gap: 5px;">
+                        <label for="restartMode" style="font-weight: normal; font-size: 15px; margin-bottom: 0; display: flex; align-items: center; gap: 4px; color: #555;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 4v6h-6"></path>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                            自动重启:
+                        </label>
+                        <select id="restartMode" style="padding: 3px 8px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; cursor: pointer;">
+                            <option value="">(默认)</option>
+                            <option value="no">no</option>
+                            <option value="always">always</option>
+                            <option value="on-failure">on-failure</option>
+                            <option value="unless-stopped" selected>unless-stopped</option>
+                            <option value="custom">-- 自定义 --</option>
+                        </select>
+                        <input type="text" id="restartModeCustom" placeholder="策略名" style="display: none; padding: 4px 10px; font-size: 13px; width: 100px; height: 28px; border: 1px solid var(--border-color); border-radius: 4px;">
+                    </div>
+                    <div class="checkbox-item"><input type="checkbox" id="privilegedMode"><label
+                            for="privilegedMode">特权模式 (--privileged)</label></div>
+                    <div class="checkbox-item" style="gap: 5px;">
+                        <label for="networkMode" style="font-weight: normal; font-size: 15px; margin-bottom: 0; display: flex; align-items: center; gap: 4px; color: #555;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="6" y1="3" x2="6" y2="15"></line>
+                                <circle cx="18" cy="6" r="3"></circle>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <path d="M18 9a9 9 0 0 1-9 9"></path>
+                            </svg>
+                            默认网络模式:
+                        </label>
+                        <select id="networkMode" style="padding: 3px 8px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; cursor: pointer;">
+                            <option value="">(默认)</option>
+                            <option value="bridge">bridge</option>
+                            <option value="host">host</option>
+                            <option value="none">none</option>
+                            <option value="custom">-- 自定义 --</option>
+                        </select>
+                        <input type="text" id="networkModeCustom" placeholder="输入网络名" style="display: none; padding: 4px 10px; font-size: 13px; width: 140px; height: 28px;">
+                    </div>
+                </div>
+                <div class="hint">仅在命令中未显式指定对应参数时生效</div>
+            </div>
+            <div class="btn-row">
+                <button id="convertBtn" style="flex: 1; margin-top: 0;">转换配置</button>
+                <button id="resetAllBtn" class="reset-btn" style="padding: 10px 24px; margin-top: 0;"
+                    title="重置页面所有设置">重置</button>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    生成的 Compose 配置
+                </h2>
+                <div class="output-header-tools">
+                    <button class="theme-toggle-btn" id="themeToggleBtn" title="切换明暗配色主题">
+                        <svg id="themeMoon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                        <svg id="themeSun" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" style="display:none;">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <span id="themeLabel">深色</span>
+                    </button>
+                    <button class="export-btn" id="exportYamlBtn" title="导出为 .yml 文件">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>导出 YAML</span>
+                    </button>
+                    <button class="copy-output-btn" id="copyOutputBtn" title="复制配置内容">
+                        <svg id="copyIcon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <svg id="checkIcon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span id="copyOutputLabel">复制</span>
+                    </button>
+                </div>
+            </div>
+            <div class="output theme-dark" id="outputContainer">
+                <pre class="language-yaml"><code id="outputCode"># 生成的 Docker Compose 配置将显示在这里</code></pre>
+            </div>
+        </div>
+    </div>
+    <script>
+        init();
+
+        function init() {
+            var dockerCommandEl = document.getElementById('dockerCommand');
+            var volumePrefixEl = document.getElementById('volumePrefix');
+            var volumePathList = document.getElementById('volumePathList');
+            var output = document.getElementById('output');
+            var convertBtn = document.getElementById('convertBtn');
+            var copyOutputBtn = document.getElementById('copyOutputBtn');
+            var exportYamlBtn = document.getElementById('exportYamlBtn');
+            var copyOutputLabel = document.getElementById('copyOutputLabel');
+            var copyIcon = document.getElementById('copyIcon');
+            var checkIcon = document.getElementById('checkIcon');
+            var cbRestart = document.getElementById('restartPolicy');
+            var cbPrivileged = document.getElementById('privilegedMode');
+            var restartModeEl = document.getElementById('restartMode');
+            var restartModeCustomEl = document.getElementById('restartModeCustom');
+            var networkModeEl = document.getElementById('networkMode');
+            var networkModeCustomEl = document.getElementById('networkModeCustom');
+            var resetAllBtn = document.getElementById('resetAllBtn');
+            var containerNamePreview = document.getElementById('containerNamePreview');
+            var previewValue = document.getElementById('previewValue');
+            var outputCode = document.getElementById('outputCode');
+            var paramSyncPanel = document.getElementById('paramSyncPanel');
+            var syncGrid = document.getElementById('syncGrid');
+            var pasteCommandBtn = document.getElementById('pasteCommandBtn');
+            var clearCommandBtn = document.getElementById('clearCommandBtn');
+            var clearPrefixBtn = document.getElementById('clearPrefixBtn');
+            var activeOverrides = {}; // 存储用户在同步面板的修改
+            var lastScannedVars = {}; // 存储上一次扫描到的原始变量值
+
+            // 清除按钮逻辑
+            function checkBtn(el, btn) { btn.style.display = el.value ? 'flex' : 'none'; }
+
+            // 实时预览容器名
+            function updateNamePreview() {
+                var raw = dockerCommandEl.value.trim();
+                if (!raw) { containerNamePreview.style.display = 'none'; return; }
+                var cname = '';
+                if (raw.includes('services:') || raw.includes('version:')) {
+                    var m = raw.match(/^\s*container_name:\s*(.+)/m);
+                    if (m) cname = m[1].trim();
+                } else {
+                    var res = extractRunCommand(raw);
+                    if (res.runCommand) {
+                        var args = res.runCommand.replace(/^docker run\s*/, '');
+                        var tokens = tokenize(args);
+                        for (var i = 0; i < tokens.length; i++) {
+                            if (tokens[i] === '--name') { cname = tokens[i + 1]; break; }
+                            else if (tokens[i].startsWith('--name=')) { cname = tokens[i].split('=')[1]; break; }
+                            else if (!tokens[i].startsWith('-') && !cname) { cname = tokens[i].split('/').pop().split(':')[0]; break; }
+                        }
+                    }
+                }
+                if (cname) {
+                    cname = cname.replace(/["']/g, '').replace(/[^a-zA-Z0-9_-]/g, '-');
+                    previewValue.textContent = cname;
+                    containerNamePreview.style.display = 'flex';
+                } else {
+                    containerNamePreview.style.display = 'none';
+                }
+            }
+
+            clearCommandBtn.onclick = function () { dockerCommandEl.value = ''; dockerCommandEl.focus(); checkBtn(dockerCommandEl, clearCommandBtn); updateNamePreview(); updateSyncPanel(); convertCommand(); };
+            clearPrefixBtn.onclick = function () { volumePrefixEl.value = ''; volumePrefixEl.focus(); checkBtn(volumePrefixEl, clearPrefixBtn); };
+            dockerCommandEl.oninput = function () { checkBtn(dockerCommandEl, clearCommandBtn); updateNamePreview(); updateSyncPanel(); };
+            volumePrefixEl.oninput = function () { checkBtn(volumePrefixEl, clearPrefixBtn); };
+            
+            networkModeEl.onchange = function() {
+                if (this.value === 'custom') {
+                    networkModeCustomEl.style.display = 'inline-block';
+                    networkModeCustomEl.focus();
+                } else {
+                    networkModeCustomEl.style.display = 'none';
+                }
+                convertCommand();
+            };
+            networkModeCustomEl.oninput = function() { convertCommand(); };
+
+
+            restartModeEl.onchange = function() {
+                if (this.value === 'custom') {
+                    restartModeCustomEl.style.display = 'inline-block';
+                    restartModeCustomEl.focus();
+                } else {
+                    restartModeCustomEl.style.display = 'none';
+                }
+                convertCommand();
+            };
+            restartModeCustomEl.oninput = function() { convertCommand(); };
+
+            // 粘贴功能实现
+            pasteCommandBtn.onclick = function() {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    navigator.clipboard.readText().then(function(text) {
+                        if (text) {
+                            dockerCommandEl.value = text;
+                            checkBtn(dockerCommandEl, clearCommandBtn);
+                            updateNamePreview();
+                            updateSyncPanel();
+                            convertCommand();
+                        }
+                    }).catch(function(err) {
+                        console.error('读取剪贴板失败:', err);
+                    });
+                } else {
+                    console.log('浏览器不支持自动粘贴，请使用 Ctrl+V');
+                }
+            };
+
+            checkBtn(dockerCommandEl, clearCommandBtn);
+            checkBtn(volumePrefixEl, clearPrefixBtn);
+
+            // 重置功能
+            var outputContainer = document.getElementById('outputContainer');
+            var themeToggleBtn = document.getElementById('themeToggleBtn');
+            var themeSun = document.getElementById('themeSun');
+            var themeMoon = document.getElementById('themeMoon');
+
+            // 主题切换逻辑
+            function setTheme(isLight) {
+                outputContainer.classList.toggle('theme-light', isLight);
+                outputContainer.classList.toggle('theme-dark', !isLight);
+                themeSun.style.display = isLight ? 'block' : 'none';
+                themeMoon.style.display = isLight ? 'none' : 'block';
+                document.getElementById('themeLabel').textContent = isLight ? '浅色' : '深色';
+                localStorage.setItem('output_theme', isLight ? 'light' : 'dark');
+                if (outputCode.textContent && !outputCode.textContent.startsWith('#')) {
+                    Prism.highlightElement(outputCode);
+                }
+            }
+
+            themeToggleBtn.onclick = function () {
+                var isCurrentlyLight = outputContainer.classList.contains('theme-light');
+                setTheme(!isCurrentlyLight);
+            };
+
+            // 载入持久化主题
+            var savedTheme = localStorage.getItem('output_theme') || 'dark';
+            setTheme(savedTheme === 'light');
+
+            resetAllBtn.onclick = function () {
+                dockerCommandEl.value = '';
+                volumePrefixEl.value = currentPaths[0];
+                restartModeEl.value = 'unless-stopped';
+                restartModeCustomEl.value = '';
+                restartModeCustomEl.style.display = 'none';
+                networkModeEl.value = '';
+                networkModeCustomEl.value = '';
+                networkModeCustomEl.style.display = 'none';
+                cbPrivileged.checked = false;
+                outputCode.textContent = '# 生成的 Docker Compose 配置将显示在这里';
+                outputCode.className = '';
+                checkBtn(dockerCommandEl, clearCommandBtn);
+                checkBtn(volumePrefixEl, clearPrefixBtn);
+                activeOverrides = {};
+                updateNamePreview();
+                updateSyncPanel();
+            };
+
+            // 变量扫描与同步逻辑
+            function updateSyncPanel() {
+                var raw = dockerCommandEl.value.trim();
+                if (!raw) { paramSyncPanel.classList.remove('active'); return; }
+
+                var vars = {};
+                // 1. 提取容器名
+                var cname = previewValue.textContent;
+                if (cname && cname !== 'my-service') vars['container_name'] = cname;
+
+                // 2. 提取并同步网络模式
+                var netMatch = raw.match(/(?:--net(?:work)?(?:\s+|=))([^\s]+)/);
+                if (netMatch) vars['network'] = netMatch[1].replace(/["']/g, '');
+
+                // 2.1 提取并同步重启策略
+                var restartMatch = raw.match(/(?:--restart(?:\s+|=))([^\s]+)/);
+                if (restartMatch) vars['restart'] = restartMatch[1].replace(/["']/g, '');
+
+                // 2.2 提取并同步端口映射
+                var portRegex = /(?:-p|--publish)\s+([^-\s]+)/g;
+                var portMatch, pIdx = 1;
+                while ((portMatch = portRegex.exec(raw)) !== null) {
+                    vars['port_' + (pIdx++)] = portMatch[1].replace(/["']/g, '');
+                }
+                
+                // YAML 模式提取端口
+                if (raw.includes('ports:')) {
+                    var lines = raw.split('\n');
+                    var inPorts = false;
+                    lines.forEach(function(l) {
+                        if (l.match(/^\s*ports:\s*$/)) inPorts = true;
+                        else if (inPorts && l.match(/^\s+-\s+["']?([^"']+)["']?/)) {
+                            var p = l.match(/^\s+-\s+["']?([^"']+)["']?/)[1];
+                            vars['port_' + (pIdx++)] = p;
+                        } else if (inPorts && l.trim() !== '' && !l.match(/^\s+-/)) {
+                            inPorts = false;
+                        }
+                    });
+                }
+
+                // 3. 提取环境变量
+                var envRegex = /(?:-e|--env)\s+([^=\s]+)=([^=\s]+)/g;
+                var match;
+                while ((match = envRegex.exec(raw)) !== null) {
+                    var key = match[1], val = match[2].replace(/["']/g, '');
+                    if (key.match(/DB|DATABASE|USER|PASSWORD|PASS|ROOT|SECRET|TOKEN|CONFIG/i)) {
+                        vars[key] = val;
+                    }
+                }
+                
+                // YAML 模式提取
+                if (raw.includes('network_mode:')) {
+                    var nmMatch = raw.match(/^\s*network_mode:\s*(.+)/m);
+                    if (nmMatch) vars['network'] = nmMatch[1].trim().replace(/["']/g, '');
+                } else if (raw.includes('networks:')) {
+                    // 只提取第一个网络作为同步展现
+                    var nMatch = raw.match(/^\s+networks:\s*\n\s+-\s+(.+)/m);
+                    if (nMatch) vars['network'] = nMatch[1].trim().replace(/["']/g, '');
+                }
+                
+                // 3. 同步到“常用选项”下拉框 (非 Override 情况下)
+                if (vars['network']) {
+                    var netVal = vars['network'];
+                    var isManualFocus = document.activeElement === networkModeCustomEl;
+                    if (netVal === 'bridge' || netVal === 'host' || netVal === 'none') {
+                        networkModeEl.value = netVal;
+                        if (!isManualFocus) networkModeCustomEl.style.display = 'none';
+                    } else {
+                        networkModeEl.value = 'custom';
+                        // 仅在未获得焦点时更新值，防止干扰用户输入
+                        if (!isManualFocus) {
+                            networkModeCustomEl.value = netVal;
+                            networkModeCustomEl.style.display = 'inline-block';
+                        }
+                    }
+                }
+                
+                // 3.1 同步到“自动重启”下拉框
+                if (vars['restart']) {
+                    var restVal = vars['restart'];
+                    var isManualFocusRest = document.activeElement === restartModeCustomEl;
+                    var standardRest = ['no', 'always', 'on-failure', 'unless-stopped'];
+                    if (standardRest.indexOf(restVal) !== -1) {
+                        restartModeEl.value = restVal;
+                        if (!isManualFocusRest) restartModeCustomEl.style.display = 'none';
+                    } else {
+                        restartModeEl.value = 'custom';
+                        if (!isManualFocusRest) {
+                            restartModeCustomEl.value = restVal;
+                            restartModeCustomEl.style.display = 'inline-block';
+                        }
+                    }
+                }
+
+                if (raw.includes('environment:')) {
+                    var envLines = raw.split('\n');
+                    var inEnv = false;
+                    envLines.forEach(function(l) {
+                        if (l.match(/^\s+environment:\s*/)) inEnv = true;
+                        else if (inEnv && l.match(/^\s+-\s+([^=\s]+)=(.+)/)) {
+                            var m = l.match(/^\s+-\s+([^=\s]+)=(.+)/);
+                            var k = m[1].trim(), v = m[2].trim().replace(/["']/g, '');
+                            if (k.match(/DB|DATABASE|USER|PASSWORD|PASS|ROOT|SECRET|TOKEN|CONFIG/i)) vars[k] = v;
+                        } else if (inEnv && !l.match(/^\s+-/) && l.match(/^\s+([^:\s]+):\s*(.+)/)) {
+                            var m = l.match(/^\s+([^:\s]+):\s*(.+)/);
+                            var k = m[1].trim(), v = m[2].trim().replace(/["']/g, '');
+                            if (k.match(/DB|DATABASE|USER|PASSWORD|PASS|ROOT|SECRET|TOKEN|CONFIG/i)) vars[k] = v;
+                        } else if (inEnv && l.match(/^\s*[a-zA-Z]/)) inEnv = false;
+                    });
+                }
+
+                // 比对是否有新变量，若无变化则不重绘 UI，防止输入框丢失焦点
+                var varKeys = Object.keys(vars);
+                var currentKeys = Object.keys(lastScannedVars);
+                if (varKeys.length === 0) {
+                    paramSyncPanel.classList.remove('active');
+                    lastScannedVars = {};
+                    return;
+                }
+
+                var changed = varKeys.length !== currentKeys.length;
+                if (!changed) {
+                    for (var k in vars) if (vars[k] !== lastScannedVars[k]) { changed = true; break; }
+                }
+
+                if (!changed) return;
+                
+                lastScannedVars = vars;
+                syncGrid.innerHTML = '';
+                paramSyncPanel.classList.add('active');
+
+                varKeys.sort().forEach(function(k) {
+                    var item = document.createElement('div');
+                    item.className = 'sync-item';
+                    var label = document.createElement('label');
+                    label.textContent = k;
+                    label.title = k;
+                    var input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = activeOverrides[k] !== undefined ? activeOverrides[k] : vars[k];
+                    input.placeholder = vars[k];
+                    input.oninput = function() {
+                        activeOverrides[k] = this.value;
+                        convertCommand();
+                    };
+                    item.appendChild(label);
+                    item.appendChild(input);
+                    syncGrid.appendChild(item);
+                });
+            }
+
+            // 导入功能
+            importYmlBtn.onclick = function () { var fileInput = document.getElementById('fileInput'); fileInput.click(); };
+            document.getElementById('fileInput').onchange = function (e) {
+                var file = e.target.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    dockerCommandEl.value = e.target.result;
+                    checkBtn(dockerCommandEl, clearCommandBtn);
+                    convertCommand();
+                };
+                reader.readAsText(file);
+                this.value = '';
+            };
+
+            var FIXED_PATHS = [
+                '/root/data/docker/{container_name}',
+                '/root/docker/{container_name}',
+                '/opt/data/docker/{container_name}',
+                '/opt/docker/{container_name}'
+            ];
+
+            function loadVolumes() {
+                var saved = localStorage.getItem('docker_compose_tool_paths');
+                var paths = saved ? JSON.parse(saved) : FIXED_PATHS;
+                volumePathList.innerHTML = '';
+                paths.forEach(function (p) {
+                    var opt = document.createElement('option');
+                    opt.value = p;
+                    volumePathList.appendChild(opt);
+                });
+                return paths;
+            }
+
+            function saveVolume(newPath) {
+                if (!newPath || newPath.trim() === '') return;
+                var paths = loadVolumes();
+                if (paths.indexOf(newPath) === -1) {
+                    paths.unshift(newPath);
+                    if (paths.length > 20) paths.pop();
+                    localStorage.setItem('docker_compose_tool_paths', JSON.stringify(paths));
+                    loadVolumes();
+                }
+            }
+
+            var currentPaths = loadVolumes();
+            volumePrefixEl.value = currentPaths[0];
+
+            convertBtn.addEventListener('click', function () {
+                saveVolume(volumePrefixEl.value);
+                convertCommand();
+            });
+
+            copyOutputBtn.addEventListener('click', function () {
+                var text = outputCode.textContent;
+                if (!text || text.startsWith('#')) return;
+                navigator.clipboard.writeText(text).then(function () {
+                    copyOutputBtn.classList.add('copied'); copyIcon.style.display = 'none'; checkIcon.style.display = ''; copyOutputLabel.textContent = '已复制';
+                    setTimeout(function () { copyOutputBtn.classList.remove('copied'); copyIcon.style.display = ''; checkIcon.style.display = 'none'; copyOutputLabel.textContent = '复制'; }, 2000);
+                }).catch(function () { alert('复制失败，请手动选中内容复制'); });
+            });
+
+            exportYamlBtn.addEventListener('click', function () {
+                var text = outputCode.textContent;
+                if (!text || text.startsWith('#')) return;
+
+                var fileName = 'docker-compose.yml';
+                var m = text.match(/container_name:\s*([^\n\r\s]+)/);
+                if (m && m[1]) {
+                    var cname = m[1].replace(/["']/g, '').replace(/[^a-zA-Z0-9_-]/g, '-');
+                    fileName = 'docker-compose-' + cname + '.yml';
+                }
+
+                var blob = new Blob([text], { type: 'text/yaml' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            function tokenize(str) {
+                var tokens = [], current = '', inD = false, inS = false;
+                for (var idx = 0; idx < str.length; idx++) {
+                    var c = str[idx];
+                    if (c === '"' && !inS) inD = !inD;
+                    else if (c === "'" && !inD) inS = !inS;
+                    else if (/\s/.test(c) && !inD && !inS) { if (current) { tokens.push(current); current = ''; } }
+                    else current += c;
+                }
+                if (current) tokens.push(current);
+                return tokens;
+            }
+
+            function extractRunCommand(rawInput) {
+                var joined = rawInput.replace(/\\\s*\n/g, ' ');
+                var lines = joined.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+                var runCommand = null, runStartIdx = -1, pullImage = null;
+                for (var idx = 0; idx < lines.length; idx++) {
+                    var line = lines[idx];
+                    if (line.startsWith('docker run')) { runCommand = line; runStartIdx = idx; }
+                    else if (line.startsWith('docker pull')) {
+                        var parts = line.split(/\s+/);
+                        var nonOpt = parts.slice(2).filter(function (p) { return !p.startsWith('-'); });
+                        if (nonOpt.length > 0) pullImage = nonOpt[nonOpt.length - 1];
+                    }
+                }
+                if (runCommand !== null && runStartIdx >= 0) {
+                    for (var j = runStartIdx + 1; j < lines.length; j++) {
+                        var nextLine = lines[j];
+                        if (nextLine.startsWith('docker ') || nextLine.startsWith('sudo ') || nextLine.startsWith('#')) break;
+                        runCommand += ' ' + nextLine;
+                    }
+                }
+                return { runCommand: runCommand, pullImage: pullImage };
+            }
+
+            function cleanShellVars(path) {
+                path = path.replace(/\$\([^)]*\)/g, '');
+                path = path.replace(/\$\{[^}]*\}/g, '');
+                path = path.replace(/\$[A-Za-z_][A-Za-z0-9_]*/g, '');
+                path = path.replace(/`[^`]*`/g, '');
+                path = path.replace(/\/+/g, '/');
+                return path;
+            }
+
+            var SYSTEM_PATHS = [
+                '/var/run/docker.sock', '/run/docker.sock', '/var/run/docker', '/run/docker',
+                '/var/lib/docker', '/usr/bin/docker', '/usr/local/bin/docker',
+                '/proc', '/sys', '/dev', '/boot', '/lib/modules', '/usr/src',
+                '/etc/localtime', '/etc/timezone', '/usr/share/zoneinfo',
+                '/etc/hosts', '/etc/hostname', '/etc/resolv.conf',
+                '/etc/machine-id', '/etc/docker',
+                '/etc/ssl', '/etc/pki', '/etc/ca-certificates', '/usr/share/ca-certificates', '/usr/local/share/ca-certificates',
+                '/etc/passwd', '/etc/group', '/etc/shadow', '/etc/gshadow',
+                '/etc/nsswitch.conf', '/etc/krb5.conf', '/etc/environment',
+                '/tmp/.X11-unix', '/run/dbus', '/var/run/dbus'
+            ];
+
+            function isSystemPath(hostPath) {
+                for (var idx = 0; idx < SYSTEM_PATHS.length; idx++) {
+                    if (hostPath === SYSTEM_PATHS[idx] || hostPath.startsWith(SYSTEM_PATHS[idx] + '/')) return true;
+                }
+                return false;
+            }
+
+            function resolveVolume(volRaw, prefix) {
+                // 无论是否有前缀，都清理 shell 变量（compose 不支持 shell 变量）
+                volRaw = cleanShellVars(volRaw);
+
+                // 无前缀：只清理 shell 变量，保留 ./ ~/ 等（compose 支持）
+                if (!prefix) {
+                    var ci = volRaw.indexOf(':');
+                    if (ci === 0) volRaw = '.' + volRaw;
+                    if (ci === -1 && !volRaw) return '.';
+                    return volRaw;
+                }
+
+                var ci = volRaw.indexOf(':');
+                if (ci === -1) return prefix + '/' + volRaw;
+                var hostPart = volRaw.slice(0, ci);
+                var containerPart = volRaw.slice(ci);
+                if (isSystemPath(hostPart)) return volRaw;
+
+                if (hostPart === '.' || hostPart === '~' || hostPart === '/' || hostPart === '') {
+                    hostPart = '';
+                } else if (hostPart.startsWith('./')) {
+                    hostPart = hostPart.slice(1);
+                } else if (hostPart.startsWith('~/')) {
+                    hostPart = hostPart.slice(1);
+                } else if (hostPart.startsWith('../')) {
+                    hostPart = hostPart.replace(/^(\.\.\/)+/, '');
+                    hostPart = '/' + hostPart;
+                } else if (!hostPart.startsWith('/')) {
+                    hostPart = '/' + hostPart;
+                }
+
+                var result = (prefix.replace(/\/+$/, '') + hostPart + containerPart).replace(/\/+/g, '/');
+                return result;
+            }
+
+            function processComposeYaml(yamlStr) {
+                var rp = volumePrefixEl.value.trim();
+                var lines = yamlStr.split('\n');
+                var result = [];
+                var inServiceVolumes = false;
+                var serviceIndent = -1;
+                var containerName = '';
+                var hasRestart = false;
+                var hasPrivileged = false;
+                var hasNetwork = false;
+                
+                // 优先级：先看同步面板覆盖，再看 UI select，最后看自定义文本
+                var restMode = activeOverrides['restart'] || restartModeEl.value;
+                if (restMode === 'custom') restMode = restartModeCustomEl.value.trim();
+
+                var nm = activeOverrides['network'] || networkModeEl.value;
+                if (nm === 'custom') nm = networkModeCustomEl.value.trim();
+
+                for (var i = 0; i < lines.length; i++) {
+                    var m = lines[i].match(/^\s*container_name:\s*(.+)/);
+                    if (m) containerName = m[1].trim();
+                    if (lines[i].match(/^\s*restart:\s*/)) hasRestart = true;
+                    if (lines[i].match(/^\s*privileged:\s*/)) hasPrivileged = true;
+                    if (lines[i].match(/^\s*(network_mode|networks):\s*/)) hasNetwork = true;
+                }
+
+                var finalPrefix = rp ? rp.replace(/\{container_name\}/g, containerName) : '';
+
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i];
+                    var lineIndent = line.match(/^(\s*)/)[1].length;
+
+                    // 检测服务内的 volumes: 块（缩进 >= 4，区别于顶级 volumes:）
+                    if (line.match(/^\s+volumes:\s*$/) && lineIndent >= 4) {
+                        inServiceVolumes = true;
+                        serviceIndent = lineIndent;
+                        result.push(line);
+                        continue;
+                    }
+
+                    // 顶级 volumes:（缩进 0）不处理
+                    if (line.match(/^volumes:\s*$/)) {
+                        inServiceVolumes = false;
+                        result.push(line);
+                        continue;
+                    }
+
+                    // 退出 volumes 块：遇到同级或更高级的非列表项 key
+                    if (inServiceVolumes) {
+                        var isListItem = line.match(/^\s*-\s+/);
+                        if (!isListItem && line.trim() !== '') {
+                            var currentIndent = line.match(/^(\s*)/)[1].length;
+                            if (currentIndent <= serviceIndent) {
+                                inServiceVolumes = false;
+                            }
+                        }
+                    }
+
+                    // 卷路径替换
+                    if (inServiceVolumes && line.match(/^\s*-\s+/)) {
+                        var volMatch = line.match(/^\s*-\s+"?([^"]+)"?\s*$/);
+                        if (volMatch) {
+                            var vol = volMatch[1];
+                            var resolved = resolveVolume(vol, finalPrefix);
+                            line = line.replace(vol, resolved);
+                        }
+                    }
+
+                    result.push(line);
+                }
+
+                var insertIdx = result.length;
+                for (var i = result.length - 1; i >= 0; i--) {
+                    if (result[i].trim() !== '') { insertIdx = i + 1; break; }
+                }
+
+                var indent = '    ';
+                for (var i = 0; i < result.length; i++) {
+                    var im = result[i].match(/^(\s+)(image|container_name|restart|ports|volumes|environment):/);
+                    if (im) { indent = im[1]; break; }
+                }
+
+                if (!hasRestart && restMode) {
+                    result.splice(insertIdx, 0, indent + 'restart: ' + restMode);
+                    insertIdx++;
+                }
+                if (!hasPrivileged && cbPrivileged.checked) {
+                    result.splice(insertIdx, 0, indent + 'privileged: true');
+                    insertIdx++;
+                }
+                if (!hasNetwork && nm) {
+                    result.splice(insertIdx, 0, indent + 'network_mode: ' + nm);
+                }
+
+                var finalResult = result.join('\n');
+                
+                // 应用活性参数同步覆盖
+                for (var key in activeOverrides) {
+                    var oldVal = lastScannedVars[key];
+                    var newVal = activeOverrides[key];
+                    if (oldVal && newVal !== undefined && oldVal !== newVal) {
+                        // 简单全局替换：针对生成的 YAML 内容进行安全替换
+                        // 替换格式示例： "oldVal" -> "newVal" 或 oldVal -> newVal
+                        var escapedOld = oldVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        var re = new RegExp('(["\']?)' + escapedOld + '(["\']?)', 'g');
+                        finalResult = finalResult.replace(re, '$1' + newVal + '$2');
+                    }
+                }
+
+                return finalResult;
+            }
+
+            function convertCommand() {
+                var raw = dockerCommandEl.value.trim();
+                if (!raw) { setError('# 错误：请输入 Docker Run 命令或 Docker Compose 配置'); return; }
+                if (raw.includes('services:') || raw.includes('version:')) {
+                    try {
+                        var yaml = processComposeYaml(raw);
+                        outputCode.textContent = yaml;
+                        outputCode.className = 'language-yaml';
+                        Prism.highlightElement(outputCode);
+                    } catch (err) { setError('# 错误: ' + err.message); }
+                } else {
+                    var result = extractRunCommand(raw);
+                    if (!result.runCommand) { setError('# 错误：未找到 Docker Run 命令，请确保输入中包含以 "docker run" 开头的命令'); return; }
+                    try {
+                        var yaml = parseDockerCommand(result.runCommand, result.pullImage);
+                        outputCode.textContent = yaml;
+                        outputCode.className = 'language-yaml';
+                        Prism.highlightElement(outputCode);
+                    } catch (err) { setError('# 错误: ' + err.message); }
+                }
+            }
+
+            function setError(msg) {
+                outputCode.className = 'error';
+                outputCode.textContent = msg;
+            }
+
+            function parseDockerCommand(command, pullImage) {
+                var args = command.replace(/^docker run\s*/, '');
+                var tokens = tokenize(args);
+                var BUILTIN = { host: 1, bridge: 1, none: 1 };
+                var BOOLS = { '--rm': 1, '--init': 1, '--tty': 1, '-t': 1, '-i': 1, '-it': 1, '--no-healthcheck': 1, '--oom-kill-disable': 1, '--read-only': 1, '--sig-proxy': 1 };
+                var svc = { image: '', container_name: '', hostname: '', working_dir: '', ports: [], volumes: [], environment: [], networks: [], network_mode: '', labels: [], logging: { driver: '', options: {} }, restart: '', privileged: false, command: '' };
+                var restCLI = false, privCLI = false, netCLI = false;
+                var topVol = {}, topNet = {};
+                var i = 0;
+                while (i < tokens.length) {
+                    var t = tokens[i];
+                    if (t === '\\') { i++; continue; }
+                    var o = t, ve = null;
+                    if (t.startsWith('-') && t.includes('=')) { var eq = t.indexOf('='); o = t.slice(0, eq); ve = t.slice(eq + 1); }
+                    if (o === '-d' || o === '--detach') { i++; continue; }
+                    if (BOOLS[o]) { i++; continue; }
+                    if (o === '--name') { svc.container_name = ve !== null ? ve : tokens[i + 1]; i += ve !== null ? 1 : 2; continue; }
+                    if (o === '--hostname' || o === '-h') { svc.hostname = ve !== null ? ve : tokens[i + 1]; i += ve !== null ? 1 : 2; continue; }
+                    if (o === '-p' || o === '--publish') { svc.ports.push(ve !== null ? ve : tokens[i + 1]); i += ve !== null ? 1 : 2; continue; }
+                    if (o === '--workdir' || o === '-w') { svc.working_dir = ve !== null ? ve : tokens[i + 1]; i += ve !== null ? 1 : 2; continue; }
+                    if (o === '-v' || o === '--volume') { svc.volumes.push(ve !== null ? ve : tokens[i + 1]); i += ve !== null ? 1 : 2; continue; }
+                    if (o === '-e' || o === '--env') { svc.environment.push(ve !== null ? ve : tokens[i + 1]); i += ve !== null ? 1 : 2; continue; }
+                    if (o === '--restart') { svc.restart = ve !== null ? ve : tokens[i + 1]; restCLI = true; i += ve !== null ? 1 : 2; continue; }
+                    if (o === '--privileged') { svc.privileged = true; privCLI = true; i++; continue; }
+                    if (o === '--label' || o === '-l') { svc.labels.push(ve !== null ? ve : tokens[i + 1]); i += ve !== null ? 1 : 2; continue; }
+                    if (o === '--log-driver') { svc.logging.driver = ve !== null ? ve : tokens[i + 1]; i += ve !== null ? 1 : 2; continue; }
+                    if (o === '--log-opt') { var r = ve !== null ? ve : tokens[i + 1]; var ep = r.indexOf('='); var k = ep >= 0 ? r.slice(0, ep) : r; var v = ep >= 0 ? r.slice(ep + 1) : ''; if (k) svc.logging.options[k] = v; i += ve !== null ? 1 : 2; continue; }
+                    if (o === '--network' || o === '--net') { var n = ve !== null ? ve : tokens[i + 1]; if (n === 'host' || n === 'bridge' || n === 'none') svc.network_mode = n; else svc.networks.push(n); if (!BUILTIN[n] && !topNet[n] && n !== 'host' && n !== 'bridge' && n !== 'none') topNet[n] = { external: true }; netCLI = true; i += ve !== null ? 1 : 2; continue; }
+                    if (!t.startsWith('-')) { if (!svc.image) svc.image = t; else { var cmd = tokens.slice(i).join(' '); if (cmd) svc.command = '"' + cmd + '"'; break; } i++; continue; }
+                    if (o.startsWith('-')) { i += ve !== null ? 1 : 2; continue; }
+                    i++;
+                }
+                if (!svc.image && pullImage) svc.image = pullImage;
+                var finalName;
+                if (svc.container_name) finalName = svc.container_name;
+                else if (svc.image) finalName = svc.image.split('/').pop().split(':')[0] || 'my-service';
+                else finalName = 'my-service';
+                finalName = finalName.replace(/[^a-zA-Z0-9_-]/g, '-');
+                var rp = volumePrefixEl.value.trim();
+                var vp = rp ? rp.replace(/\{container_name\}/g, finalName) : '';
+                // 最终参数决策
+                var restFinal = activeOverrides['restart'];
+                if (!restFinal) {
+                    restFinal = restartModeEl.value === 'custom' ? restartModeCustomEl.value.trim() : restartModeEl.value;
+                }
+
+                var nmFinal = activeOverrides['network']; 
+                if (!nmFinal) {
+                    nmFinal = networkModeEl.value === 'custom' ? networkModeCustomEl.value.trim() : networkModeEl.value;
+                }
+                
+                if (!restCLI && restFinal) svc.restart = restFinal;
+                if (!privCLI) svc.privileged = cbPrivileged.checked;
+                var rv = svc.volumes.map(function (vol) {
+                    var res = resolveVolume(vol, vp);
+                    if (!vp) {
+                        var cleaned = cleanShellVars(vol);
+                        var hp = cleaned.includes(':') ? cleaned.split(':')[0] : cleaned;
+                        if (hp && /^[a-zA-Z0-9_-]+$/.test(hp)) {
+                            if (!topVol[hp]) topVol[hp] = {};
+                        }
+                    }
+                    return res;
+                });
+                var y = "services:\n  " + finalName + ":\n    image: " + svc.image + "\n";
+                if (svc.container_name) y += "    container_name: " + svc.container_name + "\n";
+                if (svc.hostname) y += "    hostname: " + svc.hostname + "\n";
+                if (svc.working_dir) y += "    working_dir: " + svc.working_dir + "\n";
+                if (svc.ports.length) { y += "    ports:\n"; svc.ports.forEach(function (p) { y += '      - "' + p + '"\n'; }); }
+                if (rv.length) { y += "    volumes:\n"; rv.forEach(function (v) { y += '      - "' + v + '"\n'; }); }
+                if (svc.environment.length) { y += "    environment:\n"; svc.environment.forEach(function (e) { y += '      - "' + e + '"\n'; }); }
+                if (svc.labels.length) { y += "    labels:\n"; svc.labels.forEach(function (l) { y += '      - "' + l + '"\n'; }); }
+                var hd = !!svc.logging.driver, ho = Object.keys(svc.logging.options).length > 0;
+                if (hd || ho) {
+                    y += "    logging:\n";
+                    if (hd) y += "      driver: " + svc.logging.driver + "\n";
+                    if (ho) { y += "      options:\n"; for (var lk in svc.logging.options) y += '        ' + lk + ': "' + svc.logging.options[lk] + '"\n'; }
+                }
+                if (svc.networks.length) { y += "    networks:\n"; svc.networks.forEach(function (nn) { y += "      - " + nn + "\n"; }); }
+                if (svc.network_mode) y += "    network_mode: " + svc.network_mode + "\n";
+                if (svc.restart) y += "    restart: " + svc.restart + "\n";
+                if (svc.privileged) y += "    privileged: true\n";
+                if (svc.command) y += "    command: " + svc.command + "\n";
+                var finalYaml = y;
+                if (!vp && Object.keys(topVol).length) { finalYaml += "\nvolumes:\n"; for (var vn in topVol) finalYaml += "  " + vn + ":\n"; }
+                if (Object.keys(topNet).length) { finalYaml += "\nnetworks:\n"; for (var nn in topNet) { finalYaml += "  " + nn + ":\n"; if (topNet[nn].external) finalYaml += "    external: true\n"; } }
+                
+                // 应用活性参数同步覆盖
+                for (var key in activeOverrides) {
+                    var oldVal = lastScannedVars[key];
+                    var newVal = activeOverrides[key];
+                    if (oldVal && newVal !== undefined && oldVal !== newVal) {
+                        var escapedOld = oldVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        var re = new RegExp('(["\']?)' + escapedOld + '(["\']?)', 'g');
+                        finalYaml = finalYaml.replace(re, '$1' + newVal + '$2');
+                    }
+                }
+
+                return finalYaml;
+            }
+        }
+    </script>
+    <!-- 引入 Prism.js 脚本 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+</body>
+
+</html>
