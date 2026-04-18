@@ -121,11 +121,23 @@
         }
 
         .panel-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             color: var(--primary-color);
             margin: 0;
             padding: 0;
             border: none;
             font-size: 18px;
+            line-height: 1.2;
+            height: 32px; /* 强制标题文本高度与按钮组基准线一致 */
+        }
+
+        .panel-header-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
         }
 
         .copy-output-btn {
@@ -157,13 +169,13 @@
             border-color: var(--success-color) !important;
         }
 
-        .output-header-tools .copy-output-btn {
+        .panel-header-tools .copy-output-btn {
             background: #e7f3ff;
             color: #006edc;
             border-color: #b3d7ff;
         }
 
-        .output-header-tools .copy-output-btn:hover {
+        .panel-header-tools .copy-output-btn:hover {
             background: #006edc;
             color: white;
             border-color: #006edc;
@@ -419,14 +431,7 @@
         }
 
         /* 标题图标美化 */
-        h2 {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        h2 i,
-        h2 svg {
+        .panel-header h2 svg {
             color: var(--primary-color);
             flex-shrink: 0;
         }
@@ -598,27 +603,37 @@
                 flex-wrap: wrap;
                 align-items: center;
                 gap: 8px;
+                min-height: 32px;
             }
 
             .panel-header h2 {
                 font-size: 15px;
                 flex: 1;
-                min-width: 140px;
+                min-width: 130px;
+                line-height: 1.2;
+                height: 28px;
             }
 
-            .output-header-tools {
+            .panel-header-tools {
                 display: flex;
                 gap: 5px;
                 flex-shrink: 0;
+                align-items: center;
             }
 
             .theme-toggle-btn,
             .export-btn,
-            .copy-output-btn {
+            .copy-output-btn,
+            .paste-btn,
+            .import-btn {
                 padding: 4px 8px;
                 font-size: 12px;
                 width: auto;
                 margin-top: 0;
+                height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             /* 在极小屏下精简文字 */
@@ -632,7 +647,9 @@
                 }
                 .theme-toggle-btn, .export-btn, .copy-output-btn,
                 .paste-btn, .import-btn {
-                    padding: 5px;
+                    padding: 0;
+                    width: 30px;
+                    height: 30px;
                 }
             }
 
@@ -774,7 +791,7 @@
                     </svg>
                     输入配置信息
                 </h2>
-                <div style="display: flex; gap: 8px;">
+                <div class="panel-header-tools">
                     <button class="paste-btn" id="pasteCommandBtn" title="一键粘贴剪贴板内容">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -913,7 +930,7 @@
                     </svg>
                     生成的 Compose 配置
                 </h2>
-                <div class="output-header-tools">
+                <div class="panel-header-tools">
                     <button class="theme-toggle-btn" id="themeToggleBtn" title="切换明暗配色主题">
                         <svg id="themeMoon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
