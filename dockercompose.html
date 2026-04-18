@@ -594,20 +594,43 @@
             }
 
             .panel-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 6px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
             }
 
             .panel-header h2 {
                 font-size: 15px;
+                flex: 1;
+                min-width: 140px;
             }
 
+            .output-header-tools {
+                display: flex;
+                gap: 5px;
+                flex-shrink: 0;
+            }
+
+            .theme-toggle-btn,
+            .export-btn,
             .copy-output-btn {
-                align-self: flex-end;
+                padding: 4px 8px;
                 font-size: 12px;
-                padding: 4px 10px;
-                margin-top: -2px;
+                width: auto;
+                margin-top: 0;
+            }
+
+            /* 在极小屏下精简文字 */
+            @media (max-width: 480px) {
+                .theme-toggle-btn span,
+                .export-btn span,
+                .copy-output-btn span {
+                    display: none;
+                }
+                .theme-toggle-btn, .export-btn, .copy-output-btn {
+                    padding: 5px;
+                }
             }
 
             .input-group.flex-grow {
