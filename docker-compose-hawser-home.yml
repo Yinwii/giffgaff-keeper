@@ -9,5 +9,5 @@ services:
       - "/volume1/docker/hawser/opt/hawser-stacks:/opt/hawser-stacks"
     environment:
       - "STACKS_DIR=/opt/hawser-stacks"
-      - "TOKEN=dgvte.0908"
+      - "TOKEN=xxxxxxxx"
     restart: unless-stopped
