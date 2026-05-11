@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPY 系统局域网 HTTPS 配置指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; background: #0f172a; color: #f1f5f9; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .step-number { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
+        pre { position: relative; white-space: pre-wrap !important; word-break: break-all !important; }
+        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; z-index: 10; }
+        .copy-btn:hover { background: rgba(255,255,255,0.2); color: #818cf8; }
+        code { font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace !important; }
+        .dir-tree { font-family: monospace; color: #10b981; }
+    </style>
+</head>
+<body class="p-4 md:p-12">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">局域网 HTTPS 部署与权限激活指南</h1>
+            <p class="text-gray-400 text-lg">解决局域网环境下浏览器禁用“剪贴板 API”及“粘贴限制”报错的最终方案</p>
+        </header>
+
+        <section class="space-y-8">
+            <!-- 背景说明 -->
+            <div class="glass p-6 rounded-2xl">
+                <h2 class="text-xl font-bold mb-3 flex items-center gap-2">
+                    <i class="fas fa-shield-alt text-indigo-400"></i> 为什么需要 HTTPS？
+                </h2>
+                <p class="text-gray-300 text-sm leading-relaxed">
+                    现代浏览器出于安全考虑，仅在 <span class="text-indigo-300 font-bold">Secure Context (安全上下文)</span> 环境下允许网页使用高性能剪贴板接口。
+                    通过 IP 访问（如 192.168.x.x）被视为不安全，导致系统回退到低效复制模式，进而引发 Excel 粘贴限制报错。配置 HTTPS 后，所有权限将自动解锁。
+                </p>
+            </div>
+
+            <!-- 目录结构 -->
+            <div class="glass p-6 rounded-2xl border-l-4 border-emerald-500">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-folder-open text-emerald-400"></i> 标准目录结构
+                </h2>
+                <p class="text-gray-400 text-sm mb-4">请确保以下文件位于同一个文件夹内（文件夹名称任意）：</p>
+                <pre class="dir-tree bg-black/30 p-4 rounded-lg text-sm">
+FPY_Project_Folder/
+├── libs/                    (文件夹：存放 Tailwind, Chart.js 等本地库)
+├── 不良数据分析系统-V112.html    (主要的分析系统网页)
+├── server.pem               (证书文件：由步骤 1 生成)
+└── run_https.py             (启动脚本：由步骤 2 创建)
+                </pre>
+            </div>
+
+            <!-- 步骤 1 -->
+            <div class="relative pl-12 pb-4">
+                <div class="step-number absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <h3 class="text-lg font-bold mb-2">生成自签名证书 (server.pem)</h3>
+                <p class="text-gray-400 text-sm mb-4">在系统终端（CMD 或 PowerShell）中运行以下指令。该脚本使用 Python 自带库生成一个有效期 1 年的本地证书。</p>
+                <div class="relative">
+                    <pre><code class="language-bash">python -c "from cryptography import x509; from cryptography.hazmat.primitives import hashes; from cryptography.hazmat.primitives.asymmetric import rsa; from cryptography.hazmat.primitives import serialization; import datetime; key = rsa.generate_private_key(public_exponent=65537, key_size=2048); subject = issuer = x509.Name([]); cert = x509.CertificateBuilder().subject_name(subject).issuer_name(issuer).public_key(key.public_key()).serial_number(x509.random_serial_number()).not_valid_before(datetime.datetime.utcnow()).not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=365)).sign(key, hashes.SHA256()); print(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.TraditionalOpenSSL, serialization.NoEncryption()).decode() + cert.public_bytes(serialization.Encoding.PEM).decode())" > server.pem</code></pre>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="far fa-copy"></i> 复制</button>
+                </div>
+                <div class="mt-2 text-[12px] text-orange-300 bg-orange-950/30 p-2 rounded border border-orange-900/50">
+                    <i class="fas fa-info-circle"></i> 如果提示缺少库，请先运行：<code class="bg-black/40 px-1">pip install cryptography</code>
+                </div>
+            </div>
+
+            <!-- 步骤 2 -->
+            <div class="relative pl-12 pb-4">
+                <div class="step-number absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                <h3 class="text-lg font-bold mb-2">编写 HTTPS 启动脚本 (run_https.py)</h3>
+                <p class="text-gray-400 text-sm mb-4">创建一个名为 <code class="text-indigo-300">run_https.py</code> 的文件，并将以下代码粘贴进去。将其放在 HTML 文件所在的目录。</p>
+                <div class="relative">
+                    <pre><code class="language-python">import http.server
+import ssl
+import socket
+
+# 配置
+PORT = 44433 
+CERT_FILE = 'server.pem'
+
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    except:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
+
+class SimpleHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+        super().end_headers()
+
+server_address = ('0.0.0.0', PORT)
+httpd = http.server.HTTPServer(server_address, SimpleHandler)
+
+# 配置 SSL 证书
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+context.load_cert_chain(CERT_FILE)
+httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
+
+lan_ip = get_ip()
+print(f"\n" + "="*40)
+print(f"🚀 FPY HTTPS 服务已就绪!")
+print(f"🔗 局域网访问: https://{lan_ip}:{PORT}")
+print(f"⚠️  提示: 必须以 https:// 开头访问。")
+print("="*40 + "\n")
+
+httpd.serve_forever()</code></pre>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="far fa-copy"></i> 复制</button>
+                </div>
+            </div>
+
+            <!-- 步骤 3 -->
+            <div class="relative pl-12 pb-4">
+                <div class="step-number absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                <h3 class="text-lg font-bold mb-2">终端启动并信任证书</h3>
+                <div class="glass p-5 rounded-xl border-l-4 border-indigo-500">
+                    <ol class="list-decimal list-inside text-gray-300 space-y-3 text-sm">
+                        <li>在命令行运行：<code class="text-indigo-300">python run_https.py</code></li>
+                        <li>在浏览器访问控制台显示的 <code class="text-indigo-300">https://[IP]:44433</code>。</li>
+                        <li>由于是自签名证书，浏览器会拦截提示“不安全”。</li>
+                        <li>点击屏幕上的 <span class="font-bold text-white">“高级”</span> -> <span class="font-bold text-white underline cursor-pointer">“继续前往 [IP] (不安全)”</span>。</li>
+                        <li>进入系统后，再次测试“分析明细表”的复制功能，粘贴到 Excel 将不再报错。</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <footer class="mt-16 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
+            <p>© 2026 FPY Analyzer Team - 权限优化专项指南</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script>
+        function copyCode(btn) {
+            const pre = btn.parentElement;
+            const code = pre.querySelector('code').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check text-green-400"></i> 已复制';
+                setTimeout(() => { btn.innerHTML = original; }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
