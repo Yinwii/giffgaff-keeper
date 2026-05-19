@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考勤数据分析工具 - 旗舰专业版</title>
+    
+    <!-- 🌟 新增：内嵌 SVG 格式的 Favicon (数据图表图标) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background-color: #f4f7f6; color: #333; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        h2 { color: #2c3e50; margin: 0; display: flex; align-items: center; gap: 10px;}
+        
+        .upload-area { text-align: center; padding: 20px; border: 2px dashed #3498db; border-radius: 8px; margin-bottom: 15px; background-color: #f0f8ff; }
+        .upload-area input { display: none; }
+
+        /* 控制面板样式 */
+        .control-panel { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .panel-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        
+        .control-item { padding: 10px 12px; border-radius: 6px; font-size: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; border: 1px solid #d5dbdb; background-color: #f8f9fa; }
+        .privacy-area { background-color: #e8f8f5; border-color: #a3e4d7; flex: 1;}
+        .view-area { background-color: #f4f6f6; flex: 1.2;}
+        .color-area { background-color: #fdfefe; flex: 2; border-color: #eaeded; }
+        .settings-area { background-color: #fff3e0; border-color: #ffcc80; width: 100%; justify-content: flex-start;}
+
+        input[type="time"], input[type="number"], select { padding: 4px 6px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
+        input[type="color"] { width: 28px; height: 28px; padding: 0; border: none; border-radius: 4px; cursor: pointer; background: none; }
+        
+        .action-bar { display: none; gap: 10px; flex-wrap: wrap; }
+        .btn { color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: all 0.2s; display: flex; align-items: center; gap: 5px; }
+        .btn:active { transform: scale(0.95); }
+        .upload-btn { background-color: #3498db; font-size: 16px; padding: 10px 20px;}
+        .upload-btn:hover { background-color: #2980b9; }
+        .btn-excel { background-color: #27ae60; } .btn-excel:hover { background-color: #2ecc71; }
+        .btn-copy-data { background-color: #8e44ad; } .btn-copy-data:hover { background-color: #9b59b6; }
+        .btn-copy-img { background-color: #d35400; } .btn-copy-img:hover { background-color: #e67e22; }
+        .btn-export-img { background-color: #2c3e50; } .btn-export-img:hover { background-color: #34495e; }
+
+        #tableCaptureArea { background-color: #ffffff; padding: 10px; border-radius: 4px; }
+        
+        /* 大盘看板 */
+        .summary-board { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: stretch; }
+        .summary-card { flex: 1; min-width: 150px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; display: flex; flex-direction: column; justify-content: center;}
+        .summary-title { font-size: 14px; color: #6c757d; margin-bottom: 8px; font-weight: bold;}
+        .summary-value { font-size: 24px; font-weight: bold; color: #2c3e50; }
+        .summary-value.highlight-red { color: #e74c3c; }
+        .summary-value.highlight-green { color: #27ae60; }
+        .summary-subtext { font-size: 13px; color: #7f8c8d; margin-top: 5px; }
+        
+        /* TOP排行榜样式 */
+        .top-item { display: flex; justify-content: space-between; background: #fff; padding: 4px 8px; border-radius: 4px; border: 1px solid #eee; margin-bottom: 4px; }
+        .top-name { font-weight: bold; color: #34495e; }
+        .top-count { color: #e74c3c; font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; background-color: #fff; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: center; vertical-align: middle; }
+        th { background-color: #2c3e50; color: white; position: sticky; top: 0; z-index: 10; }
+        .sortable-header { cursor: pointer; background-color: #e74c3c; transition: background-color 0.3s; user-select: none; }
+        .sortable-header:hover { background-color: #c0392b; }
+        .sort-icon { margin-left: 5px; font-size: 14px; }
+        tr:nth-child(even) { background-color: #f9f9f9; } tr:hover { background-color: #f1f2f6; }
+        
+        .detail-cell { text-align: left; max-height: 120px; overflow-y: auto; padding: 8px; background-color: #fffaf0; border-radius: 4px; }
+        .detail-cell::-webkit-scrollbar { width: 6px; } .detail-cell::-webkit-scrollbar-thumb { background-color: #bdc3c7; border-radius: 3px; }
+        .month-title { font-weight: bold; color: #c0392b; font-size: 13px; margin: 5px 0 3px 0; border-bottom: 1px solid #eccbc8; padding-bottom: 2px; }
+        .abnormal-item { display: inline-block; background: #ecf0f1; padding: 2px 6px; border-radius: 3px; margin: 2px 4px 2px 0; font-size: 12px; color: #444; }
+        .no-abnormal { color: #27ae60; font-weight: bold; font-size: 14px; text-align: center; display: block; margin-top: 10px;}
+        .rate-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 13px; display: inline-block;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-box">
+        <h2>📊 考勤数据统计工具</h2>
+        <div id="actionBar" class="action-bar">
+            <button class="btn btn-copy-data" onclick="copyData()">📋 复制文本汇总</button>
+            <button class="btn btn-copy-img" onclick="copyImage()">📸 复制统计长图</button>
+            <button class="btn btn-export-img" onclick="exportImage()">🖼️ 导出图片</button>
+            <button class="btn btn-excel" onclick="exportExcel()">⬇️ 导出Excel</button>
+        </div>
+    </div>
+    
+    <div class="control-panel">
+        <div class="panel-row">
+            <!-- 隐私区 -->
+            <div class="control-item privacy-area">
+                <span style="font-weight:bold; color:#16a085;">🔒 隐私：</span>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:3px;">
+                    <input type="checkbox" id="maskPrivacy" onchange="handleMaskChange()">部分(*)
+                </label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:3px; color:#c0392b;">
+                    <input type="checkbox" id="fullMaskPrivacy" onchange="handleFullMaskChange()">深度(***)
+                </label>
+            </div>
+            
+            <!-- 视图与排名区 -->
+            <div class="control-item view-area">
+                <span style="font-weight:bold; color:#2c3e50;">👁️ 视图：</span>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:3px; margin-right: 10px;">
+                    <input type="checkbox" id="showAbnormalRate" onchange="renderTable()">显示异常占比
+                </label>
+                <label style="display:flex; align-items:center; gap:5px;">
+                    TOP排行数：<input type="number" id="topNValue" value="3" min="1" max="20" style="width:40px;" onchange="renderSummary()">
+                </label>
+            </div>
+
+            <!-- 颜色自定义区 -->
+            <div class="control-item color-area">
+                <span style="font-weight:bold; color:#8e44ad;">🎨 占比预警色：</span>
+                <span style="font-size: 13px;">&lt; 20%：</span>
+                <input type="color" id="colorLowBg" value="#e8f8f5" title="背景色" onchange="renderTable()">
+                <input type="color" id="colorLowText" value="#27ae60" title="文字色" onchange="renderTable()">
+                
+                <span style="font-size: 13px; margin-left:10px;">&ge; 20%：</span>
+                <input type="color" id="colorHighBg" value="#fdedec" title="背景色" onchange="renderTable()">
+                <input type="color" id="colorHighText" value="#c0392b" title="文字色" onchange="renderTable()">
+            </div>
+        </div>
+
+        <!-- 规则与过滤区 -->
+        <div class="control-item settings-area">
+            <label style="cursor:pointer; font-weight:bold; color:#2980b9; display:flex; align-items:center; gap:5px; margin-right: 20px; border-right: 1px solid #f39c12; padding-right: 15px;">
+                <input type="checkbox" id="excludeWeekend" onchange="reCalculate()"> 🚫 剔除周末 (跳过周六/日)
+            </label>
+
+            <label style="cursor:pointer; font-weight:bold; color:#d35400; display:flex; align-items:center; gap:5px;">
+                <input type="checkbox" id="enableRule" onchange="toggleRuleState()"> ⏱️ 启用漏卡干预规则
+            </label>
+            <div id="ruleInputs" style="margin-left: 10px; opacity: 0.5; pointer-events: none; transition: 0.3s;">
+                👉 若单日最早打卡晚于 
+                <input type="time" id="filterTime" onchange="reCalculate()"> ，则计为：
+                <select id="actionType" onchange="reCalculate()">
+                    <option value="ignore">不计数 (剔除该日数据)</option>
+                    <option value="normal">正常 (强制补为全勤正常)</option>
+                    <option value="abnormal">异常 (依然判定异常)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="upload-area">
+        <p>请上传包含考勤数据的 Excel 或 CSV 文件</p>
+        <label for="fileInput" class="btn upload-btn">点击选择文件</label>
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" onchange="handleFile(event)">
+        <p id="fileName" style="margin-top: 10px; color: #7f8c8d; font-size: 14px;"></p>
+    </div>
+
+    <div id="tableCaptureArea" style="display:none;">
+        <!-- 看板 -->
+        <div class="summary-board" id="summaryBoard">
+            <div class="summary-card">
+                <div class="summary-title">👥 统计总人数</div><div class="summary-value" id="sumEmp">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-title">📅 总出勤人次</div><div class="summary-value highlight-green" id="sumPresent">0 <span style="font-size:14px;color:#333;">天</span></div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-title">⚠️ 异常总数</div><div class="summary-value highlight-red" id="sumAbnormal">0 <span style="font-size:14px;color:#333;">次</span></div>
+            </div>
+            <div class="summary-card" style="flex:1.5;">
+                <div class="summary-title">📊 异常类型分布</div>
+                <div class="summary-subtext" id="sumTypes" style="display:flex; flex-wrap:wrap; justify-content:center; gap:5px;"></div>
+            </div>
+            <!-- TOP N 卡片 -->
+            <div class="summary-card" style="flex:1.5; justify-content:flex-start;">
+                <div class="summary-title" style="margin-bottom:10px;">🏆 异常次数 TOP <span id="displayTopN">3</span></div>
+                <div class="summary-subtext" id="topNList" style="display:flex; flex-direction:column; text-align:left;"></div>
+            </div>
+        </div>
+
+        <table id="resultTable">
+            <colgroup id="tableColgroup"></colgroup>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let rawExcelData = null; 
+    let employeeList = [];
+    let sortOrder = 'none';
+    let globalSummary = { totalEmp: 0, totalPresent: 0, totalAbnormal: 0, types: {} };
+    let topNDataForCopy = []; 
+
+    function handleMaskChange() {
+        let mask = document.getElementById('maskPrivacy').checked;
+        if (!mask) document.getElementById('fullMaskPrivacy').checked = false;
+        renderSummary(); 
+        renderTable();
+    }
+    function handleFullMaskChange() {
+        let fullMask = document.getElementById('fullMaskPrivacy').checked;
+        if (fullMask) document.getElementById('maskPrivacy').checked = true;
+        renderSummary(); 
+        renderTable();
+    }
+    
+    function maskName(name, isFull) {
+        if (!name) return "";
+        if (isFull) return "***"; 
+        if (name.length <= 2) return name.charAt(0) + "*";
+        return name.charAt(0) + "*".repeat(name.length - 2) + name.charAt(name.length - 1);
+    }
+    function maskId(id, isFull) {
+        if (!id) return "";
+        if (isFull) return "***"; 
+        let strId = String(id);
+        if (strId.length <= 3) return "***";
+        return "***" + strId.slice(-3);
+    }
+
+    function getAbnormalRateValue(emp) {
+        let total = emp.normalCount + emp.abnormalCount;
+        if (total === 0) return 0;
+        return (emp.abnormalCount / total) * 100;
+    }
+
+    function timeToMinutes(timeStr) {
+        if (!timeStr) return 0;
+        let parts = timeStr.trim().split(':');
+        return parseInt(parts[0] || 0) * 60 + parseInt(parts[1] || 0);
+    }
+
+    function toggleRuleState() {
+        let isEnabled = document.getElementById('enableRule').checked;
+        let ruleInputs = document.getElementById('ruleInputs');
+        if (isEnabled) {
+            ruleInputs.style.opacity = "1"; ruleInputs.style.pointerEvents = "auto";
+        } else {
+            ruleInputs.style.opacity = "0.5"; ruleInputs.style.pointerEvents = "none";
+        }
+        reCalculate();
+    }
+
+    function handleFile(e) {
+        let file = e.target.files[0];
+        if (!file) return;
+        document.getElementById('fileName').innerText = "已加载文件：" + file.name;
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let data = new Uint8Array(e.target.result);
+            let workbook = XLSX.read(data, {type: 'array'});
+            let worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            rawExcelData = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false, dateNF: 'yyyy-mm-dd'});
+            processData();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function reCalculate() { if (rawExcelData) processData(); }
+
+    function processData() {
+        if (!rawExcelData) return;
+        let data = rawExcelData;
+        let employees = {};
+
+        globalSummary = { totalEmp: 0, totalPresent: 0, totalAbnormal: 0, types: {} };
+
+        let isRuleEnabled = document.getElementById('enableRule').checked;
+        let filterTimeStr = document.getElementById('filterTime').value;
+        let filterMins = filterTimeStr ? timeToMinutes(filterTimeStr) : null;
+        let actionType = document.getElementById('actionType').value;
+        let excludeWeekend = document.getElementById('excludeWeekend').checked; 
+
+        data.forEach(row => {
+            let dateStr = row['日期'];
+            let empId = String(row['员工编号']);
+            let name = row['姓名'];
+            let shift = row['班次']; 
+            let clockInRaw = String(row['上班打卡时间'] || "").trim();
+            let clockOutRaw = String(row['下班打卡时间'] || "").trim();
+
+            if (!dateStr || !empId) return; 
+
+            // 剔除周末
+            if (excludeWeekend) {
+                let cleanDateStr = String(dateStr).replace(/\//g, '-');
+                let d = new Date(cleanDateStr);
+                if (!isNaN(d.getTime())) {
+                    let day = d.getDay();
+                    if (day === 0 || day === 6) return;
+                }
+            }
+
+            if (!employees[empId]) {
+                employees[empId] = { name: name, id: empId, presentDays: 0, normalCount: 0, abnormalCount: 0, abnormals: {} };
+            }
+
+            let emp = employees[empId];
+            let shiftStart = shift ? shift.split('-')[0] : "00:00";
+            let shiftStartMins = timeToMinutes(shiftStart);
+            let firstClockIn = clockInRaw.split(/\s+/)[0]; 
+            let firstClockOut = clockOutRaw.split(/\s+/)[0];
+            let hasIn = firstClockIn !== ""; let hasOut = firstClockOut !== "";
+            let month = String(dateStr).substring(0, 7); 
+
+            const addAbnormal = (baseType, detailReason) => {
+                emp.abnormalCount++;
+                if (!emp.abnormals[month]) emp.abnormals[month] = [];
+                let shortDate = String(dateStr).substring(8, 10) + "日";
+                if(shortDate.length < 3) shortDate = dateStr; 
+                emp.abnormals[month].push({ date: shortDate, reason: detailReason });
+                
+                globalSummary.totalAbnormal++;
+                if (!globalSummary.types[baseType]) globalSummary.types[baseType] = 0;
+                globalSummary.types[baseType]++;
+            };
+
+            if (isRuleEnabled && filterMins !== null) {
+                let inMins = hasIn ? timeToMinutes(firstClockIn) : 99999;
+                let outMins = hasOut ? timeToMinutes(firstClockOut) : 99999;
+                let earliestMins = Math.min(inMins, outMins);
+                if ((hasIn || hasOut) && earliestMins >= filterMins) {
+                    if (actionType === 'ignore') return; 
+                    else if (actionType === 'normal') { emp.presentDays++; emp.normalCount++; return; }
+                    else if (actionType === 'abnormal') { if (hasIn && hasOut) emp.presentDays++; addAbnormal("干预判定异常", `晚于设定时间打卡`); return; }
+                }
+            }
+
+            if (hasIn && hasOut) emp.presentDays++;
+
+            if (hasIn && hasOut) {
+                let clockInMins = timeToMinutes(firstClockIn);
+                if (clockInMins <= shiftStartMins) emp.normalCount++; else addAbnormal("迟到", "迟到(" + firstClockIn + ")"); 
+            } else {
+                if (!hasIn && !hasOut) addAbnormal("未打卡/休假", "未打卡/休假");
+                else if (!hasIn) addAbnormal("缺上班卡", "缺上班卡");
+                else if (!hasOut) addAbnormal("缺下班卡", "缺下班卡");
+            }
+        });
+
+        employeeList = Object.values(employees);
+        globalSummary.totalEmp = employeeList.length;
+        globalSummary.totalPresent = employeeList.reduce((sum, e) => sum + e.presentDays, 0);
+
+        sortOrder = 'none';
+        if(document.getElementById('sortIcon')) document.getElementById('sortIcon').innerText = '↕';
+        
+        renderSummary(); 
+        renderTable();   
+        document.getElementById('tableCaptureArea').style.display = 'block';
+        document.getElementById('actionBar').style.display = 'flex';
+    }
+
+    function renderSummary() {
+        document.getElementById('sumEmp').innerText = globalSummary.totalEmp;
+        document.getElementById('sumPresent').innerHTML = `${globalSummary.totalPresent} <span style="font-size:14px;color:#333;">天</span>`;
+        document.getElementById('sumAbnormal').innerHTML = `${globalSummary.totalAbnormal} <span style="font-size:14px;color:#333;">次</span>`;
+        
+        let typeHtml = '';
+        if (Object.keys(globalSummary.types).length === 0) {
+            typeHtml = '<span style="color:#27ae60;">完美！无任何异常数据</span>';
+        } else {
+            for(let type in globalSummary.types) {
+                typeHtml += `<span style="background:#ecf0f1; padding:4px 6px; border-radius:4px; border:1px solid #ddd; font-size:12px;">${type}: <span style="color:#e74c3c; font-weight:bold;">${globalSummary.types[type]}</span> 次</span>`;
+            }
+        }
+        document.getElementById('sumTypes').innerHTML = typeHtml;
+
+        let topNInput = parseInt(document.getElementById('topNValue').value) || 3;
+        document.getElementById('displayTopN').innerText = topNInput;
+        
+        let isMasked = document.getElementById('maskPrivacy').checked;
+        let sortedForTop = employeeList.filter(e => e.abnormalCount > 0).sort((a, b) => b.abnormalCount - a.abnormalCount);
+        let topN = sortedForTop.slice(0, topNInput);
+        
+        let topHtml = '';
+        topNDataForCopy = []; 
+        if (topN.length === 0) {
+            topHtml = '<span style="color:#27ae60; text-align:center; margin-top:10px;">暂无异常人员 🎉</span>';
+        } else {
+            topN.forEach((emp, index) => {
+                let displayName = isMasked ? "[脱敏保护]" : emp.name;
+                topHtml += `
+                    <div class="top-item">
+                        <span><span style="color:#95a5a6; font-size:12px;">NO.${index+1}</span> <span class="top-name">${displayName}</span></span>
+                        <span class="top-count">${emp.abnormalCount} 次</span>
+                    </div>
+                `;
+                topNDataForCopy.push(`NO.${index+1} ${displayName} - ${emp.abnormalCount}次`);
+            });
+        }
+        document.getElementById('topNList').innerHTML = topHtml;
+    }
+
+    function renderTable() {
+        let showRate = document.getElementById('showAbnormalRate').checked;
+        let isMasked = document.getElementById('maskPrivacy').checked;
+        let isFullMasked = document.getElementById('fullMaskPrivacy').checked;
+
+        let colorLowBg = document.getElementById('colorLowBg').value;
+        let colorLowText = document.getElementById('colorLowText').value;
+        let colorHighBg = document.getElementById('colorHighBg').value;
+        let colorHighText = document.getElementById('colorHighText').value;
+
+        let colgroupHtml = `
+            <col style="width: 10%;"> <col style="width: 10%;"> <col style="width: 10%;">
+            <col style="width: 10%;"> <col style="width: 12%;">
+            ${showRate ? '<col style="width: 10%;">' : ''}
+            <col style="width: ${showRate ? '38%' : '48%'};">
+        `;
+        document.getElementById('tableColgroup').innerHTML = colgroupHtml;
+
+        let arrow = sortOrder === 'desc' ? '▼' : (sortOrder === 'asc' ? '▲' : '↕');
+        let theadHtml = `
+            <tr>
+                <th>姓名</th><th>工号</th><th>出勤(天)</th><th>正常次数</th>
+                <th class="sortable-header" onclick="toggleSort()" title="点击切换升降序">异常次数 <span id="sortIcon" class="sort-icon">${arrow}</span></th>
+                ${showRate ? '<th>异常占比</th>' : ''}
+                <th>异常明细汇总</th>
+            </tr>
+        `;
+        document.getElementById('tableHead').innerHTML = theadHtml;
+
+        let tbody = document.getElementById('tableBody');
+        tbody.innerHTML = ''; 
+
+        employeeList.forEach(emp => {
+            let tr = document.createElement('tr');
+            let displayName = isMasked ? maskName(emp.name, isFullMasked) : emp.name;
+            let displayId = isMasked ? maskId(emp.id, isFullMasked) : emp.id;
+
+            let detailHtml = '';
+            let monthCount = 0;
+            for (let month in emp.abnormals) {
+                monthCount++;
+                let records = emp.abnormals[month];
+                let recordSpans = records.map(r => `<span class="abnormal-item">${r.date}: ${r.reason}</span>`).join('');
+                detailHtml += `<div class="month-title">${month} (异常${records.length}次)</div><div>${recordSpans}</div>`;
+            }
+            if (monthCount === 0) detailHtml = '<span class="no-abnormal">本周期内全勤正常</span>';
+
+            let rateHtml = '';
+            if (showRate) {
+                let rateValue = getAbnormalRateValue(emp);
+                let rateStr = rateValue.toFixed(1) + "%";
+                let bgCol = rateValue >= 20 ? colorHighBg : colorLowBg;
+                let txtCol = rateValue >= 20 ? colorHighText : colorLowText;
+                
+                rateHtml = `<td><span class="rate-badge" style="background-color:${bgCol}; color:${txtCol};">${rateStr}</span></td>`;
+            }
+
+            tr.innerHTML = `
+                <td>${displayName}</td><td>${displayId}</td><td>${emp.presentDays}</td>
+                <td><span style="color: #27ae60; font-weight:bold;">${emp.normalCount}</span></td>
+                <td><span style="color: #e74c3c; font-weight:bold; font-size: 16px;">${emp.abnormalCount}</span></td>
+                ${rateHtml}
+                <td><div class="detail-cell">${detailHtml}</div></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function toggleSort() {
+        if (employeeList.length === 0) return;
+        if (sortOrder === 'none' || sortOrder === 'asc') {
+            sortOrder = 'desc'; employeeList.sort((a, b) => b.abnormalCount - a.abnormalCount);
+        } else {
+            sortOrder = 'asc'; employeeList.sort((a, b) => a.abnormalCount - b.abnormalCount);
+        }
+        renderTable();
+    }
+
+    function copyData() {
+        if (employeeList.length === 0) return alert("没有数据可复制！");
+        let isMasked = document.getElementById('maskPrivacy').checked;
+        let isFullMasked = document.getElementById('fullMaskPrivacy').checked;
+        let showRate = document.getElementById('showAbnormalRate').checked;
+        let topNInput = document.getElementById('topNValue').value;
+        
+        let typeStrArr = [];
+        for(let t in globalSummary.types) { typeStrArr.push(`${t}(${globalSummary.types[t]}次)`); }
+        let typeStr = typeStrArr.length > 0 ? typeStrArr.join("，") : "无异常";
+
+        let text = `【数据统计概览】\n总人数：${globalSummary.totalEmp} 人 | 总出勤：${globalSummary.totalPresent} 天 | 异常总数：${globalSummary.totalAbnormal} 次\n异常分布：${typeStr}\n`;
+        
+        if (topNDataForCopy.length > 0) {
+            text += `\n【排行榜 - TOP ${topNInput} 异常人员】\n` + topNDataForCopy.join('\n') + `\n`;
+        }
+
+        text += `\n----------------------------------------\n`;
+        text += "姓名\t工号\t出勤(天)\t正常次数\t异常次数\t" + (showRate ? "异常占比\t" : "") + "异常明细汇总\n";
+        
+        employeeList.forEach(emp => {
+            let displayName = isMasked ? maskName(emp.name, isFullMasked) : emp.name;
+            let displayId = isMasked ? maskId(emp.id, isFullMasked) : emp.id;
+            let rateStr = getAbnormalRateValue(emp).toFixed(1) + "%";
+
+            let detailTextArr = [];
+            for (let month in emp.abnormals) {
+                let records = emp.abnormals[month];
+                let recordStr = records.map(r => `${r.date}: ${r.reason}`).join('，');
+                detailTextArr.push(`【${month}】共${records.length}次 -> ${recordStr}`);
+            }
+            let finalDetailText = detailTextArr.length > 0 ? detailTextArr.join('  |  ') : "本周期内全勤正常";
+            
+            text += `${displayName}\t${displayId}\t${emp.presentDays}\t${emp.normalCount}\t${emp.abnormalCount}\t` + (showRate ? `${rateStr}\t` : "") + `${finalDetailText}\n`;
+        });
+
+        navigator.clipboard.writeText(text).then(() => alert("✅ 数据已复制到剪贴板！")).catch(() => alert("❌ 复制失败"));
+    }
+
+    async function getTableCanvas() {
+        const targetArea = document.getElementById('tableCaptureArea');
+        const detailCells = document.querySelectorAll('.detail-cell');
+        detailCells.forEach(cell => { cell.style.maxHeight = 'none'; cell.style.overflow = 'visible'; });
+        const canvas = await html2canvas(targetArea, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+        detailCells.forEach(cell => { cell.style.maxHeight = '120px'; cell.style.overflowY = 'auto'; });
+        return canvas;
+    }
+
+    async function exportImage() {
+        if (employeeList.length === 0) return;
+        try {
+            const canvas = await getTableCanvas();
+            const link = document.createElement('a');
+            let now = new Date();
+            let timeStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+            link.download = `考勤统计_${timeStr}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (err) { alert("导出失败：" + err.message); }
+    }
+
+    async function copyImage() {
+        if (employeeList.length === 0) return;
+        try {
+            const canvas = await getTableCanvas();
+            canvas.toBlob(async (blob) => {
+                try {
+                    const item = new ClipboardItem({ "image/png": blob });
+                    await navigator.clipboard.write([item]);
+                    alert("✅ 【统计长图】已复制到剪贴板！");
+                } catch (err) { alert("❌ 复制失败，请使用【导出图片】"); }
+            });
+        } catch (err) { alert("生成图片失败：" + err.message); }
+    }
+
+    function exportExcel() {
+        if (employeeList.length === 0) return;
+        let isMasked = document.getElementById('maskPrivacy').checked;
+        let isFullMasked = document.getElementById('fullMaskPrivacy').checked;
+        let showRate = document.getElementById('showAbnormalRate').checked;
+
+        let exportData = employeeList.map(emp => {
+            let displayName = isMasked ? maskName(emp.name, isFullMasked) : emp.name;
+            let displayId = isMasked ? maskId(emp.id, isFullMasked) : emp.id;
+
+            let detailTextArr = [];
+            for (let month in emp.abnormals) {
+                let records = emp.abnormals[month];
+                let recordStr = records.map(r => `${r.date}: ${r.reason}`).join('，');
+                detailTextArr.push(`【${month}】共${records.length}次 -> ${recordStr}`);
+            }
+            let finalDetailText = detailTextArr.length > 0 ? detailTextArr.join('\n') : "本周期内全勤正常";
+            
+            let rowObj = {
+                "姓名": displayName, 
+                "工号": displayId, 
+                "出勤(天)": emp.presentDays,
+                "正常次数": emp.normalCount, 
+                "异常次数": emp.abnormalCount
+            };
+            if (showRate) rowObj["异常占比"] = getAbnormalRateValue(emp).toFixed(1) + "%";
+            rowObj["异常明细汇总"] = finalDetailText;
+
+            return rowObj;
+        });
+        
+        let worksheet = XLSX.utils.json_to_sheet(exportData);
+        let workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "考勤统计");
+        let now = new Date();
+        let timeStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+        XLSX.writeFile(workbook, `考勤统计结果_${timeStr}.xlsx`);
+    }
+</script>
+
+</body>
+</html>
