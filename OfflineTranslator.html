@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>局域网专属 AI 翻译服务器 - 全平台部署教程</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-light: #64748b;
+            --code-bg: #1e1e1e;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #334155;
+            margin-top: 40px;
+            display: flex;
+            align-items: center;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 10px;
+        }
+        p { margin-bottom: 15px; }
+        .highlight {
+            background-color: #fef08a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .alert {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            color: #991b1b;
+        }
+        .success-box {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #166534;
+        }
+        /* 代码块与复制按钮样式 */
+        .code-block-wrapper {
+            position: relative;
+            margin: 20px 0;
+            border-radius: 8px;
+            background-color: var(--code-bg);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #2d2d2d;
+            padding: 8px 15px;
+            border-radius: 8px 8px 0 0;
+            color: #a3a3a3;
+            font-size: 0.85em;
+        }
+        pre { margin: 0; padding: 15px; overflow-x: auto; }
+        code {
+            font-family: "Fira Code", Consolas, Monaco, "Andale Mono", monospace;
+            color: #56b6c2;
+            font-size: 0.95em;
+        }
+        .copy-btn {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { background-color: #2563eb; }
+        .copy-btn.copied { background-color: #10b981; }
+        .os-badge {
+            display: inline-block;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            color: #475569;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 局域网专属 AI 翻译服务器<br><span style="font-size: 0.6em; color: #64748b;">(全平台离线部署完整教程)</span></h1>
+
+    <div class="alert">
+        <strong>⚠️ 环境准备：</strong> 请确保电脑已安装 <strong>Python 3.11 或 3.12</strong>。Windows 用户在安装时务必勾选 <span class="highlight">Add Python to PATH</span>。
+    </div>
+
+    <h2>第一步：建立项目文件夹与模型</h2>
+    <p>1. 新建一个文件夹，命名为 <code>OfflineTranslator</code>，进入该文件夹。</p>
+    <p>2. 在里面再新建一个名为 <code>models</code> 的文件夹。</p>
+    <p>3. 将你下载好的 AI 模型文件（如 <code>.gguf</code> 格式文件）放进 <code>models</code> 文件夹内。</p>
+
+    <h2>第二步：安装必备运行插件</h2>
+    <p>打开终端 (Terminal) 或 命令提示符 (cmd)。依次复制并回车执行以下命令：</p>
+    
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>1. 升级 pip 工具</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code1')">复制命令</button>
+        </div>
+        <pre><code id="code1">python -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>2. 安装网页框架与文档处理库</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code2')">复制命令</button>
+        </div>
+        <pre><code id="code2">pip install gradio python-docx python-pptx -i https://pypi.tuna.tsinghua.edu.cn/simple</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>3. 安装高性能 AI 推理引擎 (Windows 推荐使用下方 AVX2 版本命令)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code3')">复制命令</button>
+        </div>
+        <pre><code id="code3">pip install llama-cpp-python --extra-index-url https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cpu --only-binary=:all: --no-cache-dir</code></pre>
+    </div>
+
+    <h2>第三步：保存核心代码</h2>
+    <p>在 <code>OfflineTranslator</code> 文件夹内，新建一个文本文件，重命名为 <code>main.py</code>。将管理员发放的 <strong>系统源代码</strong> 完整粘贴进去并保存。</p>
+
+    <h2>第四步：创建“一键启动”脚本 (支持后台运行)</h2>
+    <p>为了方便日后使用，请在 <code>main.py</code> 同级目录下新建对应的启动脚本。我们为您提供了两种模式：<strong>【全局绝对路径】</strong>(支持发送到桌面快捷方式/定时任务) 和 <strong>【当前相对路径】</strong>(适合直接在终端中运行)。</p>
+
+    <h3>🟦 Windows 系统 (.bat 脚本)</h3>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>[推荐] 模式 A：定义绝对路径 (随地双击 / 桌面快捷方式均可运行)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_win_a')">复制内容</button>
+        </div>
+        <pre><code id="code_win_a">@echo off
+:: 自动解析并切换到本脚本所在的绝对路径
+cd /d "%~dp0"
+echo 🚀 正在启动 AI 翻译服务器...
+python main.py
+pause</code></pre>
+    </div>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>模式 B：不定义路径 (直接在当前终端目录执行)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_win_b')">复制内容</button>
+        </div>
+        <pre><code id="code_win_b">@echo off
+echo 🚀 正在当前目录启动 AI 翻译服务器...
+python main.py
+pause</code></pre>
+    </div>
+
+    <h3>🍏 Linux / macOS 系统 (.sh 脚本)</h3>
+    <p style="font-size: 0.9em; color: #64748b;">使用 <code>nohup</code> 后台运行，关闭 SSH/终端窗口后服务器依旧保持运行，日志将保存在 <code>server_log.txt</code> 中。<br>⚠️ 脚本创建后，需执行 <code>chmod +x 启动脚本.sh</code> 赋予运行权限。</p>
+    
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>[推荐] 模式 A：定义绝对路径 (支持任意位置调用 / Crontab 定时任务)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_mac_a')">复制内容</button>
+        </div>
+        <pre><code id="code_mac_a">#!/bin/bash
+# 自动解析并切换到本脚本所在的绝对路径
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR"
+
+echo "🚀 正在后台启动 AI 翻译服务器..."
+nohup python3 main.py > server_log.txt 2>&1 &
+echo "✅ 启动成功！进程 PID: $!"
+echo "📄 运行日志正输出至: $DIR/server_log.txt"</code></pre>
+    </div>
+    
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>模式 B：不定义路径 (基于当前终端所在目录运行)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_mac_b')">复制内容</button>
+        </div>
+        <pre><code id="code_mac_b">#!/bin/bash
+echo "🚀 正在当前目录后台启动 AI 翻译服务器..."
+nohup python3 main.py > server_log.txt 2>&1 &
+echo "✅ 启动成功！进程 PID: $!"
+echo "📄 运行日志正输出至: server_log.txt"</code></pre>
+    </div>
+
+    <h2>第五步：获取局域网地址并分享</h2>
+    <p>双击或执行上述脚本启动服务器后。打开新的终端窗口，输入以下命令获取你本机的局域网 IP：</p>
+    
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>查询本机 IP 地址 (Windows: ipconfig / Linux&Mac: ifconfig)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_ip')">复制 Windows 命令</button>
+        </div>
+        <pre><code id="code_ip">ipconfig</code></pre>
+    </div>
+    
+    <p>找到内网的 IPv4 地址（例如：192.168.1.100）。局域网内的设备只要在浏览器输入以下网址即可访问：</p>
+    <div class="success-box" style="text-align: center; font-size: 1.2em; font-weight: bold;">
+        http://你的IP地址:7860
+    </div>
+
+    <div class="alert">
+        <strong>🛡️ 防火墙终极提醒：</strong> 如果同事输入网址打不开，说明是被防火墙拦截了。Windows 请在安全中心将 <code>python.exe</code> 放行；Linux 请执行 <code>ufw allow 7860</code> 开放端口。
+    </div>
+
+    <hr style="margin-top: 40px; border: none; border-top: 1px solid #e2e8f0;">
+    <p style="text-align: center; color: var(--text-light); font-size: 0.9em;">
+        系统默认密码 —— Admin管理员: admin / adm1ng | User用户: user / user2026
+    </p>
+</div>
+
+<script>
+    function copyCode(btn, codeId) {
+        const codeText = document.getElementById(codeId).innerText;
+        navigator.clipboard.writeText(codeText).then(() => {
+            const originalText = btn.innerText;
+            btn.innerText = "✅ 已复制!";
+            btn.classList.add("copied");
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove("copied");
+            }, 2000);
+        }).catch(err => {
+            alert('复制失败，请手动框选复制。');
+        });
+    }
+</script>
+
+</body>
+</html>
