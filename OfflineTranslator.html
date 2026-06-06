@@ -393,6 +393,47 @@ CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python --verbose --no-cache-d
     <h3>3. 代码支持配置说明</h3>
     <p>在最新的 <code>main.py</code> 核心代码中，已预先配置了 <code>n_gpu_layers=-1</code>。系统在检测到显卡运行环境后，会自动将模型的计算图层全部卸载至 GPU 显存中运行。</p>
 
+    <h2>📦 拓展：其他项目运行依赖库一键配置（可选）</h2>
+    <p>如果您还需要在同一台电脑中运行其他相关项目（如导航页重构系统、损耗工时监控系统、考勤系统等），可以直接使用以下任一方式在当前 Python 环境下一键补全所有第三方依赖库：</p>
+    
+    <h3>方法一：一键命令行直接安装（推荐，无需建文件）</h3>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>多项目依赖一键安装命令（使用阿里云镜像）</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_ext_all')">复制命令</button>
+        </div>
+        <pre><code id="code_ext_all">pip install Flask==3.0.0 beautifulsoup4 flask-socketio watchdog pandas==2.1.4 openpyxl==3.1.2 Flask-Login==0.6.3 Flask-SQLAlchemy==3.1.1 requests markdown flask-cors python-dotenv -i https://mirrors.aliyun.com/pypi/simple</code></pre>
+    </div>
+
+    <h3>方法二：标准 <code>requirements.txt</code> 批量安装</h3>
+    <p>1. 在任意文件夹下新建一个文本文件，重命名为 <code>requirements.txt</code>，将以下内容复制进去并保存：</p>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>requirements.txt 文件内容</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_req_txt')">复制内容</button>
+        </div>
+        <pre><code id="code_req_txt">Flask==3.0.0
+beautifulsoup4
+flask-socketio
+watchdog
+pandas==2.1.4
+openpyxl==3.1.2
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
+requests
+markdown
+flask-cors
+python-dotenv</code></pre>
+    </div>
+    <p>2. 在命令行中切换到该文件所在的目录（如 <code>cd /d %USERPROFILE%\Desktop</code>），然后运行以下命令进行批量安装：</p>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>读取 requirements.txt 批量安装</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_req_install')">复制命令</button>
+        </div>
+        <pre><code id="code_req_install">pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple</code></pre>
+    </div>
+
     <hr style="margin-top: 40px; border: none; border-top: 1px solid #e2e8f0;">
     <p style="text-align: center; color: var(--text-light); font-size: 0.9em;">
         系统默认密码 —— Admin管理员: admin / adm1ng | User用户: user / user2026
