@@ -157,7 +157,7 @@
     </div>
 
     <h2>第三步：保存核心代码</h2>
-    <p>在 <code>OfflineTranslator</code> 文件夹内，新建一个文本文件，重命名为 <code>main.py</code>。将管理员发放的 <strong>系统源代码</strong> 完整粘贴进去并保存。</p>
+    <p>在 <code>OfflineTranslator</code> 文件夹内，新建一个文本 file，重命名为 <code>main.py</code>。将管理员发放的 <strong>系统源代码</strong> 完整粘贴进去并保存。</p>
 
     <h2>第四步：创建“一键启动”脚本 (支持后台运行)</h2>
     <p>为了方便日后使用，请在 <code>main.py</code> 同级目录下新建对应的启动脚本。我们为您提供了两种模式：<strong>【全局绝对路径】</strong>(支持发送到桌面快捷方式/定时任务) 和 <strong>【当前相对路径】</strong>(适合直接在终端中运行)。</p>
@@ -169,10 +169,22 @@
             <button class="copy-btn" onclick="copyCode(this, 'code_win_a')">复制内容</button>
         </div>
         <pre><code id="code_win_a">@echo off
-:: 自动解析并切换到本脚本所在的绝对路径
+:: 🔥 强制 CMD 窗口使用全球通用 UTF-8 编码，彻底消灭所有中文和 Emoji 乱码！
+chcp 65001 &gt; nul
+
+:: 🚀 设置命令行窗口的专属标题
+title 局域网离线 AI 翻译服务器 - 纯本地运行
+
+:: 自动获取当前bat所在的绝对路径，确保从桌面快捷方式双击也能正确运行
 cd /d "%~dp0"
-echo 🚀 正在启动 AI 翻译服务器...
+
+echo ==============================================
+echo 🚀 正在启动局域网 AI 翻译服务器，请勿关闭此窗口...
+echo ==============================================
+echo.
+
 python main.py
+
 pause</code></pre>
     </div>
     <div class="code-block-wrapper">
@@ -181,8 +193,19 @@ pause</code></pre>
             <button class="copy-btn" onclick="copyCode(this, 'code_win_b')">复制内容</button>
         </div>
         <pre><code id="code_win_b">@echo off
-echo 🚀 正在当前目录启动 AI 翻译服务器...
+:: 🔥 强制 CMD 窗口使用全球通用 UTF-8 编码，彻底消灭所有中文和 Emoji 乱码！
+chcp 65001 &gt; nul
+
+:: 🚀 设置命令行窗口的专属标题
+title 局域网离线 AI 翻译服务器 - 纯本地运行
+
+echo ==============================================
+echo 🚀 正在当前目录启动局域网 AI 翻译服务器，请勿关闭此窗口...
+echo ==============================================
+echo.
+
 python main.py
+
 pause</code></pre>
     </div>
 
@@ -195,14 +218,26 @@ pause</code></pre>
             <button class="copy-btn" onclick="copyCode(this, 'code_mac_a')">复制内容</button>
         </div>
         <pre><code id="code_mac_a">#!/bin/bash
+# 🔥 设置终端字符集，确保中文字符与 Emoji 不乱码
+export LANG=zh_CN.UTF-8
+export LC_ALL=zh_CN.UTF-8
+
+# 🚀 设置终端窗口的专属标题
+echo -ne "\033]0;局域网离线 AI 翻译服务器 - 纯本地运行\007"
+
 # 自动解析并切换到本脚本所在的绝对路径
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &amp;&amp; pwd )"
 cd "$DIR"
 
-echo "🚀 正在后台启动 AI 翻译服务器..."
-nohup python3 main.py > server_log.txt 2>&1 &
+echo "=============================================="
+echo "🚀 正在后台启动局域网 AI 翻译服务器..."
+echo "=============================================="
+echo ""
+
+nohup python3 main.py &gt; server_log.txt 2&gt;&amp;1 &amp;
+
 echo "✅ 启动成功！进程 PID: $!"
-echo "📄 运行日志正输出至: $DIR/server_log.txt"</code></pre>
+echo "📄 运行日志正实时输出至: $DIR/server_log.txt"</code></pre>
     </div>
     
     <div class="code-block-wrapper">
@@ -211,10 +246,22 @@ echo "📄 运行日志正输出至: $DIR/server_log.txt"</code></pre>
             <button class="copy-btn" onclick="copyCode(this, 'code_mac_b')">复制内容</button>
         </div>
         <pre><code id="code_mac_b">#!/bin/bash
-echo "🚀 正在当前目录后台启动 AI 翻译服务器..."
-nohup python3 main.py > server_log.txt 2>&1 &
+# 🔥 设置终端字符集，确保中文字符与 Emoji 不乱码
+export LANG=zh_CN.UTF-8
+export LC_ALL=zh_CN.UTF-8
+
+# 🚀 设置终端窗口的专属标题
+echo -ne "\033]0;局域网离线 AI 翻译服务器 - 纯本地运行\007"
+
+echo "=============================================="
+echo "🚀 正在当前目录后台启动局域网 AI 翻译服务器..."
+echo "=============================================="
+echo ""
+
+nohup python3 main.py &gt; server_log.txt 2&gt;&amp;1 &amp;
+
 echo "✅ 启动成功！进程 PID: $!"
-echo "📄 运行日志正输出至: server_log.txt"</code></pre>
+echo "📄 运行日志正实时输出至: server_log.txt"</code></pre>
     </div>
 
     <h2>第五步：获取局域网地址并分享</h2>
