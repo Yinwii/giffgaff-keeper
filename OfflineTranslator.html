@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>局域网专属 AI 翻译服务器 - 全平台部署教程</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-light: #64748b;
+            --code-bg: #1e1e1e;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #334155;
+            margin-top: 40px;
+            display: flex;
+            align-items: center;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 10px;
+        }
+        h3 {
+            color: #475569;
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+        p { margin-bottom: 15px; }
+        .highlight {
+            background-color: #fef08a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .alert {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            color: #991b1b;
+        }
+        .success-box {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #166534;
+        }
+        /* 代码块与复制按钮样式 */
+        .code-block-wrapper {
+            position: relative;
+            margin: 20px 0;
+            border-radius: 8px;
+            background-color: var(--code-bg);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #2d2d2d;
+            padding: 8px 15px;
+            border-radius: 8px 8px 0 0;
+            color: #a3a3a3;
+            font-size: 0.85em;
+        }
+        pre { margin: 0; padding: 15px; overflow-x: auto; }
+        code {
+            font-family: "Fira Code", Consolas, Monaco, "Andale Mono", monospace;
+            color: #56b6c2;
+            font-size: 0.95em;
+        }
+        .copy-btn {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { background-color: #2563eb; }
+        .copy-btn.copied { background-color: #10b981; }
+        .os-badge {
+            display: inline-block;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            color: #475569;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 局域网专属 AI 翻译服务器<br><span style="font-size: 0.6em; color: #64748b;">(全平台离线部署完整教程)</span></h1>
+
+    <div class="alert">
+        <strong>⚠️ 环境准备：</strong> 请确保电脑已安装 <strong>Python 3.11 (全平台最佳推荐) 或 3.12</strong>。请避开 Python 3.13。
+        <br>• <strong>Windows</strong>：安装时务必勾选 <span class="highlight">Add Python to PATH</span>，并建议使用管理员权限启动命令行（CMD）。
+        <br>• <strong>macOS</strong>：建议使用 Homebrew 安装 Python 3.11（终端运行 <code>brew install python@3.11</code>）。
+        <br>• <strong>Linux</strong>：推荐通过系统包管理器安装（Ubuntu/Debian 终端运行 <code>sudo apt install python3 python3-pip python3-venv</code>）。
+    </div>
+
+    <h2>第一步：建立项目文件夹与模型</h2>
+    <p>1. 新建一个文件夹，命名为 <code>OfflineTranslator</code>，进入该文件夹。</p>
+    <p>2. 在里面再新建一个名为 <code>models</code> 的文件夹。</p>
+    <p>3. 将你下载好的 AI 模型文件（如 <code>.gguf</code> 格式文件）放进 <code>models</code> 文件夹内。</p>
+
+    <h2>第二步：安装必备运行插件</h2>
+    <p>打开终端（Terminal）或命令提示符（cmd）。若<strong>清华源出现 403 拦截或报错</strong>，请直接使用右侧的<strong>阿里云镜像源</strong>：</p>
+    
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>1. 升级 pip 工具 (方案 A：阿里云源 - 推荐)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code1_ali')">复制命令</button>
+        </div>
+        <pre><code id="code1_ali">python3 -m pip install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>1. 升级 pip 工具 (方案 B：清华源)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code1_tsinghua')">复制命令</button>
+        </div>
+        <pre><code id="code1_tsinghua">python -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>2. 安装网页框架与文档处理库 (方案 A：阿里云源 - 推荐，规避 403 封锁)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code2_ali')">复制命令</button>
+        </div>
+        <pre><code id="code2_ali">pip3 install gradio python-docx python-pptx python-dotenv -i https://mirrors.aliyun.com/pypi/simple</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>2. 安装网页框架与文档处理库 (方案 B：清华源)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code2_tsinghua')">复制命令</button>
+        </div>
+        <pre><code id="code2_tsinghua">pip install gradio python-docx python-pptx -i https://pypi.tuna.tsinghua.edu.cn/simple</code></pre>
+    </div>
+
+    <h3>3. 安装高性能 AI 推理引擎 (请根据您的系统选择对应指令)</h3>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>💻 Windows：纯 CPU 运行极速预编译版（AVX2 架构优化）</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code3_win_cpu')">复制命令</button>
+        </div>
+        <pre><code id="code3_win_cpu">pip install llama-cpp-python -i https://mirrors.aliyun.com/pypi/simple --extra-index-url https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cpu --only-binary=:all: --no-cache-dir</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>🍏 macOS：Apple Silicon 芯片 (M1/M2/M3/M4 系列 Metal 显卡原生加速)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code3_mac_metal')">复制命令</button>
+        </div>
+        <pre><code id="code3_mac_metal">CMAKE_ARGS="-DLLAMA_METAL=on" pip3 install llama-cpp-python --no-cache-dir --force-reinstall --no-binary :all: -i https://mirrors.aliyun.com/pypi/simple</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>🐧 Linux：NVIDIA 显卡 (CUDA 本地编译器自动构建)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code3_linux_cuda')">复制命令</button>
+        </div>
+        <pre><code id="code3_linux_cuda">CMAKE_ARGS="-DLLAMA_CUDA=on" pip3 install llama-cpp-python --verbose --no-cache-dir --force-reinstall --no-binary :all: -i https://mirrors.aliyun.com/pypi/simple</code></pre>
+    </div>
+
+    <div class="success-box">
+        <strong>💡 【强力推荐】Windows 离线浏览器下载安装法 (彻底解决 403 阻断与 GitHub 下载超时)：</strong>
+        <br>如果在线安装时出现连接超时、找不到版本或握手失败等报错，说明终端网络访问受阻，请直接通过浏览器手动下载：
+        <ol style="margin-top: 10px; padding-left: 20px;">
+            <li style="margin-bottom: 8px;">
+                打开您的浏览器，访问预编译组件列表页：
+                <br><a href="https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cpu" target="_blank" style="color: #2563eb; font-weight: bold; text-decoration: underline;">https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cpu</a>
+            </li>
+            <li style="margin-bottom: 8px;">
+                在文件列表中，根据您当前电脑安装的 <strong>Python 版本</strong> 下载对应的文件（认准 <code>win_amd64</code> 后缀）：
+                <ul>
+                    <li>如果您安装的是 <strong>Python 3.11</strong>：下载文件名包含 <code>cp311</code> 的文件，例如：<code>llama_cpp_python-0.2.26+cpuavx2-cp311-cp311-win_amd64.whl</code></li>
+                    <li>如果您安装的是 <strong>Python 3.12</strong>：下载文件名包含 <code>cp312</code> 的文件，例如：<code>llama_cpp_python-0.3.2-cp312-cp312-win_amd64.whl</code></li>
+                </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
+                将下载好的 <code>.whl</code> 文件保存到本地（例如直接放在系统的“下载”文件夹中）。
+            </li>
+            <li style="margin-bottom: 8px;">
+                在命令行中切换到该文件所在的存放路径：
+                <div class="code-block-wrapper" style="margin: 8px 0;">
+                    <div class="code-header">
+                        <span>切换到系统下载文件夹 (Downloads)</span>
+                        <button class="copy-btn" onclick="copyCode(this, 'code_cd')">复制命令</button>
+                    </div>
+                    <pre><code id="code_cd">cd /d %USERPROFILE%\Downloads</code></pre>
+                </div>
+            </li>
+            <li style="margin-bottom: 8px;">
+                运行本地安装命令完成部署（将文件名替换为您实际下载的文件名称，此处以 3.11 为例）：
+                <div class="code-block-wrapper" style="margin: 8px 0;">
+                    <div class="code-header">
+                        <span>执行本地依赖安装</span>
+                        <button class="copy-btn" onclick="copyCode(this, 'code_local_install')">复制命令</button>
+                    </div>
+                    <pre><code id="code_local_install">pip install llama_cpp_python-0.2.26+cpuavx2-cp311-cp311-win_amd64.whl -i https://mirrors.aliyun.com/pypi/simple</code></pre>
+                </div>
+            </li>
+        </ol>
+    </div>
+
+    <h2>第三步：保存核心代码</h2>
+    <p>在 <code>OfflineTranslator</code> 文件夹内，新建一个文本文件，重命名为 <code>main.py</code>。将管理员发放的 <strong>系统源代码</strong> 完整粘贴进去并保存。</p>
+
+    <h2>第四步：创建“一键启动”脚本 (支持后台运行)</h2>
+    <p>为了方便日后使用，请在 <code>main.py</code> 同级目录下新建对应的启动脚本。我们为您提供了两种模式：<strong>【全局绝对路径】</strong>(支持发送到桌面快捷方式/定时任务) 和 <strong>【当前相对路径】</strong>(适合直接在终端中运行)。</p>
+
+    <h3>🟦 Windows 系统 (.bat 脚本)</h3>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>[推荐] 模式 A：定义绝对路径 (随地双击 / 桌面快捷方式均可运行)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_win_a')">复制内容</button>
+        </div>
+        <pre><code id="code_win_a">@echo off
+:: 🔥 强制 CMD 窗口使用全球通用 UTF-8 编码，彻底消灭所有中文和 Emoji 乱码！
+chcp 65001 &gt; nul
+
+:: 🚀 设置命令行窗口的专属标题
+title 局域网离线 AI 翻译服务器 - 纯本地运行
+
+:: 自动获取当前bat所在的绝对路径，确保从桌面快捷方式双击也能正确运行
+cd /d "%~dp0"
+
+echo ==============================================
+echo 🚀 正在启动局域网 AI 翻译服务器，请勿关闭此窗口...
+echo ==============================================
+echo.
+
+python main.py
+
+pause</code></pre>
+    </div>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>模式 B：不定义路径 (直接在当前终端目录执行)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_win_b')">复制内容</button>
+        </div>
+        <pre><code id="code_win_b">@echo off
+:: 🔥 强制 CMD 窗口使用全球通用 UTF-8 编码，彻底消灭所有中文和 Emoji 乱码！
+chcp 65001 &gt; nul
+
+:: 🚀 设置命令行窗口的专属标题
+title 局域网离线 AI 翻译服务器 - 纯本地运行
+
+echo ==============================================
+echo 🚀 正在当前目录启动局域网 AI 翻译服务器，请勿关闭此窗口...
+echo ==============================================
+echo.
+
+python main.py
+
+pause</code></pre>
+    </div>
+
+    <h3>🍏 macOS / 🐧 Linux 系统 (.sh 脚本)</h3>
+    <p style="font-size: 0.9em; color: #64748b;">使用 <code>nohup</code> 后台运行，关闭 SSH/终端窗口后服务器依旧保持运行，日志将保存在 <code>server_log.txt</code> 中。<br>⚠️ 脚本创建后，需执行 <code>chmod +x 启动脚本.sh</code> 赋予运行权限。</p>
+    
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>[推荐] 模式 A：定义绝对路径 (支持任意位置调用 / Crontab 定时任务)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_mac_a')">复制内容</button>
+        </div>
+        <pre><code id="code_mac_a">#!/bin/bash
+# 🔥 设置终端字符集，确保中文字符与 Emoji 不乱码
+export LANG=zh_CN.UTF-8
+export LC_ALL=zh_CN.UTF-8
+
+# 🚀 设置终端窗口的专属标题
+echo -ne "\033]0;局域网离线 AI 翻译服务器 - 纯本地运行\007"
+
+# 自动解析并切换到本脚本所在的绝对路径
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &amp;&amp; pwd )"
+cd "$DIR"
+
+echo "=============================================="
+echo "🚀 正在后台启动局域网 AI 翻译服务器..."
+echo "=============================================="
+echo ""
+
+nohup python3 main.py &gt; server_log.txt 2&gt;&amp;1 &amp;
+
+echo "✅ 启动成功！进程 PID: $!"
+echo "📄 运行日志正实时输出至: $DIR/server_log.txt"</code></pre>
+    </div>
+    
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>模式 B：不定义路径 (基于当前终端所在目录运行)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_mac_b')">复制内容</button>
+        </div>
+        <pre><code id="code_mac_b">#!/bin/bash
+# 🔥 设置终端字符集，确保中文字符与 Emoji 不乱码
+export LANG=zh_CN.UTF-8
+export LC_ALL=zh_CN.UTF-8
+
+# 🚀 设置终端窗口的专属标题
+echo -ne "\033]0;局域网离线 AI 翻译服务器 - 纯本地运行\007"
+
+echo "=============================================="
+echo "🚀 正在当前目录后台启动局域网 AI 翻译服务器..."
+echo "=============================================="
+echo ""
+
+nohup python3 main.py &gt; server_log.txt 2&gt;&amp;1 &amp;
+
+echo "✅ 启动成功！进程 PID: $!"
+echo "📄 运行日志正实时输出至: server_log.txt"</code></pre>
+    </div>
+
+    <h2>第五步：获取局域网地址并分享</h2>
+    <p>双击或执行上述脚本启动服务器后。运行以下命令获取你本机的内网 IP 物理地址：</p>
+    
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>💻 Windows 查询 IP 命令</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_ip')">复制命令</button>
+        </div>
+        <pre><code id="code_ip">ipconfig</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>🍏 macOS / 🐧 Linux 查询 IP 命令</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_ip_unix')">复制命令</button>
+        </div>
+        <pre><code id="code_ip_unix">ifconfig</code></pre>
+    </div>
+    
+    <p>找到内网的 IPv4 地址（例如：192.168.1.100）。局域网内的设备只要在浏览器输入以下网址即可访问：</p>
+    <div class="success-box" style="text-align: center; font-size: 1.2em; font-weight: bold;">
+        http://你的IP地址:7860
+    </div>
+
+    <div class="alert">
+        <strong>🛡️ 防火墙终极提醒：</strong> 如果同事输入网址打不开，说明是被防火墙拦截了：
+        <br>• <strong>Windows</strong>：请在安全中心将 <code>python.exe</code> 放行。
+        <br>• <strong>Linux (UFW 规则)</strong>：请在终端执行 <code>sudo ufw allow 7860</code> 开放端口。
+        <br>• <strong>Linux (Firewalld 规则)</strong>：请在终端执行下方命令开放端口：
+        <div class="code-block-wrapper" style="margin-top: 10px;">
+            <div class="code-header">
+                <span>CentOS/RedHat 开放 7860 端口</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code_firewall')">复制命令</button>
+            </div>
+            <pre><code id="code_firewall">sudo firewall-cmd --zone=public --add-port=7860/tcp --permanent &amp;&amp; sudo firewall-cmd --reload</code></pre>
+        </div>
+    </div>
+
+    <h2>💡 进阶：如何开启 GPU (显卡) 硬件加速（可选）</h2>
+    <p>如果您的设备配有独立显卡（如 NVIDIA 显卡或 Apple M 系列芯片），可以按照以下步骤配置以启用显卡加速，从而显著提升翻译计算速度、减轻 CPU 负担。</p>
+    
+    <h3>1. 确认本地 CUDA 环境 (仅 Windows / Linux NVIDIA 用户)</h3>
+    <p>在配置显卡运行前，请先打开终端（cmd）运行以下命令，确认系统已正确识别您的 NVIDIA 显卡与驱动版本：</p>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>查询显卡与 CUDA 支持版本</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_cuda_check')">复制命令</button>
+        </div>
+        <pre><code id="code_cuda_check">nvidia-smi</code></pre>
+    </div>
+    <p>若正常输出显卡状态表格，请关注右上角的 <strong>CUDA Version</strong>（或 CUDA UMD Version），根据该主版本号安装对应的显卡运行库。</p>
+
+    <h3>2. 替换安装显卡版高性能 AI 推理引擎</h3>
+    <p>在终端运行相应命令卸载旧版 CPU 依赖，并换装支持您硬件的显卡依赖库：</p>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>Windows + NVIDIA 显卡 (以 CUDA 12.1 为例)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_gpu_win')">复制命令</button>
+        </div>
+        <pre><code id="code_gpu_win">pip uninstall llama-cpp-python -y
+pip install llama-cpp-python --extra-index-url https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cu121 --only-binary=:all: --no-cache-dir</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>macOS 系统 (Apple M系列芯片 Metal 原生加速)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_gpu_mac')">复制命令</button>
+        </div>
+        <pre><code id="code_gpu_mac">pip uninstall llama-cpp-python -y
+CMAKE_ARGS="-GGuid=Xcode -DLLAMA_METAL=on" pip install llama-cpp-python --no-cache-dir --force-reinstall --no-binary :all:</code></pre>
+    </div>
+
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>Linux + NVIDIA 显卡 (CUDA 本地编译)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_gpu_lnx')">复制命令</button>
+        </div>
+        <pre><code id="code_gpu_lnx">pip uninstall llama-cpp-python -y
+CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python --verbose --no-cache-dir --force-reinstall --no-binary :all:</code></pre>
+    </div>
+
+    <h3>3. 代码支持配置说明</h3>
+    <p>在最新的 <code>main.py</code> 核心代码中，已预先配置了 <code>n_gpu_layers=-1</code>。系统在检测到显卡运行环境后，会自动将模型的计算图层全部卸载至 GPU 显存中运行。</p>
+
+    <h2>📦 拓展：其他项目运行依赖库一键配置（可选）</h2>
+    <p>如果您还需要在同一台电脑中运行其他相关项目（如导航页重构系统、损耗工时监控系统、考勤系统等），可以直接使用以下任一方式在当前 Python 环境下一键补全所有第三方依赖库：</p>
+    
+    <h3>方法一：一键命令行直接安装（推荐，无需建文件）</h3>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>多项目依赖一键安装命令（使用阿里云镜像）</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_ext_all')">复制命令</button>
+        </div>
+        <pre><code id="code_ext_all">pip install Flask==3.0.0 beautifulsoup4 flask-socketio watchdog pandas==2.1.4 openpyxl==3.1.2 Flask-Login==0.6.3 Flask-SQLAlchemy==3.1.1 requests markdown flask-cors python-dotenv -i https://mirrors.aliyun.com/pypi/simple</code></pre>
+    </div>
+
+    <h3>方法二：标准 <code>requirements.txt</code> 批量安装</h3>
+    <p>1. 在任意文件夹下新建一个文本文件，重命名为 <code>requirements.txt</code>，将以下内容复制进去并保存：</p>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>requirements.txt 文件内容</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_req_txt')">复制内容</button>
+        </div>
+        <pre><code id="code_req_txt">Flask==3.0.0
+beautifulsoup4
+flask-socketio
+watchdog
+pandas==2.1.4
+openpyxl==3.1.2
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
+requests
+markdown
+flask-cors
+python-dotenv</code></pre>
+    </div>
+    <p>2. 在命令行中切换到该文件所在的目录（如 <code>cd /d %USERPROFILE%\Desktop</code>），然后运行以下命令进行批量安装：</p>
+    <div class="code-block-wrapper">
+        <div class="code-header">
+            <span>读取 requirements.txt 批量安装</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code_req_install')">复制命令</button>
+        </div>
+        <pre><code id="code_req_install">pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple</code></pre>
+    </div>
+
+    <hr style="margin-top: 40px; border: none; border-top: 1px solid #e2e8f0;">
+    <p style="text-align: center; color: var(--text-light); font-size: 0.9em;">
+        系统默认密码 —— Admin管理员: admin / adm1ng | User用户: user / user2026
+    </p>
+</div>
+
+<script>
+    function copyCode(btn, codeId) {
+        const codeText = document.getElementById(codeId).innerText;
+        navigator.clipboard.writeText(codeText).then(() => {
+            const originalText = btn.innerText;
+            btn.innerText = "✅ 已复制!";
+            btn.classList.add("copied");
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove("copied");
+            }, 2000);
+        }).catch(err => {
+            alert('复制失败，请手动框选复制。');
+        });
+    }
+</script>
+
+</body>
+</html>
