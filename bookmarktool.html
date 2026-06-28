@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全能开发辅助工具 (书签+Base64)</title>
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzM0OThkYiI+PHBhdGggZD0iTTIyLjcgMTlsLTkuMS05LjFjLjktMi4zLjQtNS0xLjUtNi45LTItMi01LTIuNC03LjQtMS4zTDkgNiA2IDkgMS42IDQuN0MuNCA3LjEuOSAxMC4xIDIuOSAxMi4xYzEuOSAxLjkgNC42IDIuNCA2LjkgMS41bDkuMSA5LjFjLjQuNCAxIC40IDEuNCAwbDIuMy0yLjNjLjUtLjQuNS0xLjEuMS0xLjR6Ii8+PC9zdmc+" type="image/svg+xml">
+    
+    <style>
+        :root {
+            --primary-color: #3498db; --primary-hover: #2980b9;
+            --bg-color: #f0f2f5; --card-bg: #ffffff;
+            --text-main: #2c3e50; --text-light: #7f8c8d;
+            --border-color: #dcdde1; --success-color: #27ae60;
+            --global-font: 'Segoe UI', 'Microsoft YaHei', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body { font-family: var(--global-font); margin: 0; padding: 20px; background-color: var(--bg-color); color: var(--text-main); }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { text-align: center; color: var(--text-main); margin-bottom: 30px; font-size: 2.2em; }
+        .section-title { border-left: 5px solid var(--primary-color); padding-left: 15px; margin: 40px 0 20px 0; color: var(--text-main); display:flex; justify-content: space-between; align-items:center;}
+        
+        .card { background-color: var(--card-bg); border-radius: 10px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; border: 1px solid var(--border-color); }
+        .card:hover { box-shadow: 0 8px 15px rgba(0,0,0,0.08); }
+
+        textarea, input[type="text"] { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border-color); border-radius: 6px; font-family: var(--global-font); font-size: 14px; line-height: 1.5; color: var(--text-main); resize: vertical; transition: border-color 0.3s; }
+        textarea:focus, input[type="text"]:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+
+        .header-with-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .action-mini-group { display: flex; gap: 8px; align-items: center;}
+        .btn-group { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; align-items: center; }
+
+        button { background-color: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-family: var(--global-font); font-size: 15px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+        button:hover { background-color: var(--primary-hover); }
+        button.btn-secondary { background-color: #95a5a6; } button.btn-secondary:hover { background-color: #7f8c8d; }
+        button.btn-outline { background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 8px 16px; } button.btn-outline:hover { background-color: var(--primary-color); color: white; }
+        button.btn-outline-gray { background-color: transparent; color: #95a5a6; border: 1px solid #95a5a6; padding: 8px 16px; } button.btn-outline-gray:hover { background-color: #95a5a6; color: white; }
+        button.btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 4px; }
+        button.btn-icon { padding: 4px 8px; font-size: 12px; }
+
+        .file-upload-wrapper { display: flex; align-items: center; gap: 15px; margin: 8px 0 15px 0; }
+        .file-name-display { font-size: 14px; color: var(--text-light); background: #f8f9fa; padding: 6px 12px; border-radius: 4px; border: 1px dashed var(--border-color); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .base64-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        @media (max-width: 900px) { .base64-layout { grid-template-columns: 1fr; } }
+        #imagePreview { max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 6px; display: none; border: 1px dashed var(--border-color); }
+        .bookmark-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 25px; }
+        h2.generator-title { margin: 0; font-size: 1.2em; color: var(--primary-color); }
+        .result-label { font-size: 14px; font-weight: bold; color: var(--text-light); }
+        .main-action-btn { width: 100%; padding: 12px; font-size: 16px; margin: 10px 0 15px 0; }
+        .extracted-icon-section { margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border-color); }
+
+        /* ================= 书签库视图管理器 ================= */
+        .library-wrapper {
+            position: relative; transition: all 0.3s ease; background: var(--card-bg); 
+            border-radius: 10px; padding: 20px; border: 1px solid var(--border-color);
+        }
+        .library-wrapper.fullscreen-mode {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: 9999; border-radius: 0; border: none; padding: 30px 5%;
+            overflow-y: auto; background-color: var(--bg-color);
+        }
+        
+        .library-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap:15px;}
+        .parsed-bookmarks-container { max-height: 400px; overflow-y: auto; overflow-x: hidden; padding-right: 5px; transition: all 0.3s; }
+        .fullscreen-mode .parsed-bookmarks-container { max-height: none; overflow-y: visible; }
+        
+        /* 1. 单列列表视图 (默认) */
+        .layout-list { display: flex; flex-direction: column; gap: 8px; }
+        .layout-list .parsed-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); background: white; transition: box-shadow 0.2s; width: 100%; }
+        .layout-list .parsed-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .layout-list .parsed-info { display: flex; align-items: center; gap: 12px; overflow: hidden; flex: 1; min-width: 0; }
+        .layout-list .parsed-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        
+        /* 2. 新增：多列列表视图 (Multi-List) */
+        .layout-multi-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 12px; }
+        .layout-multi-list .parsed-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: white; transition: box-shadow 0.2s; width: 100%; overflow: hidden;}
+        .layout-multi-list .parsed-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .layout-multi-list .parsed-info { display: flex; align-items: center; gap: 10px; overflow: hidden; flex: 1; min-width: 0; }
+        .layout-multi-list .parsed-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        /* 调整多列模式下的按钮间距，防止拥挤 */
+        .layout-multi-list .item-actions { gap: 4px; margin-left: 5px;}
+
+        /* 3. 平铺卡片视图 (Grid) */
+        .layout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .layout-grid .parsed-item { display: flex; flex-direction: column; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: white; transition: transform 0.2s; }
+        .layout-grid .parsed-item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .layout-grid .parsed-info { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 15px; overflow: hidden; width: 100%;}
+        .layout-grid .parsed-text { display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+        .layout-grid .parsed-info img { width: 32px; height: 32px; }
+        .layout-grid .item-actions { display: flex; justify-content: center; gap: 5px; flex-wrap:wrap; width: 100%; border-top: 1px dashed var(--border-color); padding-top: 10px;}
+
+        /* 4. 分列紧凑视图 (Compact) */
+        .layout-compact { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+        .layout-compact .parsed-item { display: flex; flex-direction: column; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: white; overflow: hidden; }
+        .layout-compact .parsed-info { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; overflow: hidden;}
+        .layout-compact .parsed-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; flex: 1;}
+        .layout-compact .parsed-info img { width: 16px; height: 16px; }
+        .layout-compact .parsed-text .parsed-url { display: none; }
+        .layout-compact .item-actions { display: flex; justify-content: space-between; gap: 3px; }
+
+        /* 书签元素通用样式 */
+        .parsed-info img { width: 20px; height: 20px; flex-shrink: 0; border-radius: 3px; object-fit: contain; background:#f0f2f5;}
+        .parsed-name { font-size: 14px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
+        .parsed-url { font-size: 12px; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
+        .item-actions { display: flex; gap: 6px; flex-shrink: 0; margin-left: 10px;}
+        .view-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        /* ================= 强化版查看弹窗 ================= */
+        .custom-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: rgba(0,0,0,0.6); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .custom-modal-content {
+            background: white; width: 700px; max-width: 95%; border-radius: 12px;
+            padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        /* 弹窗头部信息区 */
+        .modal-header-info {
+            display: flex; align-items: center; gap: 15px; flex: 1; min-width: 0;
+            padding: 10px 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid var(--border-color);
+        }
+        .modal-header-info img { width: 36px; height: 36px; border-radius: 6px; object-fit: contain; background: white; padding:2px; border: 1px solid #eee;}
+        .modal-header-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        .modal-header-title { font-size: 16px; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .modal-header-url { font-size: 13px; color: var(--primary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; margin-top:2px;}
+        .modal-header-url:hover { text-decoration: underline; }
+        
+        .custom-modal-content textarea { height: 220px; font-family: monospace; font-size: 13px; background:#f0f2f5; cursor:text; border: 1px solid var(--border-color); border-radius: 6px; padding: 15px;}
+    </style>
+</head>
+
+<body>
+
+    <!-- ================= 强化版原生代码查看弹窗 ================= -->
+    <div id="codeViewModal" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <div class="header-with-actions" style="margin-bottom: 0;">
+                <h3 style="margin:0; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                    <span>👁️</span> <span>书签详细信息</span>
+                </h3>
+                <div class="action-mini-group">
+                    <button id="modalOpenBtn" class="btn-outline btn-sm" style="border-color:var(--success-color); color:var(--success-color);" onclick="openModalUrl()">🌐 立即打开</button>
+                    <button class="btn-outline-gray btn-sm" onclick="closeCodeModal()">❌ 关闭</button>
+                </div>
+            </div>
+            
+            <!-- 头部动态加载的书签信息 -->
+            <div class="modal-header-info">
+                <img id="modalIcon" src="" alt="icon">
+                <div class="modal-header-text">
+                    <span id="modalTitle" class="modal-header-title">加载中...</span>
+                    <a id="modalUrl" class="modal-header-url" href="#" target="_blank">加载中...</a>
+                </div>
+            </div>
+
+            <div>
+                <p style="font-size:13px; font-weight:bold; color:var(--text-main); margin: 0 0 8px 0;">💻 原生 HTML 代码：</p>
+                <textarea id="modalCodeArea" readonly></textarea>
+            </div>
+            <div class="btn-group" style="justify-content: flex-end; margin:0;">
+                <button onclick="copyFromModal()">📋 复制全部代码</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container">
+        <h1>🛠️ 全能开发辅助工具</h1>
+
+        <!-- ================= 浏览器书签文件解析区 ================= -->
+        <h2 class="section-title">📂 浏览器书签文件智能解析</h2>
+        
+        <div id="libraryWrapper" class="library-wrapper">
+            <div class="library-header">
+                <div>
+                    <label style="display:block; margin-bottom:8px;"><strong>导入书签文件 (bookmarks.html)</strong></label>
+                    <div class="file-upload-wrapper" style="margin:0;">
+                        <input type="file" id="bookmarkFileInput" accept=".html" style="display: none;">
+                        <button id="triggerBookmarkFileBtn" class="btn-outline" style="border-color:var(--success-color); color:var(--success-color);">
+                            📑 选择并解析文件...
+                        </button>
+                        <span id="bookmarkFileNameDisplay" class="file-name-display">未选择文件</span>
+                    </div>
+                </div>
+
+                <div id="libraryControls" style="display: none; gap: 15px; align-items:center; flex-wrap: wrap;">
+                    <div class="action-mini-group" style="background:#f0f2f5; padding:4px; border-radius:6px;">
+                        <button class="btn-outline-gray btn-sm view-btn active" onclick="switchView('layout-list', this)" title="单列列表">📄 列表</button>
+                        <!-- 新增：多列视图按钮 -->
+                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-multi-list', this)" title="多列排版列表">🗂️ 多列</button>
+                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-grid', this)" title="平铺卡片">⊞ 平铺</button>
+                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-compact', this)" title="紧凑排列">▦ 紧凑</button>
+                    </div>
+                    
+                    <button id="toggleFullscreenBtn" class="btn-outline btn-sm">🗔 全屏大屏查看</button>
+                    <button id="clearParsedBtn" class="btn-outline-gray btn-sm">🗑️ 清空库</button>
+                </div>
+            </div>
+            
+            <div id="parsedBookmarksContainer" class="parsed-bookmarks-container layout-list">
+                <!-- 动态数据 -->
+            </div>
+        </div>
+
+        <!-- ================= Base64 工具区域 ================= -->
+        <h2 class="section-title">🖼️ Base64 / 文本编码转换工具</h2>
+        <div class="card base64-layout">
+            <div>
+                <label><strong>1. 导入本地文件 (推荐图片)</strong></label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="fileInput" accept="image/*, .txt, .json" style="display: none;">
+                    <button id="triggerFileBtn" class="btn-outline">📁 浏览并导入文件...</button>
+                    <span id="fileNameDisplay" class="file-name-display">未选择任何文件</span>
+                </div>
+                <div class="header-with-actions">
+                    <label><strong>2. 或输入任意文本 / 链接</strong></label>
+                    <div class="action-mini-group">
+                        <button id="pasteTextBtn" class="btn-outline btn-sm">📋 粘贴</button>
+                        <button id="clearTextBtn" class="btn-outline-gray btn-sm">🗑️ 清空</button>
+                    </div>
+                </div>
+                <textarea id="textBase64Input" rows="4" placeholder="输入任意文本，或者贴入完整的图片 URL 链接..."></textarea>
+                <div class="btn-group">
+                    <button id="btnTextToBase64">仅转换文本</button>
+                    <button id="btnUrlToBase64" class="btn-secondary" title="受浏览器CORS限制，部分图片可能无法抓取">抓取图片URL并转换</button>
+                </div>
+            </div>
+            <div>
+                <div class="header-with-actions">
+                    <label><strong>转换结果 (Base64)</strong></label>
+                    <div class="action-mini-group">
+                        <button id="copyBase64Btn" class="btn-outline btn-sm">📋 复制结果</button>
+                        <button id="clearBase64Btn" class="btn-outline-gray btn-sm">🗑️ 清空结果</button>
+                    </div>
+                </div>
+                <textarea id="base64Result" rows="8" readonly placeholder="Base64 结果将显示在这里..."></textarea>
+                <img id="imagePreview" alt="Base64图片预览">
+            </div>
+        </div>
+
+        <!-- ================= 书签生成器区域 ================= -->
+        <h2 class="section-title">🔖 工作区：批量书签生成器 (6槽位)</h2>
+        <div class="bookmark-grid">
+            <script>
+                for (let i = 1; i <= 6; i++) {
+                    document.write(`
+                        <div class="card" id="generatorCard${i}">
+                            <div class="header-with-actions">
+                                <h2 class="generator-title">生成器 ${i}</h2>
+                                <div class="action-mini-group">
+                                    <button id="bmPasteBtn${i}" class="btn-outline btn-sm">📋 粘贴</button>
+                                    <button id="bmClearInputBtn${i}" class="btn-outline-gray btn-sm">🗑️ 清空</button>
+                                </div>
+                            </div>
+                            <textarea id="linkInput${i}" rows="3" placeholder="输入从浏览器导出的书签节点代码，或通过上方工具自动提取..."></textarea>
+                            <button id="generateBtn${i}" class="main-action-btn">⚡ 生成书签及提取图标</button>
+                            <div class="header-with-actions">
+                                <span class="result-label">生成的书签代码:</span>
+                                <div class="action-mini-group" id="resultActionGrp${i}" style="display:none;">
+                                    <button id="copyBtn${i}" class="btn-outline btn-sm">📋 复制代码</button>
+                                    <button id="bmClearResultBtn${i}" class="btn-outline-gray btn-sm">🗑️ 清空结果</button>
+                                </div>
+                            </div>
+                            <textarea id="result${i}" rows="4" readonly></textarea>
+                            <div id="iconExtractContainer${i}" class="extracted-icon-section" style="display:none;">
+                                <div class="header-with-actions">
+                                    <span class="result-label" style="color:#d35400;">🧩 单独提取的图标 (Base64):</span>
+                                    <div class="action-mini-group">
+                                        <button id="copyIconBtn${i}" class="btn-outline btn-sm" style="border-color:#e67e22; color:#e67e22;">📋 复制图标</button>
+                                    </div>
+                                </div>
+                                <textarea id="extractedIcon${i}" rows="3" readonly></textarea>
+                            </div>
+                        </div>
+                    `);
+                }
+            </script>
+        </div>
+    </div>
+
+
+    <script>
+        /* =================全局剪贴板函数================= */
+        function copyTextDirectly(text, successMsg) {
+            if(!text) return;
+            navigator.clipboard.writeText(text).then(() => alert(successMsg || '复制成功！'))
+            .catch(() => alert('复制失败，请手动复制。'));
+        }
+        function copyToClipboard(textId, successMsg) {
+            const text = document.getElementById(textId).value;
+            if (!text) return alert('没有内容可以复制！');
+            copyTextDirectly(text, successMsg);
+        }
+        async function pasteFromClipboard(targetId) {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) document.getElementById(targetId).value = text;
+                else alert('剪贴板为空！');
+            } catch (err) { alert('读取剪贴板失败，请手动 Ctrl+V 粘贴。'); }
+        }
+
+        /* ================= 书签文件批量解析与视图管理 ================= */
+        const bookmarkFileInput = document.getElementById('bookmarkFileInput');
+        const triggerBookmarkFileBtn = document.getElementById('triggerBookmarkFileBtn');
+        const bookmarkFileNameDisplay = document.getElementById('bookmarkFileNameDisplay');
+        const parsedBookmarksContainer = document.getElementById('parsedBookmarksContainer');
+        const libraryControls = document.getElementById('libraryControls');
+        const libraryWrapper = document.getElementById('libraryWrapper');
+        const toggleFullscreenBtn = document.getElementById('toggleFullscreenBtn');
+        const clearParsedBtn = document.getElementById('clearParsedBtn');
+        
+        // 核心改动：不再只存字符串，而是存储对象数组，方便弹窗调用
+        let globalParsedBookmarks = []; 
+
+        triggerBookmarkFileBtn.addEventListener('click', () => bookmarkFileInput.click());
+
+        bookmarkFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            bookmarkFileNameDisplay.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function(event) { parseBookmarkHtml(event.target.result); };
+            reader.readAsText(file);
+        });
+
+        function parseBookmarkHtml(htmlString) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, 'text/html');
+            const aTags = doc.querySelectorAll('a');
+            
+            globalParsedBookmarks = [];
+            parsedBookmarksContainer.innerHTML = ''; 
+
+            if(aTags.length === 0) return alert("未能找到任何书签！请确保上传的是正确的 bookmarks.html");
+
+            aTags.forEach((a, index) => {
+                const icon = a.getAttribute('icon') || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi42MiAyIDIgMi42MiAyIDEydjhjMCA5LjM4LjYyIDEwIDEwIDEwaDhYzEyLjM4IDIyIDIyIDIxLjM4IDIyIDEyVjRjMC05LjM4LS42Mi0xMC0xMC0xMEgxMnoiLz48L3N2Zz4=';
+                const name = a.textContent || '未命名书签';
+                const href = a.getAttribute('href') || '#';
+                const rawHtml = a.outerHTML;
+                
+                // 将完整数据存入对象
+                globalParsedBookmarks.push({ name, url: href, icon, rawHtml });
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'parsed-item';
+                itemDiv.innerHTML = `
+                    <div class="parsed-info">
+                        <img src="${icon}" alt="icon">
+                        <div class="parsed-text">
+                            <span class="parsed-name" title="${name}">${name}</span>
+                            <span class="parsed-url" title="${href}">${href}</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <!-- 新增：打开按钮 -->
+                        <button class="btn-outline-gray btn-icon" onclick="window.open('${href}', '_blank')" title="在新标签页打开">🌐 打开</button>
+                        <button class="btn-outline-gray btn-icon" onclick="viewRawCode(${index})" title="查看原生代码">👁️ 查看</button>
+                        <button class="btn-outline-gray btn-icon" onclick="copyRawCode(${index})" title="复制原生代码">📋 复制</button>
+                        <button class="btn-sm" style="background-color:var(--success-color); color:white;" onclick="sendToGeneratorSlot(${index})" title="提取到下方工作区">⬇️ 提取</button>
+                    </div>
+                `;
+                parsedBookmarksContainer.appendChild(itemDiv);
+            });
+
+            libraryControls.style.display = 'flex';
+        }
+
+        window.switchView = function(layoutClass, btnElement) {
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active'); 
+            parsedBookmarksContainer.className = `parsed-bookmarks-container ${layoutClass}`;
+        };
+
+        toggleFullscreenBtn.addEventListener('click', () => {
+            const isFullscreen = libraryWrapper.classList.toggle('fullscreen-mode');
+            if (isFullscreen) {
+                toggleFullscreenBtn.innerHTML = '🗗 退出全屏模式';
+                toggleFullscreenBtn.style.backgroundColor = 'var(--primary-color)';
+                toggleFullscreenBtn.style.color = 'white';
+                document.body.style.overflow = 'hidden'; 
+            } else {
+                exitFullscreenUI();
+            }
+        });
+
+        function exitFullscreenUI() {
+            libraryWrapper.classList.remove('fullscreen-mode');
+            toggleFullscreenBtn.innerHTML = '🗔 全屏大屏查看';
+            toggleFullscreenBtn.style.backgroundColor = 'transparent';
+            toggleFullscreenBtn.style.color = 'var(--primary-color)';
+            document.body.style.overflow = ''; 
+        }
+
+        clearParsedBtn.addEventListener('click', () => {
+            parsedBookmarksContainer.innerHTML = '';
+            libraryControls.style.display = 'none';
+            bookmarkFileInput.value = '';
+            bookmarkFileNameDisplay.textContent = '未选择文件';
+            globalParsedBookmarks = [];
+            exitFullscreenUI();
+        });
+
+
+        /* ================= 强化版书签操作弹窗 ================= */
+        const codeViewModal = document.getElementById('codeViewModal');
+        const modalCodeArea = document.getElementById('modalCodeArea');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalUrl = document.getElementById('modalUrl');
+        
+        // 存储当前弹窗正在查看的URL，供“立即打开”按钮使用
+        let currentModalUrl = '#';
+
+        window.viewRawCode = function(index) {
+            const data = globalParsedBookmarks[index];
+            
+            // 渲染弹窗头部数据
+            modalIcon.src = data.icon;
+            modalTitle.textContent = data.name;
+            modalTitle.title = data.name; // 鼠标悬停显示全名
+            modalUrl.textContent = data.url;
+            modalUrl.href = data.url;
+            currentModalUrl = data.url;
+            
+            // 渲染代码
+            modalCodeArea.value = data.rawHtml;
+            codeViewModal.style.display = 'flex';
+        };
+        
+        window.closeCodeModal = function() { codeViewModal.style.display = 'none'; };
+        window.copyFromModal = function() { copyToClipboard('modalCodeArea', '代码已复制！'); };
+        window.openModalUrl = function() { if(currentModalUrl && currentModalUrl !== '#') window.open(currentModalUrl, '_blank'); };
+        
+        window.copyRawCode = function(index) { copyTextDirectly(globalParsedBookmarks[index].rawHtml, '书签原生 HTML 代码已复制！'); };
+
+        window.sendToGeneratorSlot = function(index) {
+            const rawHtml = globalParsedBookmarks[index].rawHtml;
+            let emptySlotId = -1;
+            for(let i = 1; i <= 6; i++) {
+                if(!document.getElementById(`linkInput${i}`).value.trim()) {
+                    emptySlotId = i; break;
+                }
+            }
+
+            if(emptySlotId !== -1) {
+                document.getElementById(`linkInput${emptySlotId}`).value = rawHtml;
+                generateBookmark(emptySlotId);
+                if(libraryWrapper.classList.contains('fullscreen-mode')) { exitFullscreenUI(); }
+                setTimeout(() => { document.getElementById(`generatorCard${emptySlotId}`).scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+            } else {
+                alert('下方 6 个生成器槽位都已满！\n请先往下滚动，点击某个槽位的【🗑️ 清空】腾出空间。');
+            }
+        };
+
+
+        /* ================= 工作区逻辑 ================= */
+        function generateBookmark(index) {
+            const inputId = `linkInput${index}`;
+            const resultId = `result${index}`;
+            const actionGrpId = `resultActionGrp${index}`;
+            const iconContainerId = `iconExtractContainer${index}`;
+            const extractedIconId = `extractedIcon${index}`;
+            
+            const linkInput = document.getElementById(inputId).value.trim();
+            if(!linkInput) return alert('请先输入需要生成的内容！');
+
+            const match = linkInput.match(/<a[^>]*href="([^"]+)"[^>]*icon="([^"]*)"[^>]*>([^<]+)<\/a>/i);
+            
+            if (match) {
+                const link = match[1]; const icon = match[2]; const label = match[3];
+                let resultHTML = `<a href="${link}" target="_blank" rel="noopener noreferrer" class="bookmark-card">\n` + 
+                                 `                    <img src="${icon}" alt="icon" style="width: 16px; height: 16px;">\n` + 
+                                 `                    <span>${label}</span>\n                </a>`;
+
+                document.getElementById(resultId).value = resultHTML; 
+                document.getElementById(actionGrpId).style.display = 'flex'; 
+                document.getElementById(extractedIconId).value = icon;
+                document.getElementById(iconContainerId).style.display = 'block';
+            } else {
+                return alert('提取失败！请确保代码包含 <a href="...">...</a> 并且带有 icon="..." 属性。');
+            }
+        }
+
+        for (let i = 1; i <= 6; i++) {
+            document.getElementById(`generateBtn${i}`).addEventListener('click', () => generateBookmark(i));
+            document.getElementById(`copyBtn${i}`).addEventListener('click', () => copyToClipboard(`result${i}`, '书签代码已复制！'));
+            document.getElementById(`copyIconBtn${i}`).addEventListener('click', () => copyToClipboard(`extractedIcon${i}`, '图标 Base64 数据已复制！'));
+            document.getElementById(`bmPasteBtn${i}`).addEventListener('click', () => pasteFromClipboard(`linkInput${i}`));
+            document.getElementById(`bmClearInputBtn${i}`).addEventListener('click', () => { document.getElementById(`linkInput${i}`).value = ''; });
+            document.getElementById(`bmClearResultBtn${i}`).addEventListener('click', () => {
+                document.getElementById(`result${i}`).value = '';
+                document.getElementById(`resultActionGrp${i}`).style.display = 'none';
+                document.getElementById(`extractedIcon${i}`).value = '';
+                document.getElementById(`iconExtractContainer${i}`).style.display = 'none';
+            });
+        }
+
+
+        /* ================= Base64 逻辑 ================= */
+        const fileInput = document.getElementById('fileInput');
+        const triggerFileBtn = document.getElementById('triggerFileBtn');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const textBase64Input = document.getElementById('textBase64Input');
+        const base64Result = document.getElementById('base64Result');
+        const imagePreview = document.getElementById('imagePreview');
+
+        function renderBase64Result(base64Str, isImage = false) {
+            base64Result.value = base64Str;
+            if (isImage && base64Str.startsWith('data:image')) { imagePreview.src = base64Str; imagePreview.style.display = 'block'; } 
+            else { imagePreview.style.display = 'none'; }
+        }
+
+        triggerFileBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) { fileNameDisplay.textContent = "未选择任何文件"; return; }
+            fileNameDisplay.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function(event) { renderBase64Result(event.target.result, file.type.startsWith('image/')); };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('pasteTextBtn').addEventListener('click', () => pasteFromClipboard('textBase64Input'));
+        document.getElementById('clearTextBtn').addEventListener('click', () => { textBase64Input.value = ''; });
+        document.getElementById('btnTextToBase64').addEventListener('click', function() {
+            const str = textBase64Input.value;
+            if (!str) return alert('请输入文本');
+            try { renderBase64Result(window.btoa(unescape(encodeURIComponent(str))), false); } 
+            catch (e) { alert('转换失败: ' + e.message); }
+        });
+
+        document.getElementById('btnUrlToBase64').addEventListener('click', async function() {
+            const url = textBase64Input.value.trim();
+            if (!url || !url.startsWith('http')) return alert('请输入有效的图片链接');
+            base64Result.value = "正在抓取，请稍候...";
+            try {
+                const response = await fetch(url, { mode: 'cors' });
+                if (!response.ok) throw new Error('网络响应失败');
+                const blob = await response.blob();
+                const reader = new FileReader();
+                reader.onloadend = () => renderBase64Result(reader.result, true);
+                reader.readAsDataURL(blob);
+            } catch (error) {
+                base64Result.value = ""; alert('抓取失败！可能目标图片服务器禁止跨域下载。');
+            }
+        });
+
+        document.getElementById('copyBase64Btn').addEventListener('click', () => copyToClipboard('base64Result', 'Base64 代码已复制！'));
+        document.getElementById('clearBase64Btn').addEventListener('click', () => {
+            base64Result.value = ''; fileInput.value = '';
+            fileNameDisplay.textContent = "未选择任何文件"; imagePreview.style.display = 'none';
+        });
+
+    </script>
+</body>
+</html>
