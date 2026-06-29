@@ -54,90 +54,90 @@
         .extracted-icon-section { margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border-color); }
 
         /* ================= 书签库视图管理器 ================= */
-        .library-wrapper {
-            position: relative; transition: all 0.3s ease; background: var(--card-bg); 
-            border-radius: 10px; padding: 20px; border: 1px solid var(--border-color);
-        }
-        .library-wrapper.fullscreen-mode {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
-            z-index: 9999; border-radius: 0; border: none; padding: 30px 5%;
-            overflow-y: auto; background-color: var(--bg-color);
-        }
+        .library-wrapper { position: relative; transition: all 0.3s ease; background: var(--card-bg); border-radius: 10px; padding: 20px; border: 1px solid var(--border-color); }
+        .library-wrapper.fullscreen-mode { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 9999; border-radius: 0; border: none; padding: 30px 5%; overflow-y: auto; background-color: var(--bg-color); }
         
         .library-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap:15px;}
+        
+        /* 优化后的搜索框样式：大幅增加宽度 */
+        .search-input-wrapper { display: flex; align-items: center; flex: 1; min-width: 280px; max-width: 450px; position: relative;}
+        .search-input-wrapper input { width: 100%; padding-left: 32px; margin: 0; border-radius: 20px; border-color: #cbd5e1; background: #f8f9fa;}
+        .search-input-wrapper input:focus { background: white; border-color: var(--primary-color);}
+        .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-light); }
+        
+        .highlight { background-color: #fef08a; color: #b45309; padding: 0 2px; border-radius: 2px; font-weight: bold; }
+
         .parsed-bookmarks-container { max-height: 400px; overflow-y: auto; overflow-x: hidden; padding-right: 5px; transition: all 0.3s; }
         .fullscreen-mode .parsed-bookmarks-container { max-height: none; overflow-y: visible; }
         
-        /* 1. 单列列表视图 (默认) */
         .layout-list { display: flex; flex-direction: column; gap: 8px; }
         .layout-list .parsed-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); background: white; transition: box-shadow 0.2s; width: 100%; }
-        .layout-list .parsed-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .layout-list .parsed-info { display: flex; align-items: center; gap: 12px; overflow: hidden; flex: 1; min-width: 0; }
-        .layout-list .parsed-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
         
-        /* 2. 新增：多列列表视图 (Multi-List) */
-        .layout-multi-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 12px; }
-        .layout-multi-list .parsed-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: white; transition: box-shadow 0.2s; width: 100%; overflow: hidden;}
-        .layout-multi-list .parsed-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .layout-multi-list .parsed-info { display: flex; align-items: center; gap: 10px; overflow: hidden; flex: 1; min-width: 0; }
-        .layout-multi-list .parsed-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-        /* 调整多列模式下的按钮间距，防止拥挤 */
-        .layout-multi-list .item-actions { gap: 4px; margin-left: 5px;}
-
-        /* 3. 平铺卡片视图 (Grid) */
+        .layout-multi-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 12px; }
+        .layout-multi-list .parsed-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: white; transition: box-shadow 0.2s; width: 100%; overflow: visible;}
+        
         .layout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .layout-grid .parsed-item { display: flex; flex-direction: column; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: white; transition: transform 0.2s; }
-        .layout-grid .parsed-item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .layout-grid .parsed-item { display: flex; flex-direction: column; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: white; transition: transform 0.2s; overflow: visible;}
         .layout-grid .parsed-info { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 15px; overflow: hidden; width: 100%;}
-        .layout-grid .parsed-text { display: flex; flex-direction: column; overflow: hidden; width: 100%; }
         .layout-grid .parsed-info img { width: 32px; height: 32px; }
-        .layout-grid .item-actions { display: flex; justify-content: center; gap: 5px; flex-wrap:wrap; width: 100%; border-top: 1px dashed var(--border-color); padding-top: 10px;}
-
-        /* 4. 分列紧凑视图 (Compact) */
+        
         .layout-compact { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
-        .layout-compact .parsed-item { display: flex; flex-direction: column; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: white; overflow: hidden; }
+        .layout-compact .parsed-item { display: flex; flex-direction: column; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: white; overflow: visible; }
         .layout-compact .parsed-info { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; overflow: hidden;}
-        .layout-compact .parsed-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; flex: 1;}
-        .layout-compact .parsed-info img { width: 16px; height: 16px; }
         .layout-compact .parsed-text .parsed-url { display: none; }
-        .layout-compact .item-actions { display: flex; justify-content: space-between; gap: 3px; }
 
-        /* 书签元素通用样式 */
+        .parsed-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .parsed-info { display: flex; align-items: center; gap: 10px; overflow: hidden; flex: 1; min-width: 0; }
+        .parsed-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; width: 100%;}
         .parsed-info img { width: 20px; height: 20px; flex-shrink: 0; border-radius: 3px; object-fit: contain; background:#f0f2f5;}
         .parsed-name { font-size: 14px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
         .parsed-url { font-size: 12px; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
-        .item-actions { display: flex; gap: 6px; flex-shrink: 0; margin-left: 10px;}
-        .view-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .view-btn.active, .style-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
 
-        /* ================= 强化版查看弹窗 ================= */
-        .custom-modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
-            background: rgba(0,0,0,0.6); z-index: 10000;
-            display: none; justify-content: center; align-items: center;
-        }
-        .custom-modal-content {
-            background: white; width: 700px; max-width: 95%; border-radius: 12px;
-            padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.25);
-            display: flex; flex-direction: column; gap: 15px;
-        }
-        /* 弹窗头部信息区 */
-        .modal-header-info {
-            display: flex; align-items: center; gap: 15px; flex: 1; min-width: 0;
-            padding: 10px 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid var(--border-color);
-        }
-        .modal-header-info img { width: 36px; height: 36px; border-radius: 6px; object-fit: contain; background: white; padding:2px; border: 1px solid #eee;}
-        .modal-header-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-        .modal-header-title { font-size: 16px; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .modal-header-url { font-size: 13px; color: var(--primary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; margin-top:2px;}
-        .modal-header-url:hover { text-decoration: underline; }
+        /* ================= 模式切换样式 ================= */
+        .actions-wrapper { position: relative; display: flex; align-items: center; flex-shrink: 0; margin-left: 10px;}
+        .item-actions { display: flex; gap: 4px; align-items: center; }
         
+        .action-trigger-btn { display: none; padding: 4px 10px; font-size: 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; color: var(--text-main); font-weight: bold;}
+        .action-trigger-btn:hover { background: #e2e8f0; color: var(--primary-color);}
+
+        .action-mode-full .action-trigger-btn { display: none; }
+        .action-mode-full .btn-txt { display: inline; }
+
+        .action-mode-icon .action-trigger-btn { display: none; }
+        .action-mode-icon .btn-txt { display: none; }
+        .action-mode-icon .item-actions button { padding: 4px 6px; } 
+
+        .action-mode-hover .action-trigger-btn { display: flex; }
+        .action-mode-hover .item-actions { display: none; position: absolute; right: 100%; top: 50%; transform: translateY(-50%); background: white; padding: 6px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border: 1px solid var(--border-color); margin-right: 8px; z-index: 100; flex-direction: row; gap: 4px; white-space: nowrap; }
+        .action-mode-hover .actions-wrapper:hover .item-actions { display: flex; }
+        .action-mode-hover .btn-txt { display: inline; } 
+
+        .layout-grid.action-mode-hover .item-actions,
+        .layout-compact.action-mode-hover .item-actions { right: auto; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 5px; margin-right: 0; flex-direction: column; }
+        .layout-grid .actions-wrapper { justify-content: center; width: 100%; border-top: 1px dashed var(--border-color); padding-top: 10px; margin-left:0;}
+        .layout-compact .actions-wrapper { justify-content: space-between; width: 100%; margin-left:0;}
+
+
+        /* ================= 弹窗 ================= */
+        .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.6); z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .custom-modal-content { background: white; width: 700px; max-width: 95%; border-radius: 12px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 15px; }
+        .modal-header-info { display: flex; align-items: center; gap: 15px; flex: 1; min-width: 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid var(--border-color); }
+        .modal-header-info img { width: 42px; height: 42px; border-radius: 6px; object-fit: contain; background: white; padding:2px; border: 1px solid #eee; flex-shrink: 0;}
+        .modal-header-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; gap: 6px; width: 100%;}
+        .text-with-copy { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+        .modal-header-title { font-size: 16px; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .modal-header-url { font-size: 13px; color: var(--primary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+        .inline-copy-btn { background: none; border: 1px solid #cbd5e1; padding: 4px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #64748b; transition: all 0.2s; flex-shrink: 0; }
+        .inline-copy-btn:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .inline-copy-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .custom-modal-content textarea { height: 220px; font-family: monospace; font-size: 13px; background:#f0f2f5; cursor:text; border: 1px solid var(--border-color); border-radius: 6px; padding: 15px;}
+        .empty-search-msg { text-align: center; padding: 30px; color: var(--text-light); width: 100%; font-size: 15px;}
     </style>
 </head>
 
 <body>
 
-    <!-- ================= 强化版原生代码查看弹窗 ================= -->
     <div id="codeViewModal" class="custom-modal-overlay">
         <div class="custom-modal-content">
             <div class="header-with-actions" style="margin-bottom: 0;">
@@ -145,17 +145,26 @@
                     <span>👁️</span> <span>书签详细信息</span>
                 </h3>
                 <div class="action-mini-group">
-                    <button id="modalOpenBtn" class="btn-outline btn-sm" style="border-color:var(--success-color); color:var(--success-color);" onclick="openModalUrl()">🌐 立即打开</button>
+                    <button class="btn-outline btn-sm" style="border-color:var(--success-color); color:var(--success-color);" onclick="openModalUrl()">🌐 立即打开</button>
                     <button class="btn-outline-gray btn-sm" onclick="closeCodeModal()">❌ 关闭</button>
                 </div>
             </div>
             
-            <!-- 头部动态加载的书签信息 -->
             <div class="modal-header-info">
                 <img id="modalIcon" src="" alt="icon">
                 <div class="modal-header-text">
-                    <span id="modalTitle" class="modal-header-title">加载中...</span>
-                    <a id="modalUrl" class="modal-header-url" href="#" target="_blank">加载中...</a>
+                    <div class="text-with-copy">
+                        <span id="modalTitle" class="modal-header-title">加载中...</span>
+                        <button class="inline-copy-btn" onclick="copyModalField('title')" title="复制标题">
+                            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
+                    <div class="text-with-copy">
+                        <a id="modalUrl" class="modal-header-url" href="#" target="_blank">加载中...</a>
+                        <button class="inline-copy-btn" onclick="copyModalField('url')" title="复制链接">
+                            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -173,42 +182,51 @@
     <div class="container">
         <h1>🛠️ 全能开发辅助工具</h1>
 
-        <!-- ================= 浏览器书签文件解析区 ================= -->
         <h2 class="section-title">📂 浏览器书签文件智能解析</h2>
         
         <div id="libraryWrapper" class="library-wrapper">
             <div class="library-header">
-                <div>
-                    <label style="display:block; margin-bottom:8px;"><strong>导入书签文件 (bookmarks.html)</strong></label>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; flex: 1;">
                     <div class="file-upload-wrapper" style="margin:0;">
                         <input type="file" id="bookmarkFileInput" accept=".html" style="display: none;">
                         <button id="triggerBookmarkFileBtn" class="btn-outline" style="border-color:var(--success-color); color:var(--success-color);">
-                            📑 选择并解析文件...
+                            📑 导入书签 (bookmarks.html)
                         </button>
                         <span id="bookmarkFileNameDisplay" class="file-name-display">未选择文件</span>
+                    </div>
+
+                    <!-- 搜索框：加宽且自适应 -->
+                    <div id="searchWrapper" class="search-input-wrapper" style="display: none;">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="bookmarkSearchInput" placeholder="全局搜索书签名称或链接...">
                     </div>
                 </div>
 
                 <div id="libraryControls" style="display: none; gap: 15px; align-items:center; flex-wrap: wrap;">
+                    
                     <div class="action-mini-group" style="background:#f0f2f5; padding:4px; border-radius:6px;">
-                        <button class="btn-outline-gray btn-sm view-btn active" onclick="switchView('layout-list', this)" title="单列列表">📄 列表</button>
-                        <!-- 新增：多列视图按钮 -->
-                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-multi-list', this)" title="多列排版列表">🗂️ 多列</button>
-                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-grid', this)" title="平铺卡片">⊞ 平铺</button>
-                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-compact', this)" title="紧凑排列">▦ 紧凑</button>
+                        <button class="btn-outline-gray btn-sm view-btn active" onclick="switchView('layout-list', this)" title="单列列表">📄</button>
+                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-multi-list', this)" title="多列列表">🗂️</button>
+                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-grid', this)" title="平铺卡片">⊞</button>
+                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-compact', this)" title="紧凑排列">▦</button>
+                    </div>
+
+                    <div class="action-mini-group" style="background:#f0f2f5; padding:4px; border-radius:6px; margin-left: 5px;">
+                        <button class="btn-outline-gray btn-sm style-btn active" onclick="switchActionMode('action-mode-full', this)" title="完整显示 (图标+文字)">🔤</button>
+                        <button class="btn-outline-gray btn-sm style-btn" onclick="switchActionMode('action-mode-icon', this)" title="仅显示极简图标">🖼️</button>
+                        <button class="btn-outline-gray btn-sm style-btn" onclick="switchActionMode('action-mode-hover', this)" title="悬浮收纳菜单">⚙️</button>
                     </div>
                     
-                    <button id="toggleFullscreenBtn" class="btn-outline btn-sm">🗔 全屏大屏查看</button>
+                    <button id="toggleFullscreenBtn" class="btn-outline btn-sm" style="margin-left: 5px;">🗔 全屏</button>
                     <button id="clearParsedBtn" class="btn-outline-gray btn-sm">🗑️ 清空库</button>
                 </div>
             </div>
             
-            <div id="parsedBookmarksContainer" class="parsed-bookmarks-container layout-list">
+            <div id="parsedBookmarksContainer" class="parsed-bookmarks-container layout-list action-mode-full">
                 <!-- 动态数据 -->
             </div>
         </div>
 
-        <!-- ================= Base64 工具区域 ================= -->
         <h2 class="section-title">🖼️ Base64 / 文本编码转换工具</h2>
         <div class="card base64-layout">
             <div>
@@ -244,7 +262,6 @@
             </div>
         </div>
 
-        <!-- ================= 书签生成器区域 ================= -->
         <h2 class="section-title">🔖 工作区：批量书签生成器 (6槽位)</h2>
         <div class="bookmark-grid">
             <script>
@@ -286,36 +303,70 @@
 
 
     <script>
-        /* =================全局剪贴板函数================= */
-        function copyTextDirectly(text, successMsg) {
+        /* ================= HTTP 局域网剪贴板兼容引擎 ================= */
+        function copyTextDirectly(text, successMsg, silent = false) {
             if(!text) return;
-            navigator.clipboard.writeText(text).then(() => alert(successMsg || '复制成功！'))
-            .catch(() => alert('复制失败，请手动复制。'));
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => { if(!silent) alert(successMsg || '复制成功！'); })
+                .catch(() => fallbackCopy(text, successMsg, silent));
+            } else { fallbackCopy(text, successMsg, silent); }
         }
+        
+        function fallbackCopy(text, successMsg, silent) {
+            try {
+                const textArea = document.createElement("textarea"); textArea.value = text;
+                textArea.style.position = "fixed"; textArea.style.left = "-999999px"; textArea.style.top = "0";
+                document.body.appendChild(textArea); textArea.focus(); textArea.select();
+                const successful = document.execCommand('copy'); document.body.removeChild(textArea);
+                if (successful) { if(!silent) alert(successMsg || '复制成功！'); } 
+                else { alert('复制失败，请手动选中复制。'); }
+            } catch (err) { alert('当前环境不支持自动复制，请手动选中 Ctrl+C 复制。'); }
+        }
+
         function copyToClipboard(textId, successMsg) {
             const text = document.getElementById(textId).value;
             if (!text) return alert('没有内容可以复制！');
             copyTextDirectly(text, successMsg);
         }
+
         async function pasteFromClipboard(targetId) {
-            try {
-                const text = await navigator.clipboard.readText();
-                if (text) document.getElementById(targetId).value = text;
-                else alert('剪贴板为空！');
-            } catch (err) { alert('读取剪贴板失败，请手动 Ctrl+V 粘贴。'); }
+            if (navigator.clipboard && navigator.clipboard.readText && window.isSecureContext) {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text) document.getElementById(targetId).value = text;
+                    else alert('剪贴板为空！');
+                    return;
+                } catch (err) { console.error('粘贴受限', err); }
+            }
+            alert('🚫 粘贴受限！\n\n原因：您可能处于局域网 HTTP 环境，现代浏览器禁止非 HTTPS 网页直接读取剪贴板。\n\n💡 解决办法：请鼠标点击左侧的输入框，直接键盘按下 Ctrl+V (或 Cmd+V) 进行粘贴即可。');
         }
 
-        /* ================= 书签文件批量解析与视图管理 ================= */
+
+        /* ================= 搜索与防 XSS 处理 ================= */
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+
+        function highlightText(text, keyword) {
+            const safeText = escapeHTML(text);
+            if (!keyword) return safeText;
+            const escapedKeyword = escapeHTML(keyword).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedKeyword})`, 'gi');
+            return safeText.replace(regex, '<mark class="highlight">$1</mark>');
+        }
+
+        /* ================= 书签解析与渲染 ================= */
         const bookmarkFileInput = document.getElementById('bookmarkFileInput');
         const triggerBookmarkFileBtn = document.getElementById('triggerBookmarkFileBtn');
         const bookmarkFileNameDisplay = document.getElementById('bookmarkFileNameDisplay');
         const parsedBookmarksContainer = document.getElementById('parsedBookmarksContainer');
         const libraryControls = document.getElementById('libraryControls');
         const libraryWrapper = document.getElementById('libraryWrapper');
-        const toggleFullscreenBtn = document.getElementById('toggleFullscreenBtn');
+        const searchWrapper = document.getElementById('searchWrapper');
+        const searchInput = document.getElementById('bookmarkSearchInput');
         const clearParsedBtn = document.getElementById('clearParsedBtn');
         
-        // 核心改动：不再只存字符串，而是存储对象数组，方便弹窗调用
         let globalParsedBookmarks = []; 
 
         triggerBookmarkFileBtn.addEventListener('click', () => bookmarkFileInput.click());
@@ -335,64 +386,98 @@
             const aTags = doc.querySelectorAll('a');
             
             globalParsedBookmarks = [];
-            parsedBookmarksContainer.innerHTML = ''; 
+            searchInput.value = ''; 
 
             if(aTags.length === 0) return alert("未能找到任何书签！请确保上传的是正确的 bookmarks.html");
 
-            aTags.forEach((a, index) => {
+            aTags.forEach((a) => {
                 const icon = a.getAttribute('icon') || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi42MiAyIDIgMi42MiAyIDEydjhjMCA5LjM4LjYyIDEwIDEwIDEwaDhYzEyLjM4IDIyIDIyIDIxLjM4IDIyIDEyVjRjMC05LjM4LS42Mi0xMC0xMC0xMEgxMnoiLz48L3N2Zz4=';
                 const name = a.textContent || '未命名书签';
                 const href = a.getAttribute('href') || '#';
-                const rawHtml = a.outerHTML;
                 
-                // 将完整数据存入对象
-                globalParsedBookmarks.push({ name, url: href, icon, rawHtml });
+                globalParsedBookmarks.push({ name, url: href, icon, rawHtml: a.outerHTML });
+            });
+            
+            renderBookmarkList(globalParsedBookmarks, "");
+            libraryControls.style.display = 'flex';
+            searchWrapper.style.display = 'flex';
+        }
+        
+        function renderBookmarkList(dataArray, keyword = "") {
+            parsedBookmarksContainer.innerHTML = ''; 
+            
+            if (dataArray.length === 0) {
+                parsedBookmarksContainer.innerHTML = `<div class="empty-search-msg">没有找到与 "<b>${escapeHTML(keyword)}</b>" 匹配的书签...</div>`;
+                return;
+            }
 
+            dataArray.forEach((data) => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'parsed-item';
+                const dataJsonStr = encodeURIComponent(JSON.stringify(data));
+                
+                const displayTitle = highlightText(data.name, keyword);
+                const displayUrl = highlightText(data.url, keyword);
+                const safeRawTitle = escapeHTML(data.name);
+                const safeRawUrl = escapeHTML(data.url);
+                
                 itemDiv.innerHTML = `
                     <div class="parsed-info">
-                        <img src="${icon}" alt="icon">
+                        <img src="${data.icon}" alt="icon">
                         <div class="parsed-text">
-                            <span class="parsed-name" title="${name}">${name}</span>
-                            <span class="parsed-url" title="${href}">${href}</span>
+                            <span class="parsed-name" title="${safeRawTitle}">${displayTitle}</span>
+                            <span class="parsed-url" title="${safeRawUrl}">${displayUrl}</span>
                         </div>
                     </div>
-                    <div class="item-actions">
-                        <!-- 新增：打开按钮 -->
-                        <button class="btn-outline-gray btn-icon" onclick="window.open('${href}', '_blank')" title="在新标签页打开">🌐 打开</button>
-                        <button class="btn-outline-gray btn-icon" onclick="viewRawCode(${index})" title="查看原生代码">👁️ 查看</button>
-                        <button class="btn-outline-gray btn-icon" onclick="copyRawCode(${index})" title="复制原生代码">📋 复制</button>
-                        <button class="btn-sm" style="background-color:var(--success-color); color:white;" onclick="sendToGeneratorSlot(${index})" title="提取到下方工作区">⬇️ 提取</button>
+                    <!-- 调整文字，改短为 ⚙️ 选项 -->
+                    <div class="actions-wrapper">
+                        <button class="action-trigger-btn" title="更多选项">⚙️ 选项</button>
+                        <div class="item-actions">
+                            <button class="btn-outline-gray btn-icon" onclick="window.open('${safeRawUrl}', '_blank')" title="在新标签页打开"><span class="btn-ic">🌐</span><span class="btn-txt"> 打开</span></button>
+                            <button class="btn-outline-gray btn-icon" onclick="viewRawCode('${dataJsonStr}')" title="查看原生代码"><span class="btn-ic">👁️</span><span class="btn-txt"> 查看</span></button>
+                            <button class="btn-outline-gray btn-icon" onclick="copyRawCode('${dataJsonStr}')" title="复制原生代码"><span class="btn-ic">📋</span><span class="btn-txt"> 复制</span></button>
+                            <button class="btn-sm" style="background-color:var(--success-color); color:white; border-color:var(--success-color);" onclick="sendToGeneratorSlot('${dataJsonStr}')" title="提取到下方工作区"><span class="btn-ic">⬇️</span><span class="btn-txt"> 提取</span></button>
+                        </div>
                     </div>
                 `;
                 parsedBookmarksContainer.appendChild(itemDiv);
             });
-
-            libraryControls.style.display = 'flex';
         }
+
+        searchInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            if (!keyword) { renderBookmarkList(globalParsedBookmarks, ""); return; }
+            const filtered = globalParsedBookmarks.filter(bm => bm.name.toLowerCase().includes(keyword) || bm.url.toLowerCase().includes(keyword));
+            renderBookmarkList(filtered, keyword);
+        });
 
         window.switchView = function(layoutClass, btnElement) {
             document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
             btnElement.classList.add('active'); 
-            parsedBookmarksContainer.className = `parsed-bookmarks-container ${layoutClass}`;
+            const currentActionMode = Array.from(parsedBookmarksContainer.classList).find(c => c.startsWith('action-mode-')) || 'action-mode-full';
+            parsedBookmarksContainer.className = `parsed-bookmarks-container ${layoutClass} ${currentActionMode}`;
         };
 
+        window.switchActionMode = function(modeClass, btnElement) {
+            document.querySelectorAll('.style-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            parsedBookmarksContainer.classList.remove('action-mode-full', 'action-mode-icon', 'action-mode-hover');
+            parsedBookmarksContainer.classList.add(modeClass);
+        };
+
+        const toggleFullscreenBtn = document.getElementById('toggleFullscreenBtn');
         toggleFullscreenBtn.addEventListener('click', () => {
             const isFullscreen = libraryWrapper.classList.toggle('fullscreen-mode');
             if (isFullscreen) {
-                toggleFullscreenBtn.innerHTML = '🗗 退出全屏模式';
+                toggleFullscreenBtn.innerHTML = '🗗 退出全屏';
                 toggleFullscreenBtn.style.backgroundColor = 'var(--primary-color)';
                 toggleFullscreenBtn.style.color = 'white';
                 document.body.style.overflow = 'hidden'; 
-            } else {
-                exitFullscreenUI();
-            }
+            } else { exitFullscreenUI(); }
         });
-
         function exitFullscreenUI() {
             libraryWrapper.classList.remove('fullscreen-mode');
-            toggleFullscreenBtn.innerHTML = '🗔 全屏大屏查看';
+            toggleFullscreenBtn.innerHTML = '🗔 全屏';
             toggleFullscreenBtn.style.backgroundColor = 'transparent';
             toggleFullscreenBtn.style.color = 'var(--primary-color)';
             document.body.style.overflow = ''; 
@@ -401,52 +486,50 @@
         clearParsedBtn.addEventListener('click', () => {
             parsedBookmarksContainer.innerHTML = '';
             libraryControls.style.display = 'none';
+            searchWrapper.style.display = 'none';
             bookmarkFileInput.value = '';
             bookmarkFileNameDisplay.textContent = '未选择文件';
+            searchInput.value = '';
             globalParsedBookmarks = [];
             exitFullscreenUI();
         });
 
-
-        /* ================= 强化版书签操作弹窗 ================= */
+        /* ================= 弹窗交互 ================= */
         const codeViewModal = document.getElementById('codeViewModal');
         const modalCodeArea = document.getElementById('modalCodeArea');
         const modalIcon = document.getElementById('modalIcon');
         const modalTitle = document.getElementById('modalTitle');
         const modalUrl = document.getElementById('modalUrl');
-        
-        // 存储当前弹窗正在查看的URL，供“立即打开”按钮使用
         let currentModalUrl = '#';
 
-        window.viewRawCode = function(index) {
-            const data = globalParsedBookmarks[index];
-            
-            // 渲染弹窗头部数据
+        window.viewRawCode = function(dataJsonStr) {
+            const data = JSON.parse(decodeURIComponent(dataJsonStr));
             modalIcon.src = data.icon;
-            modalTitle.textContent = data.name;
-            modalTitle.title = data.name; // 鼠标悬停显示全名
-            modalUrl.textContent = data.url;
-            modalUrl.href = data.url;
+            modalTitle.textContent = data.name; modalTitle.title = data.name;
+            modalUrl.textContent = data.url; modalUrl.href = data.url;
             currentModalUrl = data.url;
-            
-            // 渲染代码
             modalCodeArea.value = data.rawHtml;
             codeViewModal.style.display = 'flex';
         };
         
         window.closeCodeModal = function() { codeViewModal.style.display = 'none'; };
-        window.copyFromModal = function() { copyToClipboard('modalCodeArea', '代码已复制！'); };
+        window.copyModalField = function(type) {
+            const text = type === 'title' ? modalTitle.textContent : modalUrl.textContent;
+            copyTextDirectly(text, type === 'title' ? '标题复制成功！' : '链接复制成功！');
+        }
+        window.copyFromModal = function() { copyToClipboard('modalCodeArea', '完整代码已复制！'); };
         window.openModalUrl = function() { if(currentModalUrl && currentModalUrl !== '#') window.open(currentModalUrl, '_blank'); };
-        
-        window.copyRawCode = function(index) { copyTextDirectly(globalParsedBookmarks[index].rawHtml, '书签原生 HTML 代码已复制！'); };
+        window.copyRawCode = function(dataJsonStr) { 
+            const data = JSON.parse(decodeURIComponent(dataJsonStr));
+            copyTextDirectly(data.rawHtml, '书签原生 HTML 代码已复制！'); 
+        };
 
-        window.sendToGeneratorSlot = function(index) {
-            const rawHtml = globalParsedBookmarks[index].rawHtml;
+        window.sendToGeneratorSlot = function(dataJsonStr) {
+            const data = JSON.parse(decodeURIComponent(dataJsonStr));
+            const rawHtml = data.rawHtml;
             let emptySlotId = -1;
             for(let i = 1; i <= 6; i++) {
-                if(!document.getElementById(`linkInput${i}`).value.trim()) {
-                    emptySlotId = i; break;
-                }
+                if(!document.getElementById(`linkInput${i}`).value.trim()) { emptySlotId = i; break; }
             }
 
             if(emptySlotId !== -1) {
@@ -459,33 +542,25 @@
             }
         };
 
-
         /* ================= 工作区逻辑 ================= */
         function generateBookmark(index) {
-            const inputId = `linkInput${index}`;
-            const resultId = `result${index}`;
-            const actionGrpId = `resultActionGrp${index}`;
-            const iconContainerId = `iconExtractContainer${index}`;
+            const inputId = `linkInput${index}`; const resultId = `result${index}`;
+            const actionGrpId = `resultActionGrp${index}`; const iconContainerId = `iconExtractContainer${index}`;
             const extractedIconId = `extractedIcon${index}`;
             
             const linkInput = document.getElementById(inputId).value.trim();
             if(!linkInput) return alert('请先输入需要生成的内容！');
 
             const match = linkInput.match(/<a[^>]*href="([^"]+)"[^>]*icon="([^"]*)"[^>]*>([^<]+)<\/a>/i);
-            
             if (match) {
                 const link = match[1]; const icon = match[2]; const label = match[3];
                 let resultHTML = `<a href="${link}" target="_blank" rel="noopener noreferrer" class="bookmark-card">\n` + 
                                  `                    <img src="${icon}" alt="icon" style="width: 16px; height: 16px;">\n` + 
                                  `                    <span>${label}</span>\n                </a>`;
 
-                document.getElementById(resultId).value = resultHTML; 
-                document.getElementById(actionGrpId).style.display = 'flex'; 
-                document.getElementById(extractedIconId).value = icon;
-                document.getElementById(iconContainerId).style.display = 'block';
-            } else {
-                return alert('提取失败！请确保代码包含 <a href="...">...</a> 并且带有 icon="..." 属性。');
-            }
+                document.getElementById(resultId).value = resultHTML; document.getElementById(actionGrpId).style.display = 'flex'; 
+                document.getElementById(extractedIconId).value = icon; document.getElementById(iconContainerId).style.display = 'block';
+            } else { alert('提取失败！请确保代码包含 <a href="...">...</a> 并且带有 icon="..." 属性。'); }
         }
 
         for (let i = 1; i <= 6; i++) {
@@ -495,21 +570,15 @@
             document.getElementById(`bmPasteBtn${i}`).addEventListener('click', () => pasteFromClipboard(`linkInput${i}`));
             document.getElementById(`bmClearInputBtn${i}`).addEventListener('click', () => { document.getElementById(`linkInput${i}`).value = ''; });
             document.getElementById(`bmClearResultBtn${i}`).addEventListener('click', () => {
-                document.getElementById(`result${i}`).value = '';
-                document.getElementById(`resultActionGrp${i}`).style.display = 'none';
-                document.getElementById(`extractedIcon${i}`).value = '';
-                document.getElementById(`iconExtractContainer${i}`).style.display = 'none';
+                document.getElementById(`result${i}`).value = ''; document.getElementById(`resultActionGrp${i}`).style.display = 'none';
+                document.getElementById(`extractedIcon${i}`).value = ''; document.getElementById(`iconExtractContainer${i}`).style.display = 'none';
             });
         }
 
-
         /* ================= Base64 逻辑 ================= */
-        const fileInput = document.getElementById('fileInput');
-        const triggerFileBtn = document.getElementById('triggerFileBtn');
-        const fileNameDisplay = document.getElementById('fileNameDisplay');
-        const textBase64Input = document.getElementById('textBase64Input');
-        const base64Result = document.getElementById('base64Result');
-        const imagePreview = document.getElementById('imagePreview');
+        const fileInput = document.getElementById('fileInput'); const triggerFileBtn = document.getElementById('triggerFileBtn');
+        const fileNameDisplay = document.getElementById('fileNameDisplay'); const textBase64Input = document.getElementById('textBase64Input');
+        const base64Result = document.getElementById('base64Result'); const imagePreview = document.getElementById('imagePreview');
 
         function renderBase64Result(base64Str, isImage = false) {
             base64Result.value = base64Str;
@@ -519,10 +588,8 @@
 
         triggerFileBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) { fileNameDisplay.textContent = "未选择任何文件"; return; }
-            fileNameDisplay.textContent = file.name;
-            const reader = new FileReader();
+            const file = e.target.files[0]; if (!file) { fileNameDisplay.textContent = "未选择任何文件"; return; }
+            fileNameDisplay.textContent = file.name; const reader = new FileReader();
             reader.onload = function(event) { renderBase64Result(event.target.result, file.type.startsWith('image/')); };
             reader.readAsDataURL(file);
         });
@@ -530,34 +597,24 @@
         document.getElementById('pasteTextBtn').addEventListener('click', () => pasteFromClipboard('textBase64Input'));
         document.getElementById('clearTextBtn').addEventListener('click', () => { textBase64Input.value = ''; });
         document.getElementById('btnTextToBase64').addEventListener('click', function() {
-            const str = textBase64Input.value;
-            if (!str) return alert('请输入文本');
-            try { renderBase64Result(window.btoa(unescape(encodeURIComponent(str))), false); } 
-            catch (e) { alert('转换失败: ' + e.message); }
+            const str = textBase64Input.value; if (!str) return alert('请输入文本');
+            try { renderBase64Result(window.btoa(unescape(encodeURIComponent(str))), false); } catch (e) { alert('转换失败: ' + e.message); }
         });
 
         document.getElementById('btnUrlToBase64').addEventListener('click', async function() {
-            const url = textBase64Input.value.trim();
-            if (!url || !url.startsWith('http')) return alert('请输入有效的图片链接');
+            const url = textBase64Input.value.trim(); if (!url || !url.startsWith('http')) return alert('请输入有效的图片链接');
             base64Result.value = "正在抓取，请稍候...";
             try {
-                const response = await fetch(url, { mode: 'cors' });
-                if (!response.ok) throw new Error('网络响应失败');
-                const blob = await response.blob();
-                const reader = new FileReader();
-                reader.onloadend = () => renderBase64Result(reader.result, true);
-                reader.readAsDataURL(blob);
-            } catch (error) {
-                base64Result.value = ""; alert('抓取失败！可能目标图片服务器禁止跨域下载。');
-            }
+                const response = await fetch(url, { mode: 'cors' }); if (!response.ok) throw new Error('网络响应失败');
+                const blob = await response.blob(); const reader = new FileReader();
+                reader.onloadend = () => renderBase64Result(reader.result, true); reader.readAsDataURL(blob);
+            } catch (error) { base64Result.value = ""; alert('抓取失败！可能目标图片服务器禁止跨域下载。'); }
         });
 
         document.getElementById('copyBase64Btn').addEventListener('click', () => copyToClipboard('base64Result', 'Base64 代码已复制！'));
         document.getElementById('clearBase64Btn').addEventListener('click', () => {
-            base64Result.value = ''; fileInput.value = '';
-            fileNameDisplay.textContent = "未选择任何文件"; imagePreview.style.display = 'none';
+            base64Result.value = ''; fileInput.value = ''; fileNameDisplay.textContent = "未选择任何文件"; imagePreview.style.display = 'none';
         });
-
     </script>
 </body>
 </html>
