@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全能开发辅助工具 (书签+Base64)</title>
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzM0OThkYiI+PHBhdGggZD0iTTIyLjcgMTlsLTkuMS05LjFjLjktMi4zLjQtNS0xLjUtNi45LTItMi01LTIuNC03LjQtMS4zTDkgNiA2IDkgMS42IDQuN0MuNCA3LjEuOSAxMC4xIDIuOSAxMi4xYzEuOSAxLjkgNC42IDIuNCA2LjkgMS41bDkuMSA5LjFjLjQuNCAxIC40IDEuNCAwbDIuMy0yLjNjLjUtLjQuNS0xLjEuMS0xLjR6Ii8+PC9zdmc+" type="image/svg+xml">
+    
+    <style>
+        /* ================= 主题变量系统 ================= */
+        :root {
+            --primary-color: #3498db; --primary-hover: #2980b9;
+            --bg-color: #f0f2f5; --card-bg: #ffffff;
+            --text-main: #2c3e50; --text-light: #7f8c8d;
+            --border-color: #e2e8f0; --success-color: #27ae60; --success-hover: #219653;
+            --input-bg: #fafbfd; /* 亮色模式下输入框微微发灰，增加层次感 */
+            --item-bg: #f8fafc; /* 书签按钮的亮色背景 */
+            --item-hover-bg: #f1f5f9; /* 书签按钮悬停时的亮色背景 */
+            
+            --grid-color: rgba(0, 0, 0, 0.12);
+            --grid-size: 32px; 
+            
+            --modal-overlay: rgba(0, 0, 0, 0.6);
+            --global-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            
+            --scrollbar-bg: #f1f5f9;
+            --scrollbar-thumb: #cbd5e1;
+            --scrollbar-thumb-hover: #94a3b8;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3b82f6; --primary-hover: #2563eb;
+            --bg-color: #0f172a; --card-bg: #1e293b;
+            --text-main: #f1f5f9; --text-light: #94a3b8;
+            /* 核心修复 1：柔和的边框颜色 */
+            --border-color: rgba(255, 255, 255, 0.08); 
+            --success-color: #10b981; --success-hover: #059669;
+            /* 核心修复 2：输入框底色直接与容器卡片底色完全一致，无缝平滑融入 */
+            --input-bg: var(--card-bg); 
+            --item-bg: rgba(255, 255, 255, 0.02); /* 书签按钮的暗色背景 */
+            --item-hover-bg: rgba(255, 255, 255, 0.06); /* 书签按钮悬停时的暗色背景 */
+            
+            --grid-color: rgba(255, 255, 255, 0.08);
+            
+            --modal-overlay: rgba(0, 0, 0, 0.8);
+            
+            --scrollbar-bg: #1e293b;
+            --scrollbar-thumb: #475569;
+            --scrollbar-thumb-hover: #64748b;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        /* ================= 滚动条与拖拽角修复 ================= */
+        ::-webkit-scrollbar { width: 12px; height: 12px; }
+        ::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 6px; border: 3px solid var(--scrollbar-bg); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+        /* 核心修复 3：拖拽把手使用透明，完美融入任何背景色，永不出现白块 */
+        ::-webkit-scrollbar-corner { background: transparent; }
+        ::-webkit-resizer { background: transparent; }
+
+        /* ================= 基础背景与布局 ================= */
+        body { 
+            font-family: var(--global-font); margin: 0; padding: 20px; 
+            background-color: var(--bg-color); color: var(--text-main); 
+            background-attachment: fixed; background-position: center;
+        }
+
+        body.bg-grid-mode {
+            background-image: 
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            background-position: 0 0;
+            background-repeat: repeat;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; position: relative; }
+        
+        .top-right-controls { position: absolute; top: 0; right: 0; display: flex; gap: 10px; z-index: 100; }
+        .icon-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: transform 0.2s, color 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .icon-btn:hover { transform: scale(1.1); color: var(--primary-color); border-color: var(--primary-color);}
+
+        h1 { text-align: center; color: var(--text-main); margin-bottom: 30px; font-size: 2.2em; padding-top: 10px;}
+        .section-title { border-left: 5px solid var(--primary-color); padding-left: 15px; margin: 40px 0 20px 0; color: var(--text-main); display:flex; justify-content: space-between; align-items:center;}
+        
+        .card { background-color: var(--card-bg); border-radius: 10px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
+
+        textarea, input[type="text"] { 
+            width: 100%; padding: 12px; margin: 8px 0; 
+            border: 1px solid var(--border-color); border-radius: 6px; 
+            font-family: var(--global-font); font-size: 14px; line-height: 1.5; 
+            color: var(--text-main); background-color: var(--input-bg); 
+            resize: vertical; word-break: break-all; white-space: pre-wrap; 
+            box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.04);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+        }
+        [data-theme="dark"] textarea, [data-theme="dark"] input[type="text"] {
+            box-shadow: none; /* 暗色模式下不使用内阴影，使文本框完美平铺融合 */
+        }
+        textarea:focus, input[type="text"]:focus { 
+            outline: none; border-color: var(--primary-color); 
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15), inset 0 1.5px 3px rgba(0, 0, 0, 0.04); 
+        }
+        [data-theme="dark"] textarea:focus, [data-theme="dark"] input[type="text"]:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); /* 仅增加聚焦光晕 */
+        }
+
+        .header-with-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .action-mini-group { display: flex; gap: 8px; align-items: center;}
+        .btn-group { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; align-items: center; }
+
+        button { background-color: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-family: var(--global-font); font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;}
+        button:hover { background-color: var(--primary-hover); }
+        button.btn-secondary { background-color: var(--text-light); } button.btn-secondary:hover { background-color: var(--text-main); }
+        button.btn-outline { background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 8px 16px; } button.btn-outline:hover { background-color: var(--primary-color); color: white; }
+        button.btn-outline-gray { background-color: transparent; color: var(--text-light); border: 1px solid var(--border-color); padding: 8px 16px; } 
+        button.btn-outline-gray:hover { background-color: rgba(0, 0, 0, 0.04); color: var(--text-main); border-color: var(--text-light); }
+        [data-theme="dark"] button.btn-outline-gray:hover { background-color: rgba(255, 255, 255, 0.04); color: white; border-color: var(--text-main); }
+        
+        button.btn-outline-success { background-color: rgba(39, 174, 96, 0.05); color: var(--success-color); border: 1px solid var(--success-color); padding: 8px 16px; border-radius: 6px; font-family: var(--global-font); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+        button.btn-outline-success:hover { background-color: var(--success-color) !important; color: white !important; }
+        [data-theme="dark"] button.btn-outline-success { background-color: rgba(16, 185, 129, 0.12); }
+        [data-theme="dark"] button.btn-outline-success:hover { background-color: var(--success-color) !important; color: white !important; }
+        
+        button.btn-outline-primary { background-color: rgba(52, 152, 219, 0.05); color: var(--primary-color); border: 1px solid var(--primary-color); padding: 8px 16px; border-radius: 6px; font-family: var(--global-font); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+        button.btn-outline-primary:hover { background-color: var(--primary-color) !important; color: white !important; }
+        [data-theme="dark"] button.btn-outline-primary { background-color: rgba(59, 130, 246, 0.12); }
+        [data-theme="dark"] button.btn-outline-primary:hover { background-color: var(--primary-color) !important; color: white !important; }
+        
+        button.btn-outline-danger { background-color: rgba(231, 76, 60, 0.05); color: #e74c3c !important; border: 1px solid #e74c3c; transition: all 0.2s; }
+        button.btn-outline-danger:hover { background-color: #e74c3c !important; border-color: #e74c3c !important; color: white !important; }
+        [data-theme="dark"] button.btn-outline-danger { background-color: rgba(231, 76, 60, 0.12); }
+        button.btn-outline-danger span.close-x { font-size: 16px; font-weight: bold; margin-right: 4px; line-height: 1; }
+
+        button.btn-success { background-color: var(--success-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-family: var(--global-font); font-size: 15px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+        button.btn-success:hover { background-color: var(--success-hover) !important; }
+        
+        button.btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 4px; }
+        button.btn-icon { padding: 4px 8px; font-size: 12px; }
+
+        .btn-highlight-default { background-color: rgba(52, 152, 219, 0.05); color: #2980b9 !important; border-color: #3498db !important; }
+        [data-theme="dark"] .btn-highlight-default { background-color: rgba(59, 130, 246, 0.1); color: #60a5fa !important; border-color: #3b82f6 !important; }
+        .btn-highlight-default:hover { background-color: rgba(52, 152, 219, 0.12) !important; border-color: #2980b9 !important; color: #2980b9 !important; }
+        [data-theme="dark"] .btn-highlight-default:hover { background-color: rgba(59, 130, 246, 0.2) !important; border-color: #60a5fa !important; color: #60a5fa !important; }
+
+        .file-upload-wrapper { display: flex; align-items: center; gap: 15px; margin: 8px 0 15px 0; }
+        .file-name-display { font-size: 14px; color: var(--text-light); background: var(--input-bg); padding: 6px 12px; border-radius: 4px; border: 1px dashed var(--border-color); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .base64-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        @media (max-width: 900px) { .base64-layout { grid-template-columns: 1fr; } }
+        
+        .zoomable-preview { max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 6px; display: none; border: 1px solid var(--border-color); background:var(--input-bg); object-fit: contain; padding:10px; cursor: zoom-in; }
+        .zoomable-preview:hover { border-color: var(--primary-color); }
+
+        .bookmark-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 25px; margin-bottom: 30px;}
+        
+        h2.generator-title { margin: 0; font-size: 1.2em; color: var(--primary-color); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;}
+        .generator-name-tag { font-size: 14px; font-weight: normal; color: var(--success-color); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 8px; border-radius: 4px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: none;}
+        .generator-open-link { display: none; font-size: 16px; text-decoration: none; transition: transform 0.2s;}
+        .generator-open-link:hover { transform: scale(1.2); }
+
+        .result-label { font-size: 14px; font-weight: bold; color: var(--text-light); }
+        .main-action-btn { width: 100%; padding: 12px; font-size: 16px; margin: 10px 0 15px 0; }
+        .extracted-icon-section { margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border-color); }
+        
+        .extracted-icon-preview { width: 32px; height: 32px; object-fit: contain; cursor: zoom-in; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px; transition: transform 0.2s;}
+        .extracted-icon-preview:hover { transform: scale(1.1); border-color: var(--primary-color);}
+
+        .add-generator-wrapper { display: flex; justify-content: center; margin-bottom: 50px; }
+        .add-generator-btn { background: transparent; border: 2px dashed var(--primary-color); color: var(--primary-color); padding: 15px 40px; font-size: 16px; border-radius: 10px; width: 100%; max-width: 600px;}
+        .add-generator-btn:hover { background: rgba(59, 130, 246, 0.1); border-style: solid; transform: translateY(-2px);}
+
+        /* ================= Toast 悬浮消息 ================= */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; align-items: center; }
+        .toast-msg { background-color: var(--card-bg); color: var(--text-main); padding: 12px 20px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 10px; transform: translateY(-20px); opacity: 0; animation: toast-in 0.3s forwards; border-left: 4px solid var(--primary-color); max-width: 400px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; border-right: 1px solid var(--border-color); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);}
+        .toast-msg.success { border-left-color: var(--success-color); }
+        .toast-msg.error { border-left-color: #ef4444; }
+        .toast-msg.fade-out { animation: toast-out 0.3s forwards; }
+        @keyframes toast-in { to { transform: translateY(0); opacity: 1; } }
+        @keyframes toast-out { to { transform: translateY(-20px); opacity: 0; } }
+
+        /* ================= 书签库视图管理器 ================= */
+        .library-wrapper { position: relative; background: var(--card-bg); border-radius: 10px; padding: 20px; border: 1px solid var(--border-color); }
+        .library-wrapper.fullscreen-mode { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 9999; border-radius: 0; border: none; padding: 30px 5%; overflow-y: auto; background-color: var(--bg-color); }
+        .library-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap:15px;}
+        
+        .search-input-wrapper { display: flex; align-items: center; flex: 1; min-width: 280px; max-width: 450px; position: relative;}
+        .search-input-wrapper input { width: 100%; padding-left: 32px; margin: 0; border-radius: 20px;}
+        .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-light); }
+        .highlight { background-color: rgba(234, 179, 8, 0.4); color: #ca8a04; padding: 0 2px; border-radius: 2px; font-weight: bold; }
+        [data-theme="dark"] .highlight { color: #fde047; }
+
+        .parsed-bookmarks-container { max-height: 400px; overflow-y: auto; overflow-x: hidden; padding-right: 5px; }
+        .fullscreen-mode .parsed-bookmarks-container { max-height: none; overflow-y: visible; }
+        
+        .layout-list { display: flex; flex-direction: column; gap: 8px; }
+        .layout-list .parsed-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--item-bg); width: 100%; }
+        .layout-multi-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 12px; }
+        .layout-multi-list .parsed-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--item-bg); width: 100%; overflow: visible;}
+        .layout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .layout-grid .parsed-item { display: flex; flex-direction: column; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--item-bg); overflow: visible;}
+        .layout-grid .parsed-info { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 15px; overflow: hidden; width: 100%;}
+        .layout-grid .parsed-info img { width: 32px; height: 32px; }
+        .layout-compact { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+        .layout-compact .parsed-item { display: flex; flex-direction: column; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--item-bg); overflow: visible; }
+        .layout-compact .parsed-info { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; overflow: hidden;}
+        .layout-compact .parsed-text .parsed-url { display: none; }
+
+        .parsed-item { transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s; }
+        .parsed-item:hover { 
+            background-color: var(--item-hover-bg) !important; 
+            border-color: var(--primary-color); 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+        }
+        [data-theme="dark"] .parsed-item:hover {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .parsed-info { display: flex; align-items: center; gap: 10px; overflow: hidden; flex: 1; min-width: 0; }
+        .parsed-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; width: 100%;}
+        .parsed-info img { width: 20px; height: 20px; flex-shrink: 0; border-radius: 3px; object-fit: contain; background: white; padding: 1px;}
+        .parsed-name { font-size: 14px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
+        .parsed-url { font-size: 12px; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
+        
+        .bg-control-btn { background: var(--input-bg); padding:4px; border-radius:6px; border: 1px solid var(--border-color);}
+        .view-btn.active, .style-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        .actions-wrapper { position: relative; display: flex; align-items: center; flex-shrink: 0; margin-left: 10px;}
+        .item-actions { display: flex; gap: 4px; align-items: center; }
+        .action-trigger-btn { display: none; padding: 4px 10px; font-size: 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; color: var(--text-main); font-weight: bold;}
+        .action-trigger-btn:hover { color: var(--primary-color); border-color: var(--primary-color);}
+
+        .action-mode-full .action-trigger-btn { display: none; }
+        .action-mode-full .btn-txt { display: inline; }
+        .action-mode-icon .action-trigger-btn { display: none; }
+        .action-mode-icon .btn-txt { display: none; }
+        .action-mode-icon .item-actions button { padding: 4px 6px; } 
+
+        .action-mode-hover .action-trigger-btn { display: flex; }
+        .action-mode-hover .item-actions { display: none; position: absolute; right: 100%; top: 50%; transform: translateY(-50%); background: var(--card-bg); padding: 6px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border: 1px solid var(--border-color); margin-right: 8px; z-index: 100; flex-direction: row; gap: 4px; white-space: nowrap; }
+        .action-mode-hover .actions-wrapper:hover .item-actions { display: flex; }
+        .action-mode-hover .btn-txt { display: inline; } 
+
+        .layout-grid.action-mode-hover .item-actions,
+        .layout-compact.action-mode-hover .item-actions { right: auto; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 5px; margin-right: 0; flex-direction: column; }
+        .layout-grid .actions-wrapper { justify-content: center; width: 100%; border-top: 1px dashed var(--border-color); padding-top: 10px; margin-left:0;}
+        .layout-compact .actions-wrapper { justify-content: space-between; width: 100%; margin-left:0;}
+
+        /* ================= 弹窗样式 (共用) ================= */
+        .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--modal-overlay); z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .image-lightbox-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.85); z-index: 10001; display: none; justify-content: center; align-items: center; cursor: zoom-out;}
+        .image-lightbox-overlay img { max-width: 90%; max-height: 90%; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: contain;}
+
+        .custom-modal-content { background: var(--card-bg); width: 700px; max-width: 95%; border-radius: 12px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 15px; border: 1px solid var(--border-color);}
+        
+        .modal-sm { width: 480px; }
+
+        .modern-upload-area {
+            border: 2px dashed var(--border-color); border-radius: 8px; padding: 25px 20px;
+            text-align: center; cursor: pointer; background: var(--input-bg); display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .modern-upload-area:hover { border-color: var(--primary-color); background: rgba(59, 130, 246, 0.05); }
+        .modern-upload-area i { font-size: 32px; font-style: normal; }
+        .modern-upload-area span { font-size: 14px; color: var(--text-main); font-weight: bold; }
+        .modern-upload-area small { font-size: 12px; color: var(--text-light); }
+
+        .modal-header-info { display: flex; align-items: center; gap: 15px; flex: 1; min-width: 0; padding: 15px; background: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color); }
+        .modal-header-info img { width: 42px; height: 42px; border-radius: 6px; object-fit: contain; background: white; padding:2px; border: 1px solid #e2e8f0; flex-shrink: 0;}
+        .modal-header-text { display: flex; flex-direction: column; overflow: hidden; min-width: 0; gap: 6px; width: 100%;}
+        .text-with-copy { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+        .modal-header-title { font-size: 16px; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .modal-header-url { font-size: 13px; color: var(--primary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+        .inline-copy-btn { background: none; border: 1px solid var(--border-color); padding: 4px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--text-light); flex-shrink: 0; transition: all 0.2s;}
+        .inline-copy-btn:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .inline-copy-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .custom-modal-content textarea { height: 220px; }
+        .empty-search-msg { text-align: center; padding: 30px; color: var(--text-light); width: 100%; font-size: 15px;}
+    </style>
+</head>
+
+<body class="bg-grid-mode">
+
+    <div id="toast-container"></div>
+
+    <div class="container" style="position: relative; height: 0;">
+        <div class="top-right-controls">
+            <button id="bgSettingsBtn" class="icon-btn" title="自定义背景">🖼️</button>
+            <button id="themeToggleBtn" class="icon-btn" title="切换亮暗模式">🌙</button>
+        </div>
+    </div>
+
+    <!-- 背景设置弹窗 -->
+    <div id="bgSettingsModal" class="custom-modal-overlay">
+        <div class="custom-modal-content modal-sm">
+            <div class="header-with-actions" style="margin-bottom: 0;">
+                <h3 style="margin:0; color:var(--text-main);">🖼️ 自定义背景</h3>
+                <button class="btn-outline-danger btn-sm" onclick="closeBgModal()"><span class="close-x">&times;</span>关闭</button>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top:10px;">
+                <button class="btn-outline btn-highlight-default" onclick="setBgMode('grid')" style="width: 100%; font-size: 15px;">🕸️ 网格背景 (默认)</button>
+                <button class="btn-outline-gray" onclick="setBgMode('color')" style="width: 100%; font-size: 15px;">🎨 纯色背景</button>
+                
+                <div style="border-top: 1px dashed var(--border-color); padding-top: 15px;">
+                    <label style="font-size: 13px; color:var(--text-light); margin-bottom:8px; display:block;">从本地上传图片作为背景：</label>
+                    <label for="bgFileInput" class="modern-upload-area">
+                        <i>📁</i>
+                        <span>点击选择图片文件</span>
+                        <small>支持 JPG, PNG, WebP 等格式</small>
+                    </label>
+                    <input type="file" id="bgFileInput" accept="image/*" style="display: none;">
+                </div>
+                
+                <div>
+                    <label style="font-size: 13px; color:var(--text-light); margin-bottom:8px; display:block;">或输入网络图片 URL：</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="bgUrlInput" placeholder="https://..." style="flex:1; margin:0;">
+                        <button onclick="setBgFromUrl()" style="margin:0;">应用网络背景</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 原生代码查看弹窗 -->
+    <div id="codeViewModal" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <div class="header-with-actions" style="margin-bottom: 0;">
+                <h3 style="margin:0; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                    <span>👁️</span> <span>书签详细信息</span>
+                </h3>
+                <div class="action-mini-group">
+                    <button class="btn-outline btn-sm" style="border-color:var(--success-color); color:var(--success-color);" onclick="openModalUrl()">🌐 立即打开</button>
+                    <button class="btn-outline-danger btn-sm" onclick="closeCodeModal()"><span class="close-x">&times;</span>关闭</button>
+                </div>
+            </div>
+            <div class="modal-header-info">
+                <img id="modalIcon" src="" alt="icon">
+                <div class="modal-header-text">
+                    <div class="text-with-copy">
+                        <span id="modalTitle" class="modal-header-title">加载中...</span>
+                        <button class="inline-copy-btn" onclick="copyModalField('title')" title="复制标题">
+                            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
+                    <div class="text-with-copy">
+                        <a id="modalUrl" class="modal-header-url" href="#" target="_blank">加载中...</a>
+                        <button class="inline-copy-btn" onclick="copyModalField('url')" title="复制链接">
+                            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <p style="font-size:13px; font-weight:bold; color:var(--text-main); margin: 0 0 8px 0;">💻 原生 HTML 代码：</p>
+                <textarea id="modalCodeArea" readonly></textarea>
+            </div>
+            <div class="btn-group" style="justify-content: flex-end; margin:0;">
+                <button onclick="copyFromModal()">📋 复制全部代码</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全屏放大查看图片遮罩层 -->
+    <div id="imageLightboxOverlay" class="image-lightbox-overlay" onclick="closeImageModal()">
+        <img id="lightboxImage" src="" alt="大图预览" title="点击任意处关闭">
+    </div>
+
+    <!-- 粘贴解析书签弹窗 -->
+    <div id="pasteParseModal" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <div class="header-with-actions" style="margin-bottom: 0;">
+                <h3 style="margin:0; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                    <span>📋</span> <span>直接粘贴书签 HTML 解析</span>
+                </h3>
+                <div class="action-mini-group">
+                    <button class="btn-outline btn-sm" onclick="loadPasteExample()" style="border-color:var(--primary-color); color:var(--primary-color);">💡 载入测试示例</button>
+                    <button class="btn-outline-danger btn-sm" onclick="closePasteModal()"><span class="close-x">&times;</span>关闭</button>
+                </div>
+            </div>
+            <p style="font-size:12px; color:var(--text-light); margin:0;">
+                您可以直接粘贴整段 HTML 源码或包含 &lt;a&gt; 标签的书签代码段，甚至支持颠倒属性、多余属性。
+            </p>
+            <textarea id="pasteParseArea" placeholder="直接粘贴 &lt;a href=&quot;...&quot; icon=&quot;...&quot;&gt;名称&lt;/a&gt; 代码..." style="height: 180px;"></textarea>
+            <div class="btn-group" style="justify-content: flex-end; margin:0;">
+                <button onclick="executePasteParse()" style="background-color: var(--success-color); color: white;">🔄 开始解析并导入</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>🛠️ 全能开发辅助工具</h1>
+
+        <h2 class="section-title">📂 浏览器书签文件智能解析</h2>
+        <div id="libraryWrapper" class="library-wrapper">
+            <div class="library-header">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; flex: 1;">
+                    <div class="file-upload-wrapper" style="margin:0; flex-wrap: wrap;">
+                        <input type="file" id="bookmarkFileInput" accept=".html" style="display: none;">
+                        <button id="triggerBookmarkFileBtn" class="btn-outline-success">
+                            📑 导入文件
+                        </button>
+                        <button id="triggerPasteParseBtn" class="btn-outline-primary">
+                            📋 粘贴代码解析
+                        </button>
+                        <span id="bookmarkFileNameDisplay" class="file-name-display">未选择文件</span>
+                    </div>
+                    <div id="searchWrapper" class="search-input-wrapper" style="display: none;">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="bookmarkSearchInput" placeholder="全局搜索书签名称或链接...">
+                    </div>
+                </div>
+
+                <div id="libraryControls" style="display: none; gap: 15px; align-items:center; flex-wrap: wrap;">
+                    <div class="action-mini-group bg-control-btn">
+                        <button class="btn-outline-gray btn-sm view-btn active" onclick="switchView('layout-list', this)" title="单列列表">📄</button>
+                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-multi-list', this)" title="多列列表">🗂️</button>
+                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-grid', this)" title="平铺卡片">⊞</button>
+                        <button class="btn-outline-gray btn-sm view-btn" onclick="switchView('layout-compact', this)" title="紧凑排列">▦</button>
+                    </div>
+                    <div class="action-mini-group bg-control-btn" style="margin-left: 5px;">
+                        <button class="btn-outline-gray btn-sm style-btn active" onclick="switchActionMode('action-mode-full', this)" title="完整显示 (图标+文字)">🔤</button>
+                        <button class="btn-outline-gray btn-sm style-btn" onclick="switchActionMode('action-mode-icon', this)" title="仅显示极简图标">🖼️</button>
+                        <button class="btn-outline-gray btn-sm style-btn" onclick="switchActionMode('action-mode-hover', this)" title="悬浮收纳菜单">⚙️</button>
+                    </div>
+                    <button id="exportFilteredBtn" class="btn-outline btn-sm" style="margin-left: 5px; border-color:var(--success-color); color:var(--success-color);" title="将当前列表显示的书签打包导出为 HTML 文件">📥 导出当前结果</button>
+                    <button id="toggleFullscreenBtn" class="btn-outline btn-sm" style="margin-left: 5px;">🗔 全屏</button>
+                    <button id="clearParsedBtn" class="btn-outline-danger btn-sm">🗑️ 清空库</button>
+                </div>
+            </div>
+            <div id="parsedBookmarksContainer" class="parsed-bookmarks-container layout-list action-mode-full"></div>
+        </div>
+
+        <h2 class="section-title">🖼️ Base64 / 文本编码转换工具</h2>
+        <div class="card base64-layout">
+            <div>
+                <label><strong>1. 导入本地文件 (推荐图片)</strong></label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="fileInput" accept="image/*, .txt, .json" style="display: none;">
+                    <button id="triggerFileBtn" class="btn-outline">📁 浏览并导入文件...</button>
+                    <span id="fileNameDisplay" class="file-name-display">未选择任何文件</span>
+                </div>
+                <div class="header-with-actions">
+                    <label><strong>2. 或输入任意文本 / 链接 / 书签代码</strong></label>
+                    <div class="action-mini-group">
+                        <button id="pasteTextBtn" class="btn-outline btn-sm">📋 粘贴</button>
+                        <button id="clearTextBtn" class="btn-outline-danger btn-sm">🗑️ 清空</button>
+                    </div>
+                </div>
+                <textarea id="textBase64Input" rows="4" placeholder="输入任意文本、图片URL链接，\n或直接粘贴整段如 <a href=... icon=...> 的书签代码，点击下方解析提取图片..."></textarea>
+                <div class="btn-group">
+                    <button id="btnTextToBase64">仅转换文本</button>
+                    <button id="btnUrlToBase64" class="btn-secondary" title="受浏览器CORS限制，部分图片可能无法抓取">抓取图片URL并转换</button>
+                    <button id="btnDecodeBase64" class="btn-outline" style="border-color:var(--success-color); color:var(--success-color);" title="从输入的杂乱文本或书签代码中，智能提取并还原 Base64 图片">🔄 智能提取并解析 Base64 图片</button>
+                </div>
+            </div>
+            <div>
+                <div class="header-with-actions">
+                    <label><strong>转换/解析结果</strong></label>
+                    <div class="action-mini-group">
+                        <button id="downloadBase64PreviewBtn" class="btn-outline btn-sm" style="border-color:var(--primary-color); color:var(--primary-color); display:none;">💾 下载图片</button>
+                        <button id="copyBase64Btn" class="btn-outline btn-sm">📋 复制结果</button>
+                        <button id="clearBase64Btn" class="btn-outline-danger btn-sm">🗑️ 清空结果</button>
+                    </div>
+                </div>
+                <textarea id="base64Result" rows="6" readonly placeholder="Base64 代码将显示在这里..."></textarea>
+                <img id="imagePreview" class="zoomable-preview" alt="Base64图片预览" title="点击放大查看" onclick="openImageModal(this.src)">
+            </div>
+        </div>
+
+        <h2 class="section-title">🔖 工作区：批量书签生成器</h2>
+        <!-- 动态生成器容器 -->
+        <div id="bookmarkGrid" class="bookmark-grid"></div>
+        
+        <!-- 添加生成器按钮 -->
+        <div class="add-generator-wrapper" style="gap: 15px; flex-wrap: wrap;">
+            <button id="addGeneratorBtn" class="add-generator-btn" style="flex: 1; max-width: 450px;">➕ 添加新生成器槽位</button>
+        </div>
+
+        <!-- 工作区成果一键导出卡片 -->
+        <div class="card" style="margin-top: 30px; margin-bottom: 50px; border-style: dashed; border-color: var(--primary-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h3 style="margin: 0 0 5px 0; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <span>📦</span> <span>工作区书签成果批量导出</span>
+                    </h3>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-light);">可一次性汇总上方所有生成器槽位中生成的书签，并导出为浏览器标准文件。</p>
+                </div>
+                <div class="btn-group" style="margin: 0;">
+                    <button id="copyAllWorkspaceBtn" class="btn-outline-primary">📋 合并复制 HTML</button>
+                    <button id="exportAllWorkspaceBtn" class="btn-success">💾 下载标准书签文件 (bookmarks.html)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        /* ================= 核心系统：主题与背景引擎 ================= */
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const bodyEl = document.body;
+        
+        const savedTheme = localStorage.getItem('appTheme') || 'light';
+        if(savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggleBtn.textContent = '☀️';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            if(currentTheme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('appTheme', 'light');
+                themeToggleBtn.textContent = '🌙';
+                showToast('已切换至亮色模式');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('appTheme', 'dark');
+                themeToggleBtn.textContent = '☀️';
+                showToast('已切换至暗色模式');
+            }
+        });
+
+        const bgSettingsModal = document.getElementById('bgSettingsModal');
+        document.getElementById('bgSettingsBtn').addEventListener('click', () => bgSettingsModal.style.display = 'flex');
+        window.closeBgModal = () => bgSettingsModal.style.display = 'none';
+
+        function applyBackground(type, data) {
+            bodyEl.classList.remove('bg-grid-mode');
+            bodyEl.style.backgroundImage = ''; // 清理内联背景图，允许 CSS 类中的网格背景图正常生效
+            
+            if(type === 'grid') {
+                bodyEl.classList.add('bg-grid-mode');
+            } else if (type === 'image' && data) {
+                bodyEl.style.backgroundImage = `url("${data}")`;
+            } else if (type === 'color') {
+                bodyEl.style.backgroundImage = 'none'; // 纯底色模式下显式设为 none
+            }
+            
+            localStorage.setItem('bgType', type);
+            if(data) localStorage.setItem('bgData', data);
+            closeBgModal();
+        }
+
+        window.setBgMode = (mode) => {
+            applyBackground(mode, null);
+            showToast(mode === 'grid' ? '已应用网格背景' : '已应用纯色背景');
+        };
+
+        window.setBgFromUrl = () => {
+            const url = document.getElementById('bgUrlInput').value.trim();
+            if(!url) return showToast('请输入链接', 'error');
+            applyBackground('image', url);
+            showToast('背景已更新');
+        };
+
+        document.getElementById('bgFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                applyBackground('image', event.target.result);
+                showToast('本地背景已应用');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        const savedBgType = localStorage.getItem('bgType') || 'grid';
+        const savedBgData = localStorage.getItem('bgData');
+        applyBackground(savedBgType, savedBgData);
+
+
+        /* ================= 美化提示系统 (Toast) ================= */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast-msg ${type}`;
+            const icon = type === 'success' ? '✅' : (type === 'error' ? '🚫' : '💡');
+            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 2500); 
+        }
+
+        /* ================= 剪贴板引擎 ================= */
+        function copyTextDirectly(text, successMsg, silent = false) {
+            if(!text) return;
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => { if(!silent) showToast(successMsg || '复制成功！'); })
+                .catch(() => fallbackCopy(text, successMsg, silent));
+            } else { fallbackCopy(text, successMsg, silent); }
+        }
+        function fallbackCopy(text, successMsg, silent) {
+            try {
+                const textArea = document.createElement("textarea"); textArea.value = text;
+                textArea.style.position = "fixed"; textArea.style.left = "-999999px"; textArea.style.top = "0";
+                document.body.appendChild(textArea); textArea.focus(); textArea.select();
+                const successful = document.execCommand('copy'); document.body.removeChild(textArea);
+                if (successful) { if(!silent) showToast(successMsg || '复制成功！'); } 
+                else { showToast('复制失败，请手动选中复制。', 'error'); }
+            } catch (err) { showToast('环境受限，请手动 Ctrl+C 复制。', 'error'); }
+        }
+        function copyToClipboard(textId, successMsg) {
+            const text = document.getElementById(textId).value;
+            if (!text) return showToast('没有内容可以复制！', 'error');
+            copyTextDirectly(text, successMsg);
+        }
+        async function pasteFromClipboard(targetId) {
+            if (navigator.clipboard && navigator.clipboard.readText && window.isSecureContext) {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text) { document.getElementById(targetId).value = text; showToast('粘贴成功！'); } 
+                    else { showToast('剪贴板为空！', 'error'); }
+                    return;
+                } catch (err) { console.error('粘贴受限', err); }
+            }
+            showToast('粘贴受限！HTTP 环境请直接在输入框使用键盘 Ctrl+V 粘贴。', 'error');
+        }
+
+        /* ================= 辅助工具 ================= */
+        function escapeHTML(str) { return !str ? '' : str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
+        function highlightText(text, keyword) {
+            const safeText = escapeHTML(text); if (!keyword) return safeText;
+            const escapedKeyword = escapeHTML(keyword).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return safeText.replace(new RegExp(`(${escapedKeyword})`, 'gi'), '<mark class="highlight">$1</mark>');
+        }
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+        function downloadBase64Image(base64Data, filename) {
+            if(!base64Data || !base64Data.startsWith('data:image')) return showToast('非有效的图片数据，无法下载！', 'error');
+            const link = document.createElement('a'); link.href = base64Data; link.download = (filename || 'extracted_image') + '.png'; 
+            document.body.appendChild(link); link.click(); document.body.removeChild(link); showToast('开始下载...');
+        }
+        function openImageModal(src) {
+            if(!src || src === window.location.href) return; 
+            document.getElementById('lightboxImage').src = src; document.getElementById('imageLightboxOverlay').style.display = 'flex';
+        }
+        function closeImageModal() { document.getElementById('imageLightboxOverlay').style.display = 'none'; }
+
+
+        /* ================= 动态生成器系统 ================= */
+        const bookmarkGrid = document.getElementById('bookmarkGrid');
+        let generatorCount = 0;
+
+        function createGeneratorNode(index) {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.id = `generatorCard${index}`;
+            div.innerHTML = `
+                <div class="header-with-actions">
+                    <h2 class="generator-title">
+                        生成器 ${index} 
+                        <span id="generatorName${index}" class="generator-name-tag"></span>
+                        <a id="generatorOpenLink${index}" href="#" target="_blank" class="generator-open-link" title="在新标签页测试打开此书签">🌐</a>
+                    </h2>
+                    <div class="action-mini-group">
+                        <button id="bmPasteBtn${index}" class="btn-outline btn-sm">📋 粘贴</button>
+                        <button id="bmClearInputBtn${index}" class="btn-outline-danger btn-sm">🗑️ 清空</button>
+                    </div>
+                </div>
+                <textarea id="linkInput${index}" rows="3" placeholder="输入书签代码，或通过上方工具自动提取..."></textarea>
+                <button id="generateBtn${index}" class="main-action-btn">⚡ 生成书签及提取图标</button>
+                <div class="header-with-actions">
+                    <span class="result-label">生成的书签代码:</span>
+                    <div class="action-mini-group" id="resultActionGrp${index}" style="display:none;">
+                        <button id="copyBtn${index}" class="btn-outline btn-sm">📋 复制代码</button>
+                        <button id="bmClearResultBtn${index}" class="btn-outline-danger btn-sm">🗑️ 清空结果</button>
+                    </div>
+                </div>
+                <textarea id="result${index}" rows="4" readonly></textarea>
+                
+                <div id="iconExtractContainer${index}" class="extracted-icon-section" style="display:none;">
+                    <div class="header-with-actions">
+                        <span class="result-label" style="color:#d35400;">🧩 单独提取的图标:</span>
+                        <div class="action-mini-group">
+                            <img id="extractedIconPreview${index}" src="" class="extracted-icon-preview" title="点击放大查看" onclick="openImageModal(this.src)">
+                            <button id="downloadIconBtn${index}" class="btn-outline btn-sm" style="border-color:var(--primary-color); color:var(--primary-color);" title="保存图标到本地">💾 下载</button>
+                            <button id="copyIconBtn${index}" class="btn-outline btn-sm" style="border-color:#e67e22; color:#e67e22;">📋 复制 Base64</button>
+                        </div>
+                    </div>
+                    <textarea id="extractedIcon${index}" rows="2" readonly></textarea>
+                </div>
+            `;
+            return div;
+        }
+
+        function bindGeneratorEvents(index) {
+            document.getElementById(`generateBtn${index}`).addEventListener('click', () => processBookmarkGeneration(index));
+            document.getElementById(`copyBtn${index}`).addEventListener('click', () => copyToClipboard(`result${index}`, '书签代码已复制！'));
+            document.getElementById(`copyIconBtn${index}`).addEventListener('click', () => copyToClipboard(`extractedIcon${index}`, '图标 Base64 数据已复制！'));
+            
+            document.getElementById(`downloadIconBtn${index}`).addEventListener('click', () => {
+                const base64 = document.getElementById(`extractedIcon${index}`).value;
+                const bmName = document.getElementById(`generatorName${index}`).textContent || `bookmark_icon_${index}`;
+                downloadBase64Image(base64, bmName);
+            });
+
+            document.getElementById(`bmPasteBtn${index}`).addEventListener('click', () => pasteFromClipboard(`linkInput${index}`));
+            document.getElementById(`bmClearInputBtn${index}`).addEventListener('click', () => { document.getElementById(`linkInput${index}`).value = ''; });
+            document.getElementById(`bmClearResultBtn${index}`).addEventListener('click', () => {
+                document.getElementById(`result${index}`).value = ''; document.getElementById(`resultActionGrp${index}`).style.display = 'none';
+                document.getElementById(`extractedIcon${index}`).value = ''; document.getElementById(`iconExtractContainer${index}`).style.display = 'none';
+                document.getElementById(`generatorName${index}`).style.display = 'none'; document.getElementById(`generatorName${index}`).textContent = '';
+                document.getElementById(`generatorOpenLink${index}`).style.display = 'none'; document.getElementById(`generatorOpenLink${index}`).href = '#';
+                document.getElementById(`extractedIconPreview${index}`).src = '';
+            });
+        }
+
+        function addNewGenerator() {
+            generatorCount++;
+            const newNode = createGeneratorNode(generatorCount);
+            bookmarkGrid.appendChild(newNode);
+            bindGeneratorEvents(generatorCount);
+            return generatorCount;
+        }
+
+        function processBookmarkGeneration(index) {
+            const inputId = `linkInput${index}`; const resultId = `result${index}`;
+            const actionGrpId = `resultActionGrp${index}`; const iconContainerId = `iconExtractContainer${index}`;
+            const extractedIconId = `extractedIcon${index}`; const generatorNameTag = document.getElementById(`generatorName${index}`);
+            const openLink = document.getElementById(`generatorOpenLink${index}`); const iconPreview = document.getElementById(`extractedIconPreview${index}`);
+            
+            const linkInput = document.getElementById(inputId).value.trim();
+            if(!linkInput) return showToast('请先输入需要生成的内容！', 'error');
+
+            const parser = new DOMParser();
+            const tempDoc = parser.parseFromString(linkInput, 'text/html');
+            const aTag = tempDoc.querySelector('a');
+
+            if (aTag && aTag.getAttribute('href')) {
+                const link = aTag.getAttribute('href') || '#';
+                const icon = aTag.getAttribute('icon') || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi42MiAyIDIgMi42MiAyIDEydjhjMCA5LjM4LjYyIDEwIDEwIDEwaDhYzEyLjM4IDIyIDIyIDIxLjM4IDIyIDEyVjRjMC05LjM4LS42Mi0xMC0xMC0xMEgxMnoiLz48L3N2Zz4=';
+                const label = aTag.textContent || '未命名书签';
+
+                let resultHTML = `<a href="${link}" target="_blank" rel="noopener noreferrer" class="bookmark-card">\n` + 
+                                 `                    <img src="${icon}" alt="icon" style="width: 16px; height: 16px;">\n` + 
+                                 `                    <span>${label}</span>\n                </a>`;
+
+                document.getElementById(resultId).value = resultHTML; document.getElementById(actionGrpId).style.display = 'flex'; 
+                document.getElementById(extractedIconId).value = icon; iconPreview.src = icon;
+                generatorNameTag.textContent = label; generatorNameTag.title = label; generatorNameTag.style.display = 'inline-block';
+                openLink.href = link; openLink.style.display = 'inline-flex';
+                document.getElementById(iconContainerId).style.display = 'block';
+                
+                showToast(`提取成功：${label}`);
+            } else { 
+                showToast('提取失败！未检测到标准的 HTML 链接格式（例如 <a> 标签）。', 'error'); 
+            }
+        }
+
+        // 初始化
+        for(let i=0; i<6; i++) { addNewGenerator(); }
+        
+        document.getElementById('addGeneratorBtn').addEventListener('click', () => {
+            const newIndex = addNewGenerator();
+            showToast(`成功添加 第 ${newIndex} 号生成器槽位`);
+            setTimeout(() => { document.getElementById(`generatorCard${newIndex}`).scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 100);
+        });
+
+
+        /* ================= 书签解析与渲染 ================= */
+        const bookmarkFileInput = document.getElementById('bookmarkFileInput');
+        const triggerBookmarkFileBtn = document.getElementById('triggerBookmarkFileBtn');
+        const bookmarkFileNameDisplay = document.getElementById('bookmarkFileNameDisplay');
+        const parsedBookmarksContainer = document.getElementById('parsedBookmarksContainer');
+        const libraryControls = document.getElementById('libraryControls');
+        const libraryWrapper = document.getElementById('libraryWrapper');
+        const searchWrapper = document.getElementById('searchWrapper');
+        const searchInput = document.getElementById('bookmarkSearchInput');
+        
+        let globalParsedBookmarks = []; 
+        let currentFilteredBookmarks = []; 
+        let originalFileName = '未选择文件';
+
+        triggerBookmarkFileBtn.addEventListener('click', () => bookmarkFileInput.click());
+
+        bookmarkFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            originalFileName = file.name;
+            bookmarkFileNameDisplay.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function(event) { parseBookmarkHtml(event.target.result); };
+            reader.readAsText(file);
+        });
+
+        function parseBookmarkHtml(htmlString) {
+            const parser = new DOMParser(); const doc = parser.parseFromString(htmlString, 'text/html');
+            const aTags = doc.querySelectorAll('a');
+            globalParsedBookmarks = []; searchInput.value = ''; 
+            if(aTags.length === 0) return showToast("未能找到书签！请确保上传的是 bookmarks.html", 'error');
+
+            aTags.forEach((a, index) => {
+                const icon = a.getAttribute('icon') || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi42MiAyIDIgMi42MiAyIDEydjhjMCA5LjM4LjYyIDEwIDEwIDEwaDhYzEyLjM4IDIyIDIyIDIxLjM4IDIyIDEyVjRjMC05LjM4LS42Mi0xMC0xMC0xMEgxMnoiLz48L3N2Zz4=';
+                const name = a.textContent || '未命名书签'; const href = a.getAttribute('href') || '#';
+                globalParsedBookmarks.push({ id: index, name, url: href, icon, rawHtml: a.outerHTML });
+            });
+            currentFilteredBookmarks = globalParsedBookmarks; // 同步当前过滤数组
+            renderBookmarkList(globalParsedBookmarks, "");
+            libraryControls.style.display = 'flex'; searchWrapper.style.display = 'flex';
+            bookmarkFileNameDisplay.textContent = `${originalFileName} (${aTags.length}个书签)`;
+            showToast(`成功解析 ${aTags.length} 个书签！`);
+        }
+        
+        function renderBookmarkList(dataArray, keyword = "") {
+            parsedBookmarksContainer.innerHTML = ''; 
+            if (dataArray.length === 0) {
+                parsedBookmarksContainer.innerHTML = `<div class="empty-search-msg">没有找到与 "<b>${escapeHTML(keyword)}</b>" 匹配的书签...</div>`;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            dataArray.forEach((data) => {
+                const itemDiv = document.createElement('div'); itemDiv.className = 'parsed-item';
+                const itemId = data.id;
+                
+                const displayTitle = highlightText(data.name, keyword); const displayUrl = highlightText(data.url, keyword);
+                const safeRawTitle = escapeHTML(data.name); const safeRawUrl = escapeHTML(data.url);
+                
+                itemDiv.innerHTML = `
+                    <div class="parsed-info">
+                        <img src="${data.icon}" alt="icon">
+                        <div class="parsed-text">
+                            <span class="parsed-name" title="${safeRawTitle}">${displayTitle}</span>
+                            <span class="parsed-url" title="${safeRawUrl}">${displayUrl}</span>
+                        </div>
+                    </div>
+                    <div class="actions-wrapper">
+                        <button class="action-trigger-btn" title="更多选项">⚙️ 选项</button>
+                        <div class="item-actions">
+                            <button class="btn-outline-gray btn-icon" onclick="window.open('${safeRawUrl}', '_blank')" title="在新标签页打开"><span class="btn-ic">🌐</span><span class="btn-txt"> 打开</span></button>
+                            <button class="btn-outline-gray btn-icon" onclick="viewRawCodeById(${itemId})" title="查看原生代码"><span class="btn-ic">👁️</span><span class="btn-txt"> 查看</span></button>
+                            <button class="btn-outline-gray btn-icon" onclick="copyRawCodeById(${itemId})" title="复制原生代码"><span class="btn-ic">📋</span><span class="btn-txt"> 复制</span></button>
+                            <button class="btn-sm" style="background-color:var(--success-color); color:white; border-color:var(--success-color);" onclick="sendToGeneratorSlotById(${itemId})" title="提取到下方工作区"><span class="btn-ic">⬇️</span><span class="btn-txt"> 提取</span></button>
+                        </div>
+                    </div>
+                `;
+                fragment.appendChild(itemDiv);
+            });
+            parsedBookmarksContainer.appendChild(fragment);
+        }
+
+        searchInput.addEventListener('input', debounce((e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            if (!keyword) { 
+                currentFilteredBookmarks = globalParsedBookmarks;
+                bookmarkFileNameDisplay.textContent = `${originalFileName} (${globalParsedBookmarks.length}个书签)`;
+                renderBookmarkList(globalParsedBookmarks, ""); 
+                return; 
+            }
+            currentFilteredBookmarks = globalParsedBookmarks.filter(bm => bm.name.toLowerCase().includes(keyword) || bm.url.toLowerCase().includes(keyword));
+            bookmarkFileNameDisplay.textContent = `筛选结果 (${currentFilteredBookmarks.length} / ${globalParsedBookmarks.length}个书签)`;
+            renderBookmarkList(currentFilteredBookmarks, keyword);
+        }, 150));
+
+        window.switchView = function(layoutClass, btnElement) {
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active'); 
+            const currentActionMode = Array.from(parsedBookmarksContainer.classList).find(c => c.startsWith('action-mode-')) || 'action-mode-full';
+            parsedBookmarksContainer.className = `parsed-bookmarks-container ${layoutClass} ${currentActionMode}`;
+        };
+        window.switchActionMode = function(modeClass, btnElement) {
+            document.querySelectorAll('.style-btn').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active');
+            parsedBookmarksContainer.classList.remove('action-mode-full', 'action-mode-icon', 'action-mode-hover');
+            parsedBookmarksContainer.classList.add(modeClass);
+        };
+
+        const toggleFullscreenBtn = document.getElementById('toggleFullscreenBtn');
+        toggleFullscreenBtn.addEventListener('click', () => {
+            const isFullscreen = libraryWrapper.classList.toggle('fullscreen-mode');
+            if (isFullscreen) {
+                toggleFullscreenBtn.innerHTML = '🗗 退出全屏'; toggleFullscreenBtn.style.backgroundColor = 'var(--primary-color)'; toggleFullscreenBtn.style.color = 'white';
+                document.body.style.overflow = 'hidden'; 
+            } else { exitFullscreenUI(); }
+        });
+        function exitFullscreenUI() {
+            libraryWrapper.classList.remove('fullscreen-mode');
+            toggleFullscreenBtn.innerHTML = '🗔 全屏'; toggleFullscreenBtn.style.backgroundColor = 'transparent'; toggleFullscreenBtn.style.color = 'var(--primary-color)';
+            document.body.style.overflow = ''; 
+        }
+
+        document.getElementById('clearParsedBtn').addEventListener('click', () => {
+            parsedBookmarksContainer.innerHTML = ''; libraryControls.style.display = 'none'; searchWrapper.style.display = 'none';
+            bookmarkFileInput.value = ''; originalFileName = '未选择文件'; bookmarkFileNameDisplay.textContent = '未选择文件'; searchInput.value = '';
+            globalParsedBookmarks = []; currentFilteredBookmarks = []; exitFullscreenUI(); showToast('已清空书签库');
+        });
+
+        /* ================= 弹窗交互 ================= */
+        const codeViewModal = document.getElementById('codeViewModal');
+        let currentModalUrl = '#';
+
+        window.viewRawCodeById = function(id) {
+            const data = globalParsedBookmarks.find(bm => bm.id === id);
+            if(!data) return;
+            document.getElementById('modalIcon').src = data.icon;
+            document.getElementById('modalTitle').textContent = data.name; document.getElementById('modalTitle').title = data.name;
+            document.getElementById('modalUrl').textContent = data.url; document.getElementById('modalUrl').href = data.url;
+            currentModalUrl = data.url; document.getElementById('modalCodeArea').value = data.rawHtml;
+            codeViewModal.style.display = 'flex';
+        };
+        window.closeCodeModal = function() { codeViewModal.style.display = 'none'; };
+        window.copyModalField = function(type) {
+            const text = type === 'title' ? document.getElementById('modalTitle').textContent : document.getElementById('modalUrl').textContent;
+            copyTextDirectly(text, type === 'title' ? '标题复制成功！' : '链接复制成功！');
+        }
+        window.copyFromModal = function() { copyToClipboard('modalCodeArea', '完整代码已复制！'); };
+        window.openModalUrl = function() { if(currentModalUrl && currentModalUrl !== '#') window.open(currentModalUrl, '_blank'); };
+        window.copyRawCodeById = function(id) { 
+            const data = globalParsedBookmarks.find(bm => bm.id === id);
+            if(data) copyTextDirectly(data.rawHtml, '书签代码已复制！'); 
+        };
+
+        window.sendToGeneratorSlotById = function(id) {
+            const data = globalParsedBookmarks.find(bm => bm.id === id);
+            if(!data) return;
+            let targetSlotId = -1;
+            
+            for(let i = 1; i <= generatorCount; i++) {
+                if(!document.getElementById(`linkInput${i}`).value.trim()) { targetSlotId = i; break; }
+            }
+
+            if(targetSlotId === -1) {
+                targetSlotId = addNewGenerator();
+                showToast('槽位已满，已自动扩展一个新槽位！', '💡');
+            }
+
+            document.getElementById(`linkInput${targetSlotId}`).value = data.rawHtml;
+            processBookmarkGeneration(targetSlotId);
+            
+            if(libraryWrapper.classList.contains('fullscreen-mode')) { exitFullscreenUI(); }
+            setTimeout(() => { document.getElementById(`generatorCard${targetSlotId}`).scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+        };
+
+
+        /* ================= Base64 逻辑 ================= */
+        const fileInput = document.getElementById('fileInput'); const textBase64Input = document.getElementById('textBase64Input');
+        const base64Result = document.getElementById('base64Result'); const imagePreview = document.getElementById('imagePreview');
+        const downloadBase64PreviewBtn = document.getElementById('downloadBase64PreviewBtn');
+
+        function renderBase64Result(base64Str, isImage = false) {
+            base64Result.value = base64Str;
+            if (isImage && base64Str.startsWith('data:image')) { 
+                imagePreview.src = base64Str; imagePreview.style.display = 'block'; downloadBase64PreviewBtn.style.display = 'inline-flex';
+            } else { 
+                imagePreview.style.display = 'none'; downloadBase64PreviewBtn.style.display = 'none';
+            }
+        }
+
+        document.getElementById('triggerFileBtn').addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            document.getElementById('fileNameDisplay').textContent = file.name; const reader = new FileReader();
+            reader.onload = function(event) { renderBase64Result(event.target.result, file.type.startsWith('image/')); showToast(`已加载文件`); };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('pasteTextBtn').addEventListener('click', () => pasteFromClipboard('textBase64Input'));
+        document.getElementById('clearTextBtn').addEventListener('click', () => { textBase64Input.value = ''; });
+        
+        document.getElementById('btnTextToBase64').addEventListener('click', function() {
+            const str = textBase64Input.value; if (!str) return showToast('请输入文本', 'error');
+            try { renderBase64Result(window.btoa(unescape(encodeURIComponent(str))), false); showToast('已转换为 Base64');} 
+            catch (e) { showToast('转换失败', 'error'); }
+        });
+
+        document.getElementById('btnDecodeBase64').addEventListener('click', function() {
+            const str = textBase64Input.value.trim();
+            if (!str) return showToast('请先输入内容', 'error');
+            if (str.startsWith('data:image/')) { renderBase64Result(str, true); showToast('解析成功！'); return; }
+            const match = str.match(/(data:image\/[a-zA-Z0-9+.-]+;base64,[a-zA-Z0-9+/=]+)/);
+            if (match && match[1]) { renderBase64Result(match[1], true); showToast('提取成功！'); return; }
+            showToast('未检测到有效的 Base64 图片', 'error');
+        });
+
+        document.getElementById('btnUrlToBase64').addEventListener('click', async function() {
+            const url = textBase64Input.value.trim(); if (!url || !url.startsWith('http')) return showToast('请输入有效链接', 'error');
+            base64Result.value = "抓取中...";
+            try {
+                const response = await fetch(url, { mode: 'cors' }); if (!response.ok) throw new Error('网络失败');
+                const blob = await response.blob(); const reader = new FileReader();
+                reader.onloadend = () => { renderBase64Result(reader.result, true); showToast('抓取成功！'); }; reader.readAsDataURL(blob);
+            } catch (error) { base64Result.value = ""; showToast('抓取失败，可能受跨域限制', 'error'); }
+        });
+
+        document.getElementById('copyBase64Btn').addEventListener('click', () => copyToClipboard('base64Result', '代码已复制！'));
+        document.getElementById('clearBase64Btn').addEventListener('click', () => {
+            base64Result.value = ''; fileInput.value = ''; document.getElementById('fileNameDisplay').textContent = "未选择文件"; 
+            imagePreview.style.display = 'none'; downloadBase64PreviewBtn.style.display = 'none';
+        });
+        document.getElementById('downloadBase64PreviewBtn').addEventListener('click', () => downloadBase64Image(imagePreview.src, 'extracted_image'));
+
+        /* ================= 批量打包导出及粘贴解析引擎逻辑 ================= */
+        function exportToBookmarkFile(bookmarksArray) {
+            let html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>\n` +
+                       `<!-- This is an automatically generated file.\n` +
+                       `     It will be read and overwritten.\n` +
+                       `     DO NOT EDIT! -->\n` +
+                       `<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n` +
+                       `<TITLE>Bookmarks</TITLE>\n` +
+                       `<H1>Bookmarks</H1>\n` +
+                       `<DL><p>\n` +
+                       `    <DT><H3 ADD_DATE="0" LAST_MODIFIED="0">全能开发辅助工具导出的书签</H3>\n` +
+                       `    <DL><p>\n`;
+            
+            bookmarksArray.forEach(bm => {
+                const iconAttr = bm.icon ? ` ICON="${bm.icon}"` : '';
+                html += `        <DT><A HREF="${escapeHTML(bm.url)}"${iconAttr} ADD_DATE="0">${escapeHTML(bm.name)}</A>\n`;
+            });
+
+            html += `    </DL><p>\n` +
+                    `</DL><p>\n`;
+            return html;
+        }
+
+        function downloadFile(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+
+        // 解析库过滤结果导出
+        document.getElementById('exportFilteredBtn').addEventListener('click', () => {
+            if (currentFilteredBookmarks.length === 0) {
+                return showToast('没有可导出的书签结果！', 'error');
+            }
+            const htmlContent = exportToBookmarkFile(currentFilteredBookmarks);
+            downloadFile(htmlContent, 'filtered_bookmarks.html', 'text/html');
+            showToast(`成功导出 ${currentFilteredBookmarks.length} 个书签！`);
+        });
+
+        // 粘贴解析 Modal 控制
+        const pasteParseModal = document.getElementById('pasteParseModal');
+        const pasteParseArea = document.getElementById('pasteParseArea');
+        document.getElementById('triggerPasteParseBtn').addEventListener('click', () => {
+            pasteParseArea.value = '';
+            pasteParseModal.style.display = 'flex';
+        });
+        window.closePasteModal = () => pasteParseModal.style.display = 'none';
+
+        // 载入示例测试代码
+        window.loadPasteExample = () => {
+            pasteParseArea.value = 
+                `<a href="https://github.com" icon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iJSMyNDI5MmUiPjxwYXRoIGQ9Ik0xMiAuMjk3Yy02LjYzIDAtMTIgNS4zNzMtMTIgMTIgMCA1LjMgMy40MzggOS44IDguMjA1IDExLjM4NS42LjExMy44Mi0uMjU4LjgyLS41NzcgMC0uMjg1LS4wMS0xLjA0LS4wMTUtMi4wNC0zLjMzOC43MjQtNC4wNDItMS42MS00LjA0Mi0xLjYxQzQuNDIyIDE4LjA3IDMuNjMzIDE3LjcgMy42MzMgMTcuN2MtMS4wODctLjc0NC4wODQtLjcyOS4wODQtLjcyOSAxLjIwNS4wODQgMS44MzggMS4yMzcgMS44MzggMS4yMzcgMS4wNyAxLjgzNCAyLjgwNyAxLjMwNCAzLjQ5MiAxIC4xMTUtLjgyMy40NDYtMS4zNDguODExLTEuNjU3LTIuODI0LS4zMiA1Ljc5LTEuNDE3IDUuNzktNi4yOCAwLTEuMzg1LS45Ni0yLjUyLTEuMzEtMy41LjEzLS4zMi41NjctLjg4LS4xMzUtMS45MDQgMCAwLTEuMDY1LS4zNC0zLjQ5MiAxLjNBMi4wMyAxMi4wNyAwIDAgMCAxMiA2Ljg0OWMuOCAwIDEuNi4xIDIuNC4zOCAyLjQyNy0xLjY0IDMuNDkyLTEuMyAzLjQ5Mi0xLjMuNzAzIDEuMDI0LjI2NiAyLjM4NC4xMzcgMi45MDQuODI1LjktLjMgMi41Ny0xLjMgMy41LTEuMyA0Ljg3LTMgNS45Ny01LjgwNSA2LjI4MS40NS4zODcuODEgMS4xNTEuODEgMi4zMiAwIDMuMzMyLTEuOTMgNC4wOC0zLjc1NCA0LjI4Yy4zOTUuMzQuNzUyIDEuMDIuNzUyIDIuMDQgMCAxLjQ3OC0uMDEzIDIuNjctLjAxMyAzLjAzIDAgLjMyNC4yMDguNzAyLjgyMy41NzdDNDcuNTQ4IDI0LjU0IDUxIDE5LjUgNTEgMTQuMjk3YzAtNi42MjctNS4zNzMtMTItMTItMTJ6Ii8+PC9zdmc+">GitHub 官网</a>\n` +
+                `<a icon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzM0OThkYiI+PHBhdGggZD0iTTEyIDJDMi42MiAyIDIgMi42MiAyIDEydjhjMCA5LjM4LjYyIDEwIDEwIDEwaDhYzEyLjM4IDIyIDIyIDIxLjM4IDIyIDEyVjRjMC05LjM4LS42Mi0xMC0xMC0xMEgxMnoiLz48L3N2Zz4=" href="https://baidu.com">百度一下</a>`;
+            showToast('已成功载入测试示例！');
+        };
+
+        // 执行粘贴解析并渲染入库
+        window.executePasteParse = () => {
+            const rawText = pasteParseArea.value.trim();
+            if(!rawText) return showToast('请输入或载入书签 HTML 代码片段！', 'error');
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(rawText, 'text/html');
+            const aTags = doc.querySelectorAll('a');
+
+            if(aTags.length === 0) {
+                return showToast('未能解析出有效的书签！请确保输入的文本包含 <a> 标签。', 'error');
+            }
+
+            globalParsedBookmarks = [];
+            searchInput.value = '';
+
+            aTags.forEach((a, index) => {
+                const icon = a.getAttribute('icon') || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi42MiAyIDIgMi42MiAyIDEydjhjMCA5LjM4LjYyIDEwIDEwIDEwaDhYzEyLjM4IDIyIDIyIDIxLjM4IDIyIDEyVjRjMC05LjM4LS42Mi0xMC0xMC0xMEgxMnoiLz48L3N2Zz4=';
+                const name = a.textContent.trim() || '未命名书签';
+                const href = a.getAttribute('href') || '#';
+                globalParsedBookmarks.push({ id: index, name, url: href, icon, rawHtml: a.outerHTML });
+            });
+
+            currentFilteredBookmarks = globalParsedBookmarks; // 同步当前过滤数组
+            renderBookmarkList(globalParsedBookmarks, "");
+            
+            libraryControls.style.display = 'flex';
+            searchWrapper.style.display = 'flex';
+            originalFileName = '粘贴解析';
+            bookmarkFileNameDisplay.textContent = `${originalFileName} (${aTags.length}个书签)`;
+            
+            closePasteModal();
+            showToast(`成功解析 ${aTags.length} 个粘贴书签！`);
+        };
+
+        // 工作区批量打包与复制
+        function getWorkspaceBookmarks() {
+            const list = [];
+            for (let i = 1; i <= generatorCount; i++) {
+                const resultText = document.getElementById(`result${i}`).value.trim();
+                if (resultText) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(resultText, 'text/html');
+                    const aTag = doc.querySelector('a');
+                    if (aTag) {
+                        const name = aTag.textContent.trim() || `书签_${i}`;
+                        const url = aTag.getAttribute('href') || '#';
+                        const img = aTag.querySelector('img');
+                        const icon = img ? img.getAttribute('src') : '';
+                        list.push({ name, url, icon });
+                    }
+                }
+            }
+            return list;
+        }
+
+        document.getElementById('copyAllWorkspaceBtn').addEventListener('click', () => {
+            let combinedHTML = '';
+            for (let i = 1; i <= generatorCount; i++) {
+                const resultText = document.getElementById(`result${i}`).value.trim();
+                if (resultText) {
+                    combinedHTML += resultText + '\n';
+                }
+            }
+            if (!combinedHTML) return showToast('当前工作区没有已生成的书签代码！', 'error');
+            copyTextDirectly(combinedHTML.trim(), '已成功合并复制所有生成的书签代码！');
+        });
+
+        document.getElementById('exportAllWorkspaceBtn').addEventListener('click', () => {
+            const bookmarks = getWorkspaceBookmarks();
+            if (bookmarks.length === 0) {
+                return showToast('当前工作区没有已生成的书签！', 'error');
+            }
+            const htmlContent = exportToBookmarkFile(bookmarks);
+            downloadFile(htmlContent, 'workspace_bookmarks.html', 'text/html');
+            showToast(`成功打包下载 ${bookmarks.length} 个书签！`);
+        });
+
+    </script>
+</body>
+</html>
