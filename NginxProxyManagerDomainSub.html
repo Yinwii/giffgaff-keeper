@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NPM 根域名重定向教程</title>
+    
+    <!-- 使用内联 SVG 作为 Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234caf50'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='bold'>NPM</text></svg>" type="image/svg+xml">
+
+    <style>
+        :root {
+            --primary-color: #4caf50;
+            --text-color: #333;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --code-bg: #282c34;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        h3 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-left: 4px solid;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .alert-info {
+            background-color: #e2e3e5;
+            border-color: #d6d8db;
+            color: #383d41;
+        }
+
+        /* 输入框样式 */
+        .input-group {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .input-group input {
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', Courier, monospace;
+            color: #495057;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        .code-container {
+            position: relative;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            color: #abb2bf;
+            padding: 20px;
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 15px;
+            overflow-x: auto;
+            white-space: pre-wrap; /* 允许代码自动换行 */
+        }
+
+        /* 语法高亮颜色 */
+        code span.keyword { color: #c678dd; }
+        code span.string { color: #98c379; }
+        code span.variable { color: #e06c75; }
+        code span.highlight-path { color: #61afef; font-weight: bold; } /* 路径高亮颜色 */
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #4b5263;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.3s;
+        }
+
+        .copy-btn:hover {
+            background-color: #5c6370;
+        }
+
+        .copy-btn.copied {
+            background-color: var(--primary-color);
+        }
+        
+        strong {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Nginx Proxy Manager 根域名跳转配置指南</h1>
+        <p><strong>目标：</strong> 用户访问根域名时，自动跳转打开后端指定的某个文件路径。</p>
+
+        <h3>第一步：基础详情设置 (Details)</h3>
+        <p>在 <strong>Details</strong> 面板中，正常填写你的域名和后端 IP/端口。</p>
+        <div class="alert alert-warning">
+            <strong>⚠️ 严重易错点：</strong><br>
+            在 <code>Forward Hostname / IP</code> 栏目中，<strong>只能填写纯 IP 地址或纯域名</strong>（例如 <code>152.53.86.5</code>），<strong>绝对不能包含任何路径</strong>。
+        </div>
+
+        <h3>第二步：清理无用配置 (Custom Locations)</h3>
+        <p>确保 <strong>Custom Locations</strong> 面板是<strong>空的</strong>。不要在这个面板里配置路径映射，否则会导致循环重定向或 502 错误。</p>
+
+        <h3>第三步：生成并添加高级跳转代码 (Advanced)</h3>
+        
+        <!-- 交互式输入区 -->
+        <div class="input-group">
+            <label for="pathInput">✏️ 在下方输入你需要跳转到的目标路径：</label>
+            <input type="text" id="pathInput" value="/htools/bookmarktool.html" placeholder="例如: /your/custom/path.html">
+        </div>
+
+        <p>在 <strong>Advanced</strong> 面板的 <code>Custom Nginx Configuration</code> 输入框中，粘贴以下生成的代码（点击右上角按钮一键复制）：</p>
+
+        <!-- 实时生成的代码区 -->
+        <div class="code-container">
+            <button class="copy-btn" id="copyBtn" onclick="copyCode()">复制代码</button>
+            <pre><code id="nginx-code"><span class="keyword">location</span> = / {
+    <span class="keyword">return</span> <span class="string">301</span> <span class="variable">$scheme</span>://<span class="variable">$host</span><span class="highlight-path" id="dynamicPath">/htools/bookmarktool.html</span>;
+}</code></pre>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>关于 Trust Upstream Forwarded Proto Headers：</strong><br>
+            保持该选项为 <strong>关闭 (灰色)</strong> 状态即可。除非你的 NPM 前面还有一层负载均衡器（如 Cloudflare 代理），否则不需要开启此选项。
+        </div>
+
+    </div>
+
+    <script>
+        // 监听输入框变化，实时更新代码块中的路径
+        const pathInput = document.getElementById('pathInput');
+        const dynamicPath = document.getElementById('dynamicPath');
+
+        pathInput.addEventListener('input', function(e) {
+            let val = e.target.value.trim();
+            
+            // 自动容错处理：确保路径以 '/' 开头（如果用户清空了输入框，则保留为空）
+            if (val !== '' && !val.startsWith('/')) {
+                val = '/' + val;
+            }
+            
+            // 更新代码块内的文本
+            dynamicPath.textContent = val;
+        });
+
+        // 一键复制功能
+        function copyCode() {
+            // 获取代码内容 (innerText 可以很好地保留换行格式，并忽略 HTML 标签)
+            const codeElement = document.getElementById('nginx-code');
+            const textToCopy = codeElement.innerText || codeElement.textContent;
+            const btn = document.getElementById('copyBtn');
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                // 成功复制后的 UI 反馈
+                btn.innerText = '已复制！';
+                btn.classList.add('copied');
+                
+                // 2秒后恢复原样
+                setTimeout(() => {
+                    btn.innerText = '复制代码';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('无法复制文本: ', err);
+                btn.innerText = '复制失败';
+            });
+        }
+    </script>
+</body>
+</html>
