@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 源码渲染器(HTML/MD)</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2324292e%22/><path d=%22M30 40 L45 50 L30 60 M55 60 L75 60%22 stroke=%22%23ffffff%22 stroke-width=%228%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 fill=%22none%22/></svg>">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <script>
+        let currentTheme = localStorage.getItem('gh_theme_mode') || 'light';
+        if (currentTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+
+    <style>
+        :root {
+    --primary: #2ea44f; --primary-hover: #2c974b; --bg-color: #f6f8fa; --border-color: #e1e4e8;
+    --text-main: #24292e; --text-muted: #586069; --link-color: #0366d6;
+    --bg-panel: #fff; --bg-panel-secondary: #fafbfc; --bg-input: #f6f8fa; --bg-active: #f0fdf4;
+    --shadow-color: rgba(0,0,0,0.04); --card-shadow: rgba(0,0,0,0.02);
+    --toast-bg: #24292e; --toast-text: #fff; --tooltip-bg: #24292e; --tooltip-text: #fff;
+    --danger-bg: #ffeef0; --danger-border: #f1aeb5; --pin-active-bg: #fff0f2; --star-active-bg: #fff8f2;
+    --grad-edge: rgba(255,255,255,0); --grad-solid: #fff;
+    --grad-hover-edge: rgba(246,248,250,0); --grad-hover-solid: #f6f8fa;
+    --grad-active-edge: rgba(240,253,244,0); --grad-active-solid: #f0fdf4;
+    --svg-logo: #24292e; --icon-hover-bg: #e1e4e8; --icon-hover-text: #24292e;
+    --loading-bg: rgba(255,255,255,0.9); --modal-overlay: rgba(0,0,0,0.75);
+    --border-hover: #c8e1ff; --card-hover-shadow: rgba(3,102,214,0.1);
+    --badge-gh-bg: #24292e; --badge-gh-text: #fff; --badge-gh-border: #24292e;
+    --badge-web-bg: #e8f0fe; --badge-web-text: #1a73e8; --badge-web-border: #d2e3fc;
+    --highlight-bg: #fff8c5; --highlight-text: #d73a49;
+    --action-bar-bg: #fcfcfc; --action-bar-selected-bg: #ebf9eb; --action-bar-selected-border: #d1ebd5;
+}
+[data-theme='dark'] {
+    --primary: #238636; --primary-hover: #2ea043; --bg-color: #0d1117; --border-color: #30363d;
+    --text-main: #c9d1d9; --text-muted: #8b949e; --link-color: #58a6ff;
+    --bg-panel: #161b22; --bg-panel-secondary: #0d1117; --bg-input: #21262d; --bg-active: #13231a;
+    --shadow-color: rgba(0,0,0,0.4); --card-shadow: rgba(0,0,0,0.2);
+    --toast-bg: #30363d; --toast-text: #c9d1d9; --tooltip-bg: #30363d; --tooltip-text: #c9d1d9;
+    --danger-bg: #490202; --danger-border: #8e1519; --pin-active-bg: #490202; --star-active-bg: #3d1c00;
+    --grad-edge: rgba(22,27,34,0); --grad-solid: #161b22;
+    --grad-hover-edge: rgba(33,38,45,0); --grad-hover-solid: #21262d;
+    --grad-active-edge: rgba(19,35,26,0); --grad-active-solid: #13231a;
+    --svg-logo: #c9d1d9; --icon-hover-bg: #30363d; --icon-hover-text: #c9d1d9;
+    --loading-bg: rgba(13,17,23,0.9); --modal-overlay: rgba(0,0,0,0.85);
+    --border-hover: #388bfd; --card-hover-shadow: rgba(56,139,253,0.15);
+    --badge-gh-bg: #30363d; --badge-gh-text: #c9d1d9; --badge-gh-border: #30363d;
+    --badge-web-bg: #1c274c; --badge-web-text: #58a6ff; --badge-web-border: #2b3a67;
+    --highlight-bg: #4c4c0a; --highlight-text: #e2b93d;
+    --action-bar-bg: #161b22; --action-bar-selected-bg: #1a2f22; --action-bar-selected-border: #234830;
+}
+
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); display: flex; flex-direction: column; }
+
+        /* 顶部栏 */
+        .top-bar { background: var(--bg-panel); border-bottom: 1px solid var(--border-color); padding: 15px 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px var(--shadow-color); z-index: 10; position: relative; }
+        .logo-title { position: absolute; left: 20px; font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; gap: 8px; white-space: nowrap;}
+        .logo-title svg { width: 24px; height: 24px; }
+
+        .input-group { display: flex; width: 100%; max-width: 900px; align-items: stretch; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; background: var(--bg-panel); }
+        .input-group:focus-within { border-color: var(--link-color); box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3); }
+        .prefix { background-color: var(--bg-input); padding: 10px 12px; color: var(--text-muted); border-right: 1px solid var(--border-color); font-size: 1rem; display: flex; align-items: center; white-space: nowrap; user-select: none; transition: all 0.2s; }
+        .input-wrapper { flex: 1; display: flex; align-items: center; position: relative; }
+        input[type="text"] { flex: 1; border: none; padding: 10px 12px; font-size: 1rem; outline: none; font-family: inherit; color: var(--text-main); background: transparent; width: 100%; box-sizing: border-box; }
+        input[type="text"]::placeholder { color: #b1b5b9; }
+        .clear-input-btn { background: none; border: none; color: #959da5; font-size: 14px; padding: 0 12px; cursor: pointer; display: none; transition: color 0.2s; height: 100%; }
+        .clear-input-btn:hover { color: #d73a49; }
+
+        button.paste-btn { background-color: var(--bg-input); border: none; border-left: 1px solid var(--border-color); padding: 0 15px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 5px; font-size: 0.95rem; font-weight: 500; }
+        button.paste-btn:hover { background-color: var(--icon-hover-bg); color: var(--text-main); }
+        button.paste-btn svg { width: 14px; height: 14px; }
+        button.render-btn { background-color: var(--primary); color: white; border: none; padding: 0 25px; font-weight: 600; cursor: pointer; transition: background 0.2s; font-size: 1rem; }
+        button.render-btn:hover { background-color: var(--primary-hover); }
+
+        /* 主区域 */
+        .main-content { display: flex; flex: 1; overflow: hidden; position: relative; }
+        .preview-area { flex: 1; position: relative; background: var(--bg-panel); overflow-y: auto;}
+        #preview-frame { width: 100%; height: 100%; border: none; display: none; position: absolute; z-index: 2; background: var(--bg-panel);}
+        #loading { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--loading-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 右上角悬浮关闭 */
+        .close-trigger-zone { position: absolute; top: 0; right: 0; width: 120px; height: 120px; z-index: 100; display: none; }
+        .floating-close { position: absolute; top: 20px; right: 20px; background: #cb2431; color: var(--toast-text); border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 10px rgba(203, 36, 49, 0.3); opacity: 0; transform: scale(0.8); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); pointer-events: none; display: flex; align-items: center; justify-content: center;}
+        .close-trigger-zone:hover .floating-close { opacity: 1; transform: scale(1); pointer-events: auto; }
+        .floating-close:hover { background: #b31d28; transform: scale(1.1) !important; }
+
+        /* 欢迎页 */
+        #welcome-guide { padding: 30px 40px; max-width: 800px; margin: 0 auto; }
+        .welcome-header { text-align: center; margin-bottom: 30px; }
+        .welcome-header h1 { font-size: 2.2rem; margin-bottom: 10px; color: var(--text-main); display: flex; align-items: center; justify-content: center; gap: 10px;}
+        .welcome-header p { font-size: 1.1rem; color: #586069; margin: 0; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .feature-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px var(--card-shadow); transition: transform 0.2s, box-shadow 0.2s; }
+        .feature-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); border-color: var(--border-hover);}
+        .feature-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .feature-icon { font-size: 1.6rem; display: flex; align-items: center; color: var(--primary); margin: 0; line-height: 1;}
+        .feature-icon svg { width: 24px; height: 24px; }
+        .feature-card h3 { margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: bold; }
+        .feature-card p { margin: 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+        .usage-steps { background: var(--bg-panel-secondary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); }
+        .usage-steps h3 { margin-top: 0; margin-bottom: 15px; font-size: 1.1rem; }
+        .step-item { display: flex; margin-bottom: 10px; font-size: 0.95rem; color: var(--text-main); }
+        .step-num { background: var(--link-color); color: var(--toast-text); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px; flex-shrink: 0; font-size: 0.8rem; }
+
+        /* 右侧历史记录 */
+        .history-sidebar { width: 400px; background: var(--bg-panel-secondary); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 10; }
+        .history-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); }
+        .history-header-left { display: flex; align-items: center; gap: 10px; }
+        .history-header h3 { margin: 0; font-size: 1.05rem; display: flex; align-items: center; gap:6px;}
+        .badge-count { background-color: var(--badge-web-bg); color: var(--badge-web-text); padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+        .history-header-right { display: flex; align-items: center; gap: 8px; }
+        
+        /* 视图切换按钮 */
+        .icon-btn { background: none; border: 1px solid transparent; color: #586069; cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .icon-btn:hover { background: var(--icon-hover-bg); color: var(--text-main); }
+        .icon-btn svg { width: 18px; height: 18px; }
+        .clear-all-btn { background: none; border: none; color: #cb2431; cursor: pointer; font-size: 0.85rem; padding: 6px 10px; border-radius: 6px; transition: background 0.2s; font-weight: 500;}
+        .clear-all-btn:hover { background: var(--danger-bg); }
+
+        /* 搜索框 */
+        .history-search { padding: 12px 15px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); }
+        .search-input-wrapper { position: relative; display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 6px; transition: all 0.2s; background: var(--bg-panel); }
+        .search-input-wrapper:focus-within { border-color: var(--link-color); box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3); }
+        .search-icon { padding: 0 10px; color: #959da5; display: flex; align-items: center; }
+        .search-icon svg { width: 14px; height: 14px; }
+        .history-search input { flex: 1; border: none; padding: 8px 0; font-size: 0.9rem; outline: none; background: transparent; font-family: inherit; }
+
+        .history-list { flex: 1; overflow-y: auto; padding: 15px; list-style: none; margin: 0; }
+        .history-empty { text-align: center; color: #6a737d; margin-top: 30px; font-size: 0.95rem;}
+
+        /* 卡片视图 UI */
+        .history-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: all 0.2s ease; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+        .history-card:hover { border-color: var(--border-hover); box-shadow: 0 4px 12px var(--card-hover-shadow); transform: translateY(-2px); }
+        .history-card.selected-card { border-color: var(--primary); background-color: var(--bg-active); box-shadow: 0 0 0 1px var(--primary); }
+        .history-card.selected-card .hc-actions { background: var(--action-bar-selected-bg); border-top-color: var(--action-bar-selected-border);}
+        
+        .hc-content { padding: 15px 15px 12px; cursor: pointer; position: relative; }
+        .hc-title { font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+        .hc-path { font-size: 0.8rem; color: var(--text-muted); word-break: break-all; line-height: 1.4; }
+
+        /* 徽章体系 */
+        .domain-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-right: 8px; vertical-align: top; line-height: 1.4; }
+        .domain-badge.gh { background-color: var(--badge-gh-bg); color: var(--badge-gh-text); border: 1px solid var(--badge-gh-border); }
+        .domain-badge.web { background-color: var(--badge-web-bg); color: var(--badge-web-text); border: 1px solid var(--badge-web-border); }
+        .highlight-mark { background-color: var(--highlight-bg); color: var(--highlight-text); border-radius: 2px; padding: 0 2px; }
+
+        /* 🚀 修复悬浮按钮遮挡文字：卡片视图悬浮图标单列靠右显示 */
+        .hc-top-actions { 
+            position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 0px; opacity: 0; transition: opacity 0.2s ease;
+            background: var(--bg-panel); backdrop-filter: blur(4px); padding: 2px; border-radius: 6px; align-items: center;
+        }
+        .history-card:hover .hc-top-actions { opacity: 1; }
+        .history-card.is-active .hc-top-actions { opacity: 1; }
+        .action-icon { width: 26px; height: 26px; border-radius: 4px; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
+        .action-icon svg { width: 14px; height: 14px; }
+        .action-icon:hover { border-color: var(--border-color); background: var(--bg-input); color: var(--text-main); }
+        .action-icon.pin:hover { color: #d73a49; }
+        .action-icon.star:hover { color: #e36209; }
+        .action-icon.delete:hover { color: #d73a49; background: var(--danger-bg); border-color: var(--danger-border); }
+        .action-icon.pin.active { color: #d73a49; border-color: #d73a49; background: var(--pin-active-bg); }
+        .action-icon.star.active { color: #e36209; border-color: #e36209; background: var(--star-active-bg); }
+
+        /* 卡片底部功能区 */
+        .hc-actions { border-top: 1px solid var(--border-color); display: flex; background: var(--action-bar-bg); transition: background 0.2s;}
+        .hc-btn { flex: 1; background: none; border: none; padding: 10px 0; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .hc-btn:not(:last-child) { border-right: 1px solid var(--border-color); }
+        .hc-btn:hover { background: var(--bg-hover); color: var(--link-color); }
+
+        /* 🚀 列表视图重构：悬浮图标与底部操作大按钮同行显示 */
+        .history-list.list-view .history-card { border: 1px solid transparent; border-bottom: 1px solid var(--border-color); border-radius: 0; margin-bottom: 0; box-shadow: none; display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 8px 10px; position: relative; }
+        .history-list.list-view .history-card:hover { background-color: var(--bg-input); transform: none; border-bottom-color: var(--border-color); }
+        .history-list.list-view .history-card.selected-card { background-color: var(--bg-active); border-left: 3px solid var(--primary); }
+        
+        .history-list.list-view .hc-content { padding: 0; cursor: pointer; flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .history-list.list-view .hc-title { margin-bottom: 0; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; flex: 1; min-width: 0; padding-right: 10px; }
+        .history-list.list-view .hc-path { display: none; } 
+        
+        /* 恢复复制/访问/下载，无缝衔接左侧悬浮按钮，取消中间竖线并缩小间距 */
+        .history-list.list-view .hc-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; flex-direction: row; align-items: center; justify-content: flex-end; border: none; background: var(--bg-panel); padding: 0 8px 0 2px; margin: 0; gap: 4px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 2; width: 96px; box-sizing: border-box; }
+        .history-list.list-view .history-card:hover .hc-actions { opacity: 1; pointer-events: auto; background: var(--bg-input); }
+        .history-list.list-view .history-card.is-active .hc-actions { opacity: 1; pointer-events: auto; }
+        .history-list.list-view .hc-btn { padding: 0; width: 26px; height: 26px; font-size: 0; border: none !important; justify-content: center; }
+        .history-list.list-view .hc-btn svg { margin: 0; }
+        .history-list.list-view .hc-btn:hover { background: var(--icon-hover-bg); border-radius: 4px; color: var(--link-color); }
+        .history-list.list-view .history-card.selected-card .hc-actions { background: var(--bg-active); }
+        
+        .history-list.list-view .hc-top-actions { position: absolute; right: 96px; top: 0; bottom: 0; transform: none; background: linear-gradient(to right, var(--grad-edge), var(--grad-solid) 20px, var(--grad-solid)); display: flex; flex-direction: row; flex-wrap: nowrap; gap: 4px; align-items: center; backdrop-filter: none; padding: 0 2px 0 25px; max-width: none; opacity: 0; pointer-events: none; z-index: 2; }
+        .history-list.list-view .history-card:hover .hc-top-actions { opacity: 1; pointer-events: auto; background: linear-gradient(to right, var(--grad-hover-edge), var(--grad-hover-solid) 20px, var(--grad-hover-solid)); }
+        .history-list.list-view .history-card.is-active .hc-top-actions { opacity: 1; pointer-events: auto; }
+        .history-list.list-view .history-card.selected-card .hc-top-actions { background: linear-gradient(to right, var(--grad-active-edge), var(--grad-active-solid) 20px, var(--grad-active-solid)); }
+
+        /* 全局智能气泡样式 Tooltip */
+        #global-tooltip {
+            position: absolute;
+            background: var(--tooltip-bg);
+            color: var(--toast-text);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 100000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        #global-tooltip.show { opacity: 1; }
+        #global-tooltip.pop-up { transform: translateX(-50%) translateY(-4px); }
+        #global-tooltip.pop-up.show { transform: translateX(-50%) translateY(0); }
+        #global-tooltip.pop-down { transform: translateX(-50%) translateY(4px); }
+        #global-tooltip.pop-down.show { transform: translateX(-50%) translateY(0); }
+        #global-tooltip::after { content: ''; position: absolute; border: 5px solid transparent; z-index: 100000; }
+        #global-tooltip.pop-up::after { top: 100%; left: calc(50% + var(--arrow-shift, 0px)); transform: translateX(-50%); border-top-color: var(--tooltip-bg); }
+        #global-tooltip.pop-down::after { bottom: 100%; left: calc(50% + var(--arrow-shift, 0px)); transform: translateX(-50%); border-bottom-color: var(--tooltip-bg); }
+
+        /* 自定义高定弹窗 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); display: flex; justify-content: center; align-items: center; z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .custom-modal { background: var(--bg-panel); border-radius: 8px; width: 360px; max-width: 90%; padding: 24px; box-shadow: 0 12px 32px rgba(0,0,0,0.2); transform: scale(0.95); transition: transform 0.2s ease; }
+        .modal-overlay.show .custom-modal { transform: scale(1); }
+        .modal-title { margin-top: 0; margin-bottom: 12px; font-size: 1.25rem; font-weight: bold; color: var(--text-main); }
+        .modal-content { font-size: 0.95rem; color: #586069; line-height: 1.5; margin-bottom: 24px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+        .modal-btn { padding: 8px 16px; border-radius: 6px; font-size: 0.95rem; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
+        .modal-btn.cancel { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); }
+        .modal-btn.cancel:hover { background: var(--icon-hover-bg); }
+        .modal-btn.danger { background: #ef4444; color: var(--toast-text); }
+        .modal-btn.danger:hover { background: #dc2626; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3); }
+
+        /* Toast 弹窗 */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: var(--tooltip-bg); color: var(--toast-text); padding: 12px 24px; border-radius: 8px; font-size: 0.95rem; box-shadow: 0 8px 24px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-20px); transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); display: flex; align-items: center; gap: 10px; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast-error { background: #d73a49; }
+        .toast-success { background: #2ea44f; }
+        .toast-warning { background: #dbab09; color: var(--toast-text); }
+        .toast svg { width: 18px; height: 18px; flex-shrink: 0;}
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+    <div id="global-tooltip"></div>
+
+    <!-- 顶部操作区 -->
+    <div class="top-bar">
+        <div class="logo-title">
+            <svg viewBox="0 0 16 16"><path fill="var(--svg-logo)" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+            GitHub 源码渲染器
+        </div>
+        
+        <div class="input-group">
+            <div class="prefix" id="urlPrefix">https://github.com/</div>
+            <div class="input-wrapper">
+                <input type="text" id="urlInput" placeholder="在此粘贴任意 GitHub 路径或外站链接" autocomplete="off">
+                <button class="clear-input-btn" id="clearUrlBtn" onclick="clearMainInput()" data-tooltip="清空内容">✖</button>
+            </div>
+            <button class="paste-btn" onclick="pasteAndRender()" data-tooltip="读取剪贴板并立即渲染">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M5.75 1h5.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0111.25 10h-5.5A1.75 1.75 0 014 8.25v-5.5C4 1.784 4.784 1 5.75 1zm5.5 1.5H5.75a.25.25 0 00-.25.25v5.5c0 .138.112.25.25.25h5.5a.25.25 0 00.25-.25v-5.5a.25.25 0 00-.25-.25zM1.5 4.75a.75.75 0 011.5 0v6.5c0 .138.112.25.25.25h6.5a.75.75 0 110 1.5h-6.5A1.75 1.75 0 011.5 11.25v-6.5z"></path></svg>
+                粘贴
+            </button>
+            <button class="render-btn" onclick="renderPage()">一键渲染</button>
+        </div>
+
+        <div class="top-actions" style="position: absolute; right: 20px; display: flex; gap: 10px;">
+            <button id="themeToggleBtn" class="icon-btn" onclick="toggleTheme()" data-tooltip="切换亮暗主题">
+                <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- 主体内容区 -->
+    <div class="main-content">
+        <div class="preview-area">
+            
+            <!-- 欢迎引导页 -->
+            <div id="welcome-guide">
+                <div class="welcome-header">
+                    <h1>
+                        <svg width="32" height="32" viewBox="0 0 16 16"><path fill="#2ea44f" fill-rule="evenodd" d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8zm6.5-.25A.75.75 0 017.25 7h1a.75.75 0 01.75.75v2.75h.25a.75.75 0 010 1.5h-2a.75.75 0 010-1.5h.25v-2h-.25a.75.75 0 01-.75-.75zM8 6a1 1 0 100-2 1 1 0 000 2z"></path></svg>
+                        欢迎使用 全能源码渲染器
+                    </h1>
+                    <p>告别繁琐的 raw 链接，一键将代码仓库文件转化为所见即所得的精美网页。</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-card-header">
+                            <div class="feature-icon">⚡</div>
+                            <h3>智能极速渲染</h3>
+                        </div>
+                        <p>自动识别 GitHub 路径。HTML 文件直接渲染为网页；Markdown (.md) 自动套用 GitHub 官方排版样式，阅读体验拉满。</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-card-header">
+                            <div class="feature-icon">🌐</div>
+                            <h3>全网链接兼容</h3>
+                        </div>
+                        <p>不仅仅是 GitHub！粘贴任意外部网站链接，系统会自动拆分前缀，利用安全沙盒模式极速内嵌加载，支持全网预览。</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-card-header">
+                            <div class="feature-icon">📚</div>
+                            <h3>强大历史管控</h3>
+                        </div>
+                        <p>本地化存储浏览记录，支持置顶 📌、收藏 ⭐。支持卡片/列表视图切换，内置实时高亮搜索，并且支持一键下载源文件。</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-card-header">
+                            <div class="feature-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                            </div>
+                            <h3>沉浸式阅读设计</h3>
+                        </div>
+                        <p>告别刺眼的悬浮按钮！处于渲染状态时，<strong>鼠标滑动至默认的右上角区域</strong>，即可丝滑唤出退出预览按钮。若发生遮挡，<strong>右键点击该按钮即可自动切换至其他角落避让</strong>，绝不干扰阅读体验。</p>
+                    </div>
+                </div>
+
+                <div class="usage-steps">
+                    <h3>快速上手指引</h3>
+                    <div class="step-item"><div class="step-num">1</div><div>在其它页面复制你想要查看的 GitHub 文件链接或任意网址。</div></div>
+                    <div class="step-item"><div class="step-num">2</div><div>点击顶部输入框右侧的 <strong>[粘贴]</strong> 按钮（系统会自动读取剪贴板并解析路径）。</div></div>
+                    <div class="step-item"><div class="step-num">3</div><div>点击 <strong>[一键渲染]</strong>，即可在此区域沉浸式浏览网页或文档内容！</div></div>
+                </div>
+            </div>
+
+            <div id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <div id="loading-text" style="color: #586069; font-weight: 500;">正在拉取并解析数据...</div>
+            </div>
+            
+            <iframe id="preview-frame"></iframe>
+            
+            <div class="close-trigger-zone" id="closeTriggerZone">
+                <button id="closePreviewBtn" class="floating-close" onclick="closePreview()" data-tooltip="关闭渲染 (右键点击可切换角落避让)">✖</button>
+            </div>
+        </div>
+
+        <!-- 右侧历史记录面板 -->
+        <div class="history-sidebar">
+            <div class="history-header">
+                <div class="history-header-left">
+                    <h3>📑 历史记录</h3>
+                    <span id="historyCount" class="badge-count">共 0 条</span>
+                </div>
+                <div class="history-header-right">
+                    <!-- SVG 视图切换图标 -->
+                    <button id="viewToggleBtn" class="icon-btn" onclick="toggleViewMode()" data-tooltip="切换视图"></button>
+                    <button class="clear-all-btn" onclick="clearHistory()">清空所有</button>
+                </div>
+            </div>
+            
+            <div class="history-search">
+                <div class="search-input-wrapper">
+                    <div class="search-icon"><svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M11.5 7a4.499 4.499 0 11-8.998 0A4.499 4.499 0 0111.5 7zm-.82 4.74a6 6 0 111.06-1.06l3.04 3.04a.75.75 0 11-1.06 1.06l-3.04-3.04z"></path></svg></div>
+                    <input type="text" id="searchInput" placeholder="搜索标题或路径..." autocomplete="off">
+                    <button class="clear-input-btn" id="clearSearchBtn" onclick="clearSearchInput()" data-tooltip="清除搜索">✖</button>
+                </div>
+            </div>
+            <ul class="history-list" id="historyList"></ul>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('urlInput');
+        const urlPrefix = document.getElementById('urlPrefix');
+        const clearUrlBtn = document.getElementById('clearUrlBtn');
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const iframe = document.getElementById('preview-frame');
+        const welcomeGuide = document.getElementById('welcome-guide');
+        const closeTriggerZone = document.getElementById('closeTriggerZone');
+        const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loading-text');
+        const historyList = document.getElementById('historyList');
+        const historyCount = document.getElementById('historyCount');
+        const viewToggleBtn = document.getElementById('viewToggleBtn');
+        
+        window.currentRenderPath = null;
+        let currentViewMode = localStorage.getItem('gh_history_view') || 'card';
+
+        // 卡片(四宫格) / 列表(三横排) 图标
+        const ICON_CARD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`;
+        const ICON_LIST = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`;
+
+        window.onload = () => {
+            checkDataMigration();
+            applyViewMode();
+            renderHistory();
+            
+            input.addEventListener('input', (e) => {
+                let val = e.target.value;
+                if (val.startsWith('http://') || val.startsWith('https://')) updatePrefix(val);
+                toggleClearBtn('urlInput', 'clearUrlBtn');
+            });
+            input.addEventListener('keyup', (e) => { if (e.key === 'Enter') renderPage(); });
+
+            searchInput.addEventListener('input', () => {
+                toggleClearBtn('searchInput', 'clearSearchBtn');
+                renderHistory();
+            });
+            
+            iframe.onload = () => {
+                if(iframe.src && iframe.src !== window.location.href) {
+                    loading.style.display = 'none';
+                }
+            };
+        };
+
+        function applyViewMode() {
+            if (currentViewMode === 'list') {
+                historyList.classList.add('list-view');
+                viewToggleBtn.innerHTML = ICON_CARD;
+                viewToggleBtn.dataset.tooltip = "切换至卡片视图";
+            } else {
+                historyList.classList.remove('list-view');
+                viewToggleBtn.innerHTML = ICON_LIST;
+                viewToggleBtn.dataset.tooltip = "切换至列表视图";
+            }
+            viewToggleBtn.removeAttribute('title');
+        }
+
+        function toggleViewMode() {
+            currentViewMode = currentViewMode === 'list' ? 'card' : 'list';
+            localStorage.setItem('gh_history_view', currentViewMode);
+            applyViewMode();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let icon = '';
+            if(type === 'success') icon = '<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg>';
+            else if(type === 'error') icon = '<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"></path></svg>';
+            else if(type === 'warning') icon = '<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm-1.763-.707c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0114.082 15H1.918a1.75 1.75 0 01-1.543-2.575L6.457 1.047zM9 11a1 1 0 11-2 0 1 1 0 012 0zm-.25-5.25a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5z"></path></svg>';
+            
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            container.appendChild(toast);
+            
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (currentTheme === 'dark') {
+                document.getElementById('themeIcon').innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            }
+
+            const globalTooltip = document.getElementById('global-tooltip');
+            document.addEventListener('mouseover', (e) => {
+                const target = e.target.closest('[data-tooltip]');
+                if (!target) return;
+                const text = target.getAttribute('data-tooltip');
+                if (!text) return;
+                
+                globalTooltip.innerHTML = text;
+                const rect = target.getBoundingClientRect();
+                const gtRect = globalTooltip.getBoundingClientRect();
+                
+                let top = rect.top - gtRect.height - 8 + window.scrollY;
+                let popDir = 'pop-up';
+                
+                // 如果上方空间不足，则智能向下弹
+                if (rect.top - gtRect.height - 8 < 60) {
+                    top = rect.bottom + 8 + window.scrollY;
+                    popDir = 'pop-down';
+                }
+                
+                let leftPos = rect.left + rect.width / 2;
+                let shift = 0;
+                
+                // 边缘防切割处理
+                if (leftPos + gtRect.width / 2 > window.innerWidth - 10) {
+                    shift = (window.innerWidth - 10) - (leftPos + gtRect.width / 2);
+                } else if (leftPos - gtRect.width / 2 < 10) {
+                    shift = 10 - (leftPos - gtRect.width / 2);
+                }
+                
+                globalTooltip.className = popDir;
+                globalTooltip.style.left = (leftPos + window.scrollX) + 'px';
+                globalTooltip.style.marginLeft = shift + 'px';
+                globalTooltip.style.setProperty('--arrow-shift', (-shift) + 'px');
+                globalTooltip.style.top = top + 'px';
+                
+                requestAnimationFrame(() => globalTooltip.classList.add('show'));
+            });
+
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest('[data-tooltip]')) globalTooltip.classList.remove('show');
+            });
+            document.addEventListener('mousedown', () => globalTooltip.classList.remove('show'));
+            window.addEventListener('scroll', () => globalTooltip.classList.remove('show'), true);
+
+            // 智能避让：右键切换悬浮按钮角落
+            let currentCorner = 0;
+            const corners = [
+                { top: '0', right: '0', bottom: 'auto', left: 'auto', btnTop: '20px', btnRight: '20px', btnBottom: 'auto', btnLeft: 'auto' }, // TR
+                { top: '0', right: 'auto', bottom: 'auto', left: '0', btnTop: '20px', btnRight: 'auto', btnBottom: 'auto', btnLeft: '20px' }, // TL
+                { top: 'auto', right: '0', bottom: '0', left: 'auto', btnTop: 'auto', btnRight: '20px', btnBottom: '20px', btnLeft: 'auto' }, // BR
+                { top: 'auto', right: 'auto', bottom: '0', left: '0', btnTop: 'auto', btnRight: 'auto', btnBottom: '20px', btnLeft: '20px' }  // BL
+            ];
+            document.getElementById('closePreviewBtn').addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                currentCorner = (currentCorner + 1) % corners.length;
+                const pos = corners[currentCorner];
+                const zone = document.getElementById('closeTriggerZone');
+                const btn = document.getElementById('closePreviewBtn');
+                
+                zone.style.top = pos.top;
+                zone.style.right = pos.right;
+                zone.style.bottom = pos.bottom;
+                zone.style.left = pos.left;
+                
+                btn.style.top = pos.btnTop;
+                btn.style.right = pos.btnRight;
+                btn.style.bottom = pos.btnBottom;
+                btn.style.left = pos.btnLeft;
+                
+                showToast('已自动切换至其他角落避让', 'success');
+                globalTooltip.classList.remove('show'); // 隐藏气泡
+            });
+        });
+
+        function toggleClearBtn(inputId, btnId) {
+            const val = document.getElementById(inputId).value;
+            document.getElementById(btnId).style.display = val.length > 0 ? 'block' : 'none';
+        }
+
+        function clearMainInput(shouldFocus = true) {
+            input.value = '';
+            urlPrefix.innerText = 'https://github.com/';
+            toggleClearBtn('urlInput', 'clearUrlBtn');
+            if (shouldFocus) input.focus();
+        }
+
+        function clearSearchInput() {
+            searchInput.value = '';
+            toggleClearBtn('searchInput', 'clearSearchBtn');
+            renderHistory();
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            if (currentTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.getElementById('themeIcon').innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                document.getElementById('themeIcon').innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            }
+            localStorage.setItem('gh_theme_mode', currentTheme);
+        }
+
+        function getDomainName(urlStr) {
+            try {
+                let hostname = new URL(urlStr).hostname.replace(/^www\./i, '');
+                let parts = hostname.split('.');
+                const tlds = ['com', 'net', 'org', 'edu', 'gov', 'co', 'io', 'me', 'xyz', 'info'];
+                let main = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+                if (parts.length >= 3 && tlds.includes(parts[parts.length - 2])) main = parts[parts.length - 3];
+                return main.charAt(0).toUpperCase() + main.slice(1);
+            } catch(e) { return "Web"; }
+        }
+
+        function updatePrefix(rawUrl) {
+            if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+                try {
+                    let urlObj = new URL(rawUrl);
+                    if (urlObj.hostname.includes('github.com') || urlObj.hostname.includes('raw.githubusercontent.com')) {
+                        urlPrefix.innerText = 'https://github.com/';
+                        let clean = rawUrl.replace(/^(https?:\/\/)?(www\.)?github\.com\//i, "")
+                                          .replace(/^(https?:\/\/)?raw\.githubusercontent\.com\//i, "");
+                        input.value = clean;
+                    } else {
+                        urlPrefix.innerText = urlObj.origin + '/';
+                        input.value = rawUrl.replace(urlObj.origin + '/', '');
+                    }
+                } catch(e) {}
+            } else {
+                if (!urlPrefix.innerText) urlPrefix.innerText = 'https://github.com/';
+            }
+        }
+
+        // 🚀 彻底解决 GitHub 判断 Bug：任何前缀输入都能完美提取顶级域名
+        function getDomainName(urlStr) {
+            try {
+                let hostname = new URL(urlStr).hostname.replace(/^www\./i, '');
+                let parts = hostname.split('.');
+                const tlds = ['com', 'net', 'org', 'edu', 'gov', 'co', 'io', 'me', 'xyz', 'info'];
+                let main = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+                if (parts.length >= 3 && tlds.includes(parts[parts.length - 2])) main = parts[parts.length - 3];
+                return main.charAt(0).toUpperCase() + main.slice(1);
+            } catch(e) { return "Web"; }
+        }
+
+        async function pasteAndRender() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    updatePrefix(text);
+                    if (!input.value) input.value = text; 
+                    toggleClearBtn('urlInput', 'clearUrlBtn');
+                    renderPage();
+                }
+            } catch (err) {
+                showToast("读取剪贴板失败，请手动 Ctrl+V 粘贴", "error");
+            }
+        }
+
+        function closePreview() {
+            iframe.style.display = 'none';
+            iframe.removeAttribute('srcdoc');
+            iframe.removeAttribute('src');
+            closeTriggerZone.style.display = 'none';
+            loading.style.display = 'none'; 
+            welcomeGuide.style.display = 'block';
+            window.currentRenderPath = null;
+            clearMainInput(false);
+            renderHistory(); 
+        }
+
+        function renderPage(customPath = null) {
+            if (customPath) {
+                updatePrefix(customPath);
+                toggleClearBtn('urlInput', 'clearUrlBtn');
+            }
+            
+            let prefix = urlPrefix.innerText;
+            let pathValue = input.value.trim();
+
+            if (!pathValue && prefix === 'https://github.com/') {
+                showToast("请输入网页链接或 GitHub 文件路径", "warning");
+                return;
+            }
+
+            if (pathValue.startsWith('http://') || pathValue.startsWith('https://')) {
+                updatePrefix(pathValue);
+                prefix = urlPrefix.innerText;
+                pathValue = input.value.trim();
+            }
+
+            let fullUrl = prefix + pathValue;
+            
+            // 🚀 终极严谨判断是否为 GitHub
+            let urlObjForCheck;
+            try { urlObjForCheck = new URL(fullUrl.startsWith('http') ? fullUrl : 'http://' + fullUrl); } catch(e) {}
+            const isGitHub = urlObjForCheck && (urlObjForCheck.hostname === 'github.com' || urlObjForCheck.hostname === 'raw.githubusercontent.com');
+
+            welcomeGuide.style.display = 'none';
+            iframe.style.display = 'block';
+            closeTriggerZone.style.display = 'block'; 
+            loading.style.display = 'flex';
+            loadingText.innerHTML = "正在拉取并解析数据...";
+
+            window.currentRenderPath = isGitHub ? pathValue : fullUrl;
+
+            if (isGitHub) {
+                let cleanPath = pathValue.replace('/blob/', '/');
+                let rawUrl = `https://raw.githubusercontent.com/${cleanPath}`;
+                const isMarkdown = cleanPath.toLowerCase().endsWith('.md');
+
+                fetch(rawUrl)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP 状态码 ${response.status}<br>请检查路径是否正确！`);
+                        return response.text();
+                    })
+                    .then(textData => {
+                        let finalHtml = "", docTitle = "";
+                        if (isMarkdown) {
+                            const parsedMd = marked.parse(textData);
+                            finalHtml = `
+                                <!DOCTYPE html><html><head><meta charset="utf-8">
+                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css">
+                                <style>body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; padding: 45px; } @media (max-width: 767px) { body { padding: 15px; } }</style>
+                                </head><body class="markdown-body">${parsedMd}</body></html>
+                            `;
+                            const match = textData.match(/^#\s+(.+)/m);
+                            docTitle = match ? match[1].trim() : (cleanPath.split('/').pop() || "Markdown 文档");
+                        } else {
+                            finalHtml = textData;
+                            docTitle = extractTitleOrFilename(textData, cleanPath);
+                        }
+
+                        iframe.removeAttribute('src');
+                        iframe.srcdoc = finalHtml;
+                        loading.style.display = 'none';
+                        // 强制标记 isGh = true
+                        saveToHistory(pathValue, docTitle, true, prefix);
+                    })
+                    .catch(error => {
+                        loadingText.innerHTML = `<span style="color: #cb2431; font-weight:bold;">❌ 渲染失败</span><br><br><span style="font-size:0.9em; font-weight:normal;">${error.message}</span>`;
+                    });
+            } else {
+                iframe.removeAttribute('srcdoc');
+                iframe.src = fullUrl;
+                
+                let fallbackTitle = "";
+                try {
+                    // 智能解析外链甚至嵌套的URL来获取准确的文件名
+                    let urlObj = new URL(fullUrl.startsWith('http') ? fullUrl : 'http://' + fullUrl);
+                    
+                    let targetStr = fullUrl;
+                    let searchStr = urlObj.search;
+                    if (searchStr && searchStr.match(/^\?(https?:\/\/)/)) {
+                        targetStr = searchStr.substring(1);
+                    }
+                    
+                    let targetObj = new URL(targetStr);
+                    let filename = targetObj.pathname.split('/').filter(Boolean).pop();
+                    if (filename) {
+                        fallbackTitle = decodeURIComponent(filename);
+                    }
+                } catch(e) {}
+                
+                if (!fallbackTitle) fallbackTitle = getDomainName(fullUrl) + " 网页";
+                
+                // 强制标记 isGh = false
+                saveToHistory(fullUrl, fallbackTitle, false, "");
+                
+                // 🚀 后台静默尝试抓取真实的网页标题（跨域代理穿透与嵌套解包）
+                let targetUrl = fullUrl;
+                try {
+                    let urlObj = new URL(fullUrl.startsWith('http') ? fullUrl : 'http://' + fullUrl);
+                    if (urlObj.search && urlObj.search.match(/^\?(https?:\/\/)/)) {
+                        targetUrl = urlObj.search.substring(1);
+                    }
+                } catch(e) {}
+
+                let fetchUrl = targetUrl;
+                let isRawGithub = false;
+                try {
+                    let targetObj = new URL(targetUrl);
+                    if (targetObj.hostname === 'github.com') {
+                        fetchUrl = `https://raw.githubusercontent.com${targetObj.pathname.replace('/blob/', '/')}`;
+                        isRawGithub = true;
+                    } else if (!targetObj.hostname.includes('raw.githubusercontent.com')) {
+                        fetchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                    }
+                } catch(e) {}
+
+                fetch(fetchUrl)
+                    .then(res => fetchUrl.includes('allorigins.win') ? res.json() : res.text())
+                    .then(data => {
+                        let htmlContent = typeof data === 'string' ? data : (data.contents || '');
+                        if (htmlContent) {
+                            let docTitle = "";
+                            const titleMatch = htmlContent.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+                            if (titleMatch) docTitle = titleMatch[1].trim();
+                            
+                            if (!docTitle || docTitle.includes('Just a moment')) {
+                                const h1Match = htmlContent.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+                                if (h1Match) docTitle = h1Match[1].replace(/<[^>]+>/g, '').trim();
+                            }
+
+                            if (isRawGithub && !docTitle) {
+                                docTitle = extractTitleOrFilename(htmlContent, fetchUrl);
+                            }
+                            
+                            // 忽略 Cloudflare 防护盾页面和无意义标题
+                            const ignoreList = ['未命名', 'Just a moment', 'Attention Required', 'Cloudflare'];
+                            if (docTitle && !ignoreList.some(kw => docTitle.includes(kw)) && docTitle !== fallbackTitle) {
+                                saveToHistory(fullUrl, docTitle, false, "");
+                            }
+                        }
+                    }).catch(e => {});
+            }
+        }
+
+        function extractTitleOrFilename(htmlString, path) {
+            let title = "";
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseDocument(htmlString, "text/html");
+                if (doc.title && doc.title.trim() !== "") title = doc.title.trim();
+            } catch (e) {
+                const match = htmlString.match(/<title[^>]*>([^<]+)<\/title>/i);
+                if (match && match[1].trim() !== "") title = match[1].trim();
+            }
+            if (!title) title = path.split('/').pop() || "未命名文件";
+            return title;
+        }
+
+        function saveToHistory(path, title, isGh, prefix) {
+            let history = JSON.parse(localStorage.getItem('gh_html_history')) || [];
+            let existingIndex = history.findIndex(item => item.path === path);
+
+            if (existingIndex > -1) {
+                history[existingIndex].title = title;
+                history[existingIndex].isGh = isGh;
+                history[existingIndex].prefix = prefix;
+            } else {
+                history.unshift({ path, title, isPinned: false, isStar: false, isGh, prefix });
+            }
+            
+            if (history.length > 100) history.pop();
+            localStorage.setItem('gh_html_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function checkDataMigration() {
+            let history = JSON.parse(localStorage.getItem('gh_html_history')) || [];
+            if (history.length > 0 && (typeof history[0] === 'string' || history[0].isPinned === undefined)) {
+                let migrated = history.map(item => {
+                    if (typeof item === 'string') return { path: item, title: item.split('/').pop(), isPinned: false, isStar: false, isGh: true };
+                    return { ...item, isPinned: item.isPinned || false, isStar: item.isStar || false, isGh: item.isGh !== false };
+                });
+                localStorage.setItem('gh_html_history', JSON.stringify(migrated));
+            }
+        }
+
+        function toggleAction(path, actionType, event) {
+            event.stopPropagation();
+            let history = JSON.parse(localStorage.getItem('gh_html_history')) || [];
+            let itemIndex = history.findIndex(item => item.path === path);
+            
+            if (itemIndex > -1) {
+                if (actionType === 'delete') {
+                    history.splice(itemIndex, 1);
+                    showToast("记录已删除", "success");
+                    if(path === window.currentRenderPath) closePreview();
+                }
+                else if (actionType === 'pin') history[itemIndex].isPinned = !history[itemIndex].isPinned;
+                else if (actionType === 'star') history[itemIndex].isStar = !history[itemIndex].isStar;
+                
+                localStorage.setItem('gh_html_history', JSON.stringify(history));
+                renderHistory();
+            }
+        }
+
+        function highlightText(text, keyword) {
+            if (!keyword) return text;
+            const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedKeyword})`, 'gi');
+            return text.replace(regex, '<span class="highlight-mark">$1</span>');
+        }
+
+        // 🚀 动态颜色分配：基于外站域名的哈希值生成漂亮底色
+        function getColorForDomain(domain) {
+            let hash = 0;
+            for (let i = 0; i < domain.length; i++) {
+                hash = domain.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const h = Math.abs(hash) % 360;
+            return `hsl(${h}, 70%, 94%)`;
+        }
+        function getTextColorForDomain(domain) {
+            let hash = 0;
+            for (let i = 0; i < domain.length; i++) {
+                hash = domain.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const h = Math.abs(hash) % 360;
+            return `hsl(${h}, 70%, 35%)`;
+        }
+
+        function renderHistory() {
+            let history = JSON.parse(localStorage.getItem('gh_html_history')) || [];
+            let keyword = searchInput.value.toLowerCase().trim();
+            historyList.innerHTML = '';
+
+            let filteredHistory = history;
+
+            if (keyword) {
+                filteredHistory = history.filter(item => 
+                    item.title.toLowerCase().includes(keyword) || 
+                    item.path.toLowerCase().includes(keyword)
+                );
+                historyCount.innerText = `共 ${filteredHistory.length} / ${history.length} 条`;
+            } else {
+                historyCount.innerText = `共 ${history.length} 条`;
+            }
+
+            let pinned = filteredHistory.filter(i => i.isPinned);
+            let starred = filteredHistory.filter(i => i.isStar && !i.isPinned);
+            let normal = filteredHistory.filter(i => !i.isStar && !i.isPinned);
+            let sortedHistory = [...pinned, ...starred, ...normal];
+
+            if (sortedHistory.length === 0) {
+                historyList.innerHTML = keyword ? '<div class="history-empty">未找到匹配项</div>' : '<div class="history-empty">暂无浏览记录</div>';
+                return;
+            }
+
+            sortedHistory.forEach(item => {
+                let li = document.createElement('li');
+                let isCurrentReading = (item.path === window.currentRenderPath);
+                li.className = `history-card ${(item.isPinned || item.isStar) ? 'is-active' : ''} ${isCurrentReading ? 'selected-card' : ''}`;
+                
+                // 🚀 强制修正错乱的 Github 标识逻辑
+                const isRealGh = item.isGh || item.path.includes("github.com");
+                
+                const domainName = isRealGh ? 'GitHub' : getDomainName(item.path);
+                const badgeClass = isRealGh ? 'gh' : 'web';
+                const fullUrl = isRealGh ? `https://github.com/${item.path}` : item.path;
+
+                // 外站使用哈希动态分配颜色
+                let dynamicStyle = '';
+                if(!isRealGh) {
+                    const bgColor = getColorForDomain(domainName);
+                    const textColor = getTextColorForDomain(domainName);
+                    dynamicStyle = `style="background-color:${bgColor}; color:${textColor}; border-color:transparent;"`;
+                }
+
+                const displayTitle = highlightText(item.title.replace(/^外站:\s*/, ''), keyword);
+                const displayPath = highlightText(item.path, keyword);
+
+                li.innerHTML = `
+                    <div class="hc-content" onclick="loadFromHistory('${item.path}', ${isRealGh})">
+                        <div class="hc-title">
+                            <span class="domain-badge ${badgeClass}" ${dynamicStyle}>${domainName}</span>${displayTitle}
+                        </div>
+                        <div class="hc-path">${displayPath}</div>
+                        
+                        <div class="hc-top-actions">
+                            <div class="action-icon pin ${item.isPinned ? 'active' : ''}" data-tooltip="置顶" onclick="toggleAction('${item.path}', 'pin', event)">
+                                <svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M11.5 5.5V1h-7v4.5L3 9v2h4.5v3.5L8 16l.5-1.5V11H13V9l-1.5-3.5z"></path></svg>
+                            </div>
+                            <div class="action-icon star ${item.isStar ? 'active' : ''}" data-tooltip="收藏" onclick="toggleAction('${item.path}', 'star', event)">
+                                <svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.14.602a.75.75 0 01.416 1.279l-3 2.927.708 4.125a.75.75 0 01-1.088.791L8 12.347l-3.731 1.962a.75.75 0 01-1.088-.79l.708-4.126-3-2.927a.75.75 0 01.416-1.28l4.14-.602L7.327.668A.75.75 0 018 .25z"></path></svg>
+                            </div>
+                            <div class="action-icon delete" data-tooltip="删除记录" onclick="toggleAction('${item.path}', 'delete', event)">
+                                <svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M6.5 1.75a.25.25 0 01.25-.25h2.5a.25.25 0 01.25.25V3h-3V1.75zm4.5 0V3h2.25a.75.75 0 010 1.5H2.75a.75.75 0 010-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75zM4.496 6.675a.75.75 0 10-1.492.15l.66 6.6A1.75 1.75 0 005.405 15h5.19c.9 0 1.652-.681 1.741-1.576l.66-6.6a.75.75 0 00-1.492-.149l-.66 6.6a.25.25 0 01-.249.225h-5.19a.25.25 0 01-.249-.225l-.66-6.6z"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="hc-actions">
+                        <button class="hc-btn" onclick="copyLink(this, '${fullUrl}', event)" data-tooltip="复制链接">
+                            <svg width="14" height="14" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M5.75 1h5.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0111.25 10h-5.5A1.75 1.75 0 014 8.25v-5.5C4 1.784 4.784 1 5.75 1zm5.5 1.5H5.75a.25.25 0 00-.25.25v5.5c0 .138.112.25.25.25h5.5a.25.25 0 00.25-.25v-5.5a.25.25 0 00-.25-.25zM1.5 4.75a.75.75 0 011.5 0v6.5c0 .138.112.25.25.25h6.5a.75.75 0 110 1.5h-6.5A1.75 1.75 0 011.5 11.25v-6.5z"></path></svg>
+                            复制
+                        </button>
+                        <button class="hc-btn" onclick="window.open('${fullUrl}', '_blank'); event.stopPropagation();" data-tooltip="访问源">
+                            <svg width="14" height="14" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M10.604 1h4.146a.25.25 0 01.25.25v4.146a.25.25 0 01-.427.177L13.03 4.03 9.28 7.78a.75.75 0 01-1.06-1.06l3.75-3.75-1.543-1.543A.25.25 0 0110.604 1zM3.75 2A1.75 1.75 0 002 3.75v8.5c0 .966.784 1.75 1.75 1.75h8.5A1.75 1.75 0 0014 12.25v-3.5a.75.75 0 00-1.5 0v3.5a.25.25 0 01-.25.25h-8.5a.25.25 0 01-.25-.25v-8.5a.25.25 0 01.25-.25h3.5a.75.75 0 000-1.5h-3.5z"></path></svg>
+                            访问
+                        </button>
+                        <button class="hc-btn" onclick="downloadFile(this, '${item.path}', ${isRealGh}, event)" data-tooltip="直接下载">
+                            <svg width="14" height="14" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM3.75 13a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5z"></path></svg>
+                            下载
+                        </button>
+                    </div>
+                `;
+                historyList.appendChild(li);
+            });
+        }
+
+        function loadFromHistory(path, isGh) {
+            if (isGh) {
+                urlPrefix.innerText = 'https://github.com/';
+                input.value = path;
+            } else {
+                updatePrefix(path);
+            }
+            toggleClearBtn('urlInput', 'clearUrlBtn');
+            renderPage();
+        }
+
+        function copyLink(btn, url, event) {
+            if(event) event.stopPropagation();
+            navigator.clipboard.writeText(url).then(() => {
+                showToast("链接已复制", "success");
+            });
+        }
+
+        async function downloadFile(btn, path, isGh, event) {
+            if(event) event.stopPropagation();
+            showToast("正在请求下载...", "info");
+            
+            try {
+                if (isGh) {
+                    const rawUrl = `https://raw.githubusercontent.com/${path.replace('/blob/', '/')}`;
+                    const filename = path.split('/').pop() || 'download_file';
+                    const response = await fetch(rawUrl);
+                    if (!response.ok) throw new Error();
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = filename;
+                    document.body.appendChild(a); a.click();
+                    window.URL.revokeObjectURL(url); a.remove();
+                    showToast("下载任务已触发", "success");
+                } else {
+                    window.open(path, '_blank'); 
+                }
+            } catch (e) {
+                showToast("下载失败！可能是网络原因或文件不存在。", "error");
+            }
+        }
+    </script>
+
+    <!-- 自定义确认弹窗 -->
+    <div id="custom-modal-overlay" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+        <div class="custom-modal">
+            <h3 class="modal-title">清空历史记录</h3>
+            <p class="modal-content">确定要清空所有本地浏览记录吗？<br><span style="color:#ef4444; font-weight:bold;">(注意：置顶和收藏的记录也会被一并清空！)</span></p>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeModal()">取消</button>
+                <button class="modal-btn danger" onclick="confirmClearHistory()">确定清空</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function clearHistory() {
+            document.getElementById('custom-modal-overlay').classList.add('show');
+        }
+        function closeModal() {
+            document.getElementById('custom-modal-overlay').classList.remove('show');
+        }
+        function confirmClearHistory() {
+            localStorage.removeItem('gh_html_history');
+            clearSearchInput();
+            renderHistory();
+            showToast("历史记录已全部清空", "success");
+            closeModal();
+        }
+    </script>
+</body>
+</html>
