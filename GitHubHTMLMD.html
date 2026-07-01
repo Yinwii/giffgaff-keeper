@@ -723,9 +723,9 @@
                 const isMarkdown = ext === 'md' || ext === 'mdx';
                 const isHtml = ext === 'html' || ext === 'htm';
                 
-                const codeExts = ['js','py','java','c','cpp','h','hpp','cs','go','rs','php','rb','swift','kt','ts','jsx','tsx','vue','css','scss','less','json','yaml','yml','xml','toml','ini','sh','bat','ps1','sql','txt','csv','log','conf','env'];
-                const noExtFiles = ['makefile', 'dockerfile', 'jenkinsfile', 'license'];
-                const isCode = !isHtml && !isMarkdown && (codeExts.includes(ext) || noExtFiles.includes(filename) || ext === '');
+                // 排除常见的图片、多媒体、压缩包等二进制格式。其余所有未知后缀默认当作纯文本/代码处理，以保留换行符。
+                const mediaExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'pdf', 'zip', 'tar', 'gz', 'rar', '7z', 'mp4', 'mp3', 'webm', 'ogg', 'woff', 'woff2', 'ttf', 'eot', 'wasm'];
+                const isCode = !isHtml && !isMarkdown && !mediaExts.includes(ext);
 
                 fetch(rawUrl)
                     .then(response => {
