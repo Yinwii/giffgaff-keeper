@@ -176,18 +176,34 @@
         
         <!-- 交互式输入区 -->
         <div class="input-group">
-            <label for="pathInput">✏️ 在下方输入你需要跳转到的目标路径：</label>
+            <label for="pathInput">✏️ 在下方统一输入你需要跳转到的目标路径：</label>
             <input type="text" id="pathInput" value="/htools/bookmarktool.html" placeholder="例如: /your/custom/path.html">
         </div>
 
-        <p>在 <strong>Advanced</strong> 面板的 <code>Custom Nginx Configuration</code> 输入框中，粘贴以下生成的代码（点击右上角按钮一键复制）：</p>
+        <p>在 <strong>Advanced</strong> 面板的 <code>Custom Nginx Configuration</code> 输入框中，根据你的业务需求选择以下<strong>任意一种</strong>方案并粘贴代码：</p>
 
-        <!-- 实时生成的代码区 -->
-        <div class="code-container">
-            <button class="copy-btn" id="copyBtn" onclick="copyCode()">复制代码</button>
-            <pre><code id="nginx-code"><span class="keyword">location</span> = / {
-    <span class="keyword">return</span> <span class="string">301</span> <span class="variable">$scheme</span>://<span class="variable">$host</span><span class="highlight-path" id="dynamicPath">/htools/bookmarktool.html</span>;
+        <!-- 方案A -->
+        <div style="margin-top: 30px;">
+            <h4 style="color: #2c3e50; border-left: 4px solid var(--primary-color); padding-left: 10px; margin-bottom: 10px; margin-top: 0;">方案A：纯净跳转 (丢弃查询参数)</h4>
+            <p style="color: #555; font-size: 14px; margin-top: 0; margin-bottom: 15px;"><strong>适用场景：</strong> 静态展示页面。无论用户访问时是否带有 <code>?xxx=1</code> 等参数，均统一跳转至纯净的目标路径。</p>
+            <div class="code-container" style="margin-top: 0;">
+                <button class="copy-btn" id="copyBtnA" onclick="copyCode('nginx-code-a', 'copyBtnA')">复制代码</button>
+                <pre><code id="nginx-code-a"><span class="keyword">location</span> = / {
+    <span class="keyword">return</span> <span class="string">301</span> <span class="variable">$scheme</span>://<span class="variable">$host</span><span class="highlight-path dynamicPath">/htools/bookmarktool.html</span>;
 }</code></pre>
+            </div>
+        </div>
+
+        <!-- 方案B -->
+        <div style="margin-top: 30px;">
+            <h4 style="color: #2c3e50; border-left: 4px solid #e06c75; padding-left: 10px; margin-bottom: 10px; margin-top: 0;">方案B：透传跳转 (保留查询参数)</h4>
+            <p style="color: #555; font-size: 14px; margin-top: 0; margin-bottom: 15px;"><strong>适用场景：</strong> 动态业务页面。当访客在浏览器中访问你的域名时如果自带了参数（例如访客实际访问的是 <code>你的域名.com/?token=123</code>），Nginx 会自动把这部分参数透传拼接到目标路径后面。<br><strong style="color: #d35400;">（💡 提示：这些参数是访客访问时动态产生的，你无需在上方输入框中去死板地配置它。）</strong></p>
+            <div class="code-container" style="margin-top: 0;">
+                <button class="copy-btn" id="copyBtnB" onclick="copyCode('nginx-code-b', 'copyBtnB')">复制代码</button>
+                <pre><code id="nginx-code-b"><span class="keyword">location</span> = / {
+    <span class="keyword">return</span> <span class="string">301</span> <span class="variable">$scheme</span>://<span class="variable">$host</span><span class="highlight-path dynamicPath">/htools/bookmarktool.html</span><span class="variable">$is_args$args</span>;
+}</code></pre>
+            </div>
         </div>
 
         <div class="alert alert-info">
@@ -200,7 +216,7 @@
     <script>
         // 监听输入框变化，实时更新代码块中的路径
         const pathInput = document.getElementById('pathInput');
-        const dynamicPath = document.getElementById('dynamicPath');
+        const dynamicPaths = document.querySelectorAll('.dynamicPath');
 
         pathInput.addEventListener('input', function(e) {
             let val = e.target.value.trim();
@@ -210,16 +226,16 @@
                 val = '/' + val;
             }
             
-            // 更新代码块内的文本
-            dynamicPath.textContent = val;
+            // 更新所有代码块内的文本
+            dynamicPaths.forEach(el => el.textContent = val);
         });
 
-        // 一键复制功能
-        function copyCode() {
+        // 通用一键复制功能
+        function copyCode(codeId, btnId) {
             // 获取代码内容 (innerText 可以很好地保留换行格式，并忽略 HTML 标签)
-            const codeElement = document.getElementById('nginx-code');
+            const codeElement = document.getElementById(codeId);
             const textToCopy = codeElement.innerText || codeElement.textContent;
-            const btn = document.getElementById('copyBtn');
+            const btn = document.getElementById(btnId);
 
             navigator.clipboard.writeText(textToCopy).then(() => {
                 // 成功复制后的 UI 反馈
