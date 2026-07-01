@@ -241,6 +241,35 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+        /* 移动端自适应适配 (Mobile Responsive Layout) */
+        @media (max-width: 768px) {
+            /* 改变主区域布局：侧边栏移到下半屏幕 */
+            .main-content { flex-direction: column; }
+            .history-sidebar { width: 100%; height: 45vh; max-height: 350px; border-left: none; border-top: 1px solid var(--border-color); }
+            
+            /* 顶部搜索栏调整：解除绝对定位，垂直排列，缩小组件 */
+            .top-bar { flex-direction: column; padding: 12px 15px; gap: 12px; align-items: flex-start; }
+            .logo-title { position: static; font-size: 1.1rem; }
+            .top-actions { top: 12px; right: 15px; }
+            
+            .input-group { max-width: 100%; }
+            .prefix { display: none; } /* 隐藏 URL 前缀节省空间 */
+            .paste-btn { font-size: 0; padding: 0 12px; } /* 隐藏粘贴文字，只保留图标 */
+            .paste-btn svg { width: 16px; height: 16px; }
+            .render-btn { padding: 0 15px; font-size: 0.95rem; }
+            
+            /* 欢迎页自适应 */
+            #welcome-guide { padding: 20px; }
+            .welcome-header h1 { font-size: 1.5rem; }
+            .welcome-header p { font-size: 0.95rem; }
+            .feature-grid { grid-template-columns: 1fr; gap: 12px; }
+            .feature-card { padding: 15px; }
+            
+            /* 确保关闭按钮在手机上更大、更好点 */
+            .floating-close { width: 44px; height: 44px; font-size: 1.4rem; top: 10px; right: 10px; }
+            .close-trigger-zone { width: 80px; height: 80px; }
+        }
     </style>
 </head>
 <body>
@@ -460,7 +489,9 @@
             }
 
             const globalTooltip = document.getElementById('global-tooltip');
+            let tooltipRaf;
             document.addEventListener('mouseover', (e) => {
+                if (window.matchMedia && window.matchMedia('(hover: none)').matches) return; // 移动端触摸设备禁用鼠标悬浮气泡
                 const target = e.target.closest('[data-tooltip]');
                 if (!target) return;
                 const text = target.getAttribute('data-tooltip');
@@ -495,14 +526,28 @@
                 globalTooltip.style.setProperty('--arrow-shift', (-shift) + 'px');
                 globalTooltip.style.top = top + 'px';
                 
-                requestAnimationFrame(() => globalTooltip.classList.add('show'));
+                cancelAnimationFrame(tooltipRaf);
+                tooltipRaf = requestAnimationFrame(() => globalTooltip.classList.add('show'));
             });
 
             document.addEventListener('mouseout', (e) => {
-                if (e.target.closest('[data-tooltip]')) globalTooltip.classList.remove('show');
+                if (e.target.closest('[data-tooltip]')) {
+                    cancelAnimationFrame(tooltipRaf);
+                    globalTooltip.classList.remove('show');
+                }
             });
-            document.addEventListener('mousedown', () => globalTooltip.classList.remove('show'));
-            window.addEventListener('scroll', () => globalTooltip.classList.remove('show'), true);
+            document.addEventListener('mousedown', () => {
+                cancelAnimationFrame(tooltipRaf);
+                globalTooltip.classList.remove('show');
+            });
+            document.addEventListener('touchstart', () => {
+                cancelAnimationFrame(tooltipRaf);
+                globalTooltip.classList.remove('show');
+            }, {passive: true});
+            window.addEventListener('scroll', () => {
+                cancelAnimationFrame(tooltipRaf);
+                globalTooltip.classList.remove('show');
+            }, true);
 
             // 智能避让：右键切换悬浮按钮角落
             let currentCorner = 0;
@@ -670,7 +715,17 @@
             if (isGitHub) {
                 let cleanPath = pathValue.replace('/blob/', '/');
                 let rawUrl = `https://raw.githubusercontent.com/${cleanPath}`;
-                const isMarkdown = cleanPath.toLowerCase().endsWith('.md');
+                
+                const extMatch = cleanPath.match(/\.([^.]+)$/);
+                const ext = extMatch ? extMatch[1].toLowerCase() : '';
+                const filename = cleanPath.split('/').pop().toLowerCase();
+                
+                const isMarkdown = ext === 'md' || ext === 'mdx';
+                const isHtml = ext === 'html' || ext === 'htm';
+                
+                const codeExts = ['js','py','java','c','cpp','h','hpp','cs','go','rs','php','rb','swift','kt','ts','jsx','tsx','vue','css','scss','less','json','yaml','yml','xml','toml','ini','sh','bat','ps1','sql','txt','csv','log','conf','env'];
+                const noExtFiles = ['makefile', 'dockerfile', 'jenkinsfile', 'license'];
+                const isCode = !isHtml && !isMarkdown && (codeExts.includes(ext) || noExtFiles.includes(filename) || ext === '');
 
                 fetch(rawUrl)
                     .then(response => {
@@ -679,16 +734,29 @@
                     })
                     .then(textData => {
                         let finalHtml = "", docTitle = "";
-                        if (isMarkdown) {
-                            const parsedMd = marked.parse(textData);
+                        if (isMarkdown || isCode) {
+                            let mdContent = isCode ? `\`\`\`${ext}\n${textData}\n\`\`\`` : textData;
+                            const parsedMd = marked.parse(mdContent);
+                            const mdTheme = currentTheme === 'dark' ? 'github-markdown-dark.min.css' : 'github-markdown-light.min.css';
+                            const hljsTheme = currentTheme === 'dark' ? 'github-dark.min.css' : 'github.min.css';
+                            const bodyBg = currentTheme === 'dark' ? '#0d1117' : '#fff';
+                            
                             finalHtml = `
                                 <!DOCTYPE html><html><head><meta charset="utf-8">
-                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css">
-                                <style>body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; padding: 45px; } @media (max-width: 767px) { body { padding: 15px; } }</style>
-                                </head><body class="markdown-body">${parsedMd}</body></html>
+                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/${mdTheme}">
+                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${hljsTheme}">
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
+                                <style>body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; padding: 45px; background: ${bodyBg}; } @media (max-width: 767px) { body { padding: 15px; } }</style>
+                                </head><body class="markdown-body">${parsedMd}
+                                <script>hljs.highlightAll();<\/script>
+                                </body></html>
                             `;
-                            const match = textData.match(/^#\s+(.+)/m);
-                            docTitle = match ? match[1].trim() : (cleanPath.split('/').pop() || "Markdown 文档");
+                            if (isCode) {
+                                docTitle = filename || "代码片段";
+                            } else {
+                                const match = textData.match(/^#\s+(.+)/m);
+                                docTitle = match ? match[1].trim() : (filename || "Markdown 文档");
+                            }
                         } else {
                             finalHtml = textData;
                             docTitle = extractTitleOrFilename(textData, cleanPath);
