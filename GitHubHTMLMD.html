@@ -425,6 +425,15 @@
             applyViewMode();
             renderHistory();
             
+            // 🚀 路由直达支持：如果链接带了 ?https://... 则自动渲染
+            let query = window.location.search;
+            if (query && query.length > 1) {
+                let targetUrl = query.substring(1);
+                if (targetUrl.startsWith('url=')) targetUrl = targetUrl.substring(4);
+                input.value = decodeURIComponent(targetUrl);
+                setTimeout(() => renderPage(), 50);
+            }
+            
             input.addEventListener('input', (e) => {
                 let val = e.target.value;
                 if (val.startsWith('http://') || val.startsWith('https://')) updatePrefix(val);
