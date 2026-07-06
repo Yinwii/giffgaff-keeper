@@ -9,6 +9,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
     <script>
         let currentTheme = localStorage.getItem('gh_theme_mode') || 'light';
+        // 🚀 优先继承 URL 传过来的独立阅读主题，确保新标签页与主页亮暗色完全同步
+        let urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('theme')) {
+            currentTheme = urlParams.get('theme');
+        }
         if (currentTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     </script>
 
@@ -18,7 +23,7 @@
     --text-main: #24292e; --text-muted: #586069; --link-color: #0366d6;
     --bg-panel: #fff; --bg-panel-secondary: #fafbfc; --bg-input: #f6f8fa; --bg-active: #f0fdf4;
     --shadow-color: rgba(0,0,0,0.04); --card-shadow: rgba(0,0,0,0.02);
-    --toast-bg: #24292e; --toast-text: #fff; --tooltip-bg: #24292e; --tooltip-text: #fff;
+    --toast-bg: #24292e; --toast-text: #fff; --tooltip-bg: #24292e; --tooltip-text: #fff;a
     --danger-bg: #ffeef0; --danger-border: #f1aeb5; --pin-active-bg: #fff0f2; --star-active-bg: #fff8f2;
     --grad-edge: rgba(255,255,255,0); --grad-solid: #fff;
     --grad-hover-edge: rgba(246,248,250,0); --grad-hover-solid: #f6f8fa;
@@ -80,11 +85,98 @@
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 右上角悬浮关闭 */
-        .close-trigger-zone { position: absolute; top: 0; right: 0; width: 120px; height: 120px; z-index: 100; display: none; }
-        .floating-close { position: absolute; top: 20px; right: 20px; background: #cb2431; color: var(--toast-text); border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 10px rgba(203, 36, 49, 0.3); opacity: 0; transform: scale(0.8); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); pointer-events: none; display: flex; align-items: center; justify-content: center;}
-        .close-trigger-zone:hover .floating-close { opacity: 1; transform: scale(1); pointer-events: auto; }
-        .floating-close:hover { background: #b31d28; transform: scale(1.1) !important; }
+        /* 🚀 复合悬浮控制区 */
+        .close-trigger-zone { position: absolute; top: 0; right: 0; width: 180px; height: 180px; z-index: 100; display: none; }
+        .floating-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            pointer-events: none;
+            z-index: 101;
+        }
+        .close-trigger-zone:hover .floating-controls { opacity: 1; transform: scale(1); pointer-events: auto; }
+        
+        .floating-btn {
+            color: var(--toast-text);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            outline: none;
+        }
+        .floating-btn:focus-visible { box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.4); }
+        .floating-btn.close { background: #cb2431; }
+        .floating-btn.close:hover { background: #b31d28; transform: scale(1.1); }
+        .floating-btn.open-tab { background: #2ea44f; }
+        .floating-btn.open-tab:hover { background: #2c974b; transform: scale(1.1); }
+
+        /* 🚀 独立阅读模式控制条 */
+        .standalone-toolbar {
+            display: none;
+            height: 48px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: 0 1px 3px var(--shadow-color);
+            transition: all 0.2s;
+        }
+        body.standalone-mode .standalone-toolbar { display: flex; }
+        body.standalone-mode .top-bar,
+        body.standalone-mode .history-sidebar { display: none !important; }
+        body.standalone-mode .main-content { height: calc(100% - 48px); }
+        .standalone-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 164, 79, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(46, 164, 79, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 164, 79, 0); }
+        }
+        .standalone-actions { display: flex; gap: 10px; }
+        .standalone-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .standalone-btn:hover { background: var(--icon-hover-bg); color: var(--text-main); }
+        .standalone-btn.close:hover { background: var(--danger-bg); color: #d73a49; border-color: var(--danger-border); }
+
 
         /* 欢迎页 */
         #welcome-guide { padding: 30px 40px; max-width: 800px; margin: 0 auto; }
@@ -248,8 +340,12 @@
         @media (max-width: 768px) {
             /* 改变主区域布局：侧边栏移到下半屏幕 */
             .main-content { flex-direction: column; }
-            .history-sidebar { width: 100%; height: 45vh; max-height: 350px; border-left: none; border-top: 1px solid var(--border-color); }
+            .history-sidebar { width: 100%; height: 45vh; max-height: 350px; border-left: none; border-top: 1px solid var(--border-color); transition: all 0.3s; }
             
+            /* 🚀 正在阅读/渲染文档时，隐藏手机端历史记录，给文档留下 100% 的全部高宽 */
+            body.is-previewing .history-sidebar { display: none !important; }
+            body.is-previewing .main-content { height: 100%; }
+
             /* 顶部搜索栏调整：解除绝对定位，垂直排列，缩小组件 */
             .top-bar { flex-direction: column; padding: 12px 15px; gap: 12px; align-items: flex-start; }
             .logo-title { position: static; font-size: 1.1rem; }
@@ -268,13 +364,36 @@
             .feature-grid { grid-template-columns: 1fr; gap: 12px; }
             .feature-card { padding: 15px; }
             
-            /* 确保关闭按钮在手机上更大、更好点 */
-            .floating-close { width: 44px; height: 44px; font-size: 1.4rem; top: 10px; right: 10px; }
-            .close-trigger-zone { width: 80px; height: 80px; }
+            /* 🚀 复合悬浮控制区在手机上不需要 Hover 触发，默认完全可见并调小尺寸 */
+            .close-trigger-zone { width: 120px; height: 120px; }
+            .floating-controls {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                transform: scale(0.9) !important;
+                top: 10px !important;
+                right: 10px !important;
+            }
+            .floating-btn { width: 36px; height: 36px; font-size: 1rem; }
+
+            /* 独立阅读模式的控制条在手机上收缩高度 */
+            .standalone-toolbar { height: 44px; padding: 0 12px; }
+            .standalone-title { font-size: 0.85rem; }
+            .standalone-btn { padding: 4px 8px; font-size: 0.75rem; }
+            body.standalone-mode .main-content { height: calc(100% - 44px); }
         }
     </style>
 </head>
 <body>
+    <!-- 🚀 独立阅读模式控制条 -->
+    <div id="standalone-bar" class="standalone-toolbar">
+        <div class="standalone-title" id="standaloneTitle">
+            <span class="pulse-dot"></span> 独立阅读模式
+        </div>
+        <div class="standalone-actions">
+            <button class="standalone-btn" onclick="goBackToMain()"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M9.78 12.78a.75.75 0 01-1.06 0L4.47 8.53a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 1.06L6.06 8l3.72 3.72a.75.75 0 010 1.06z"></path></svg>返回主站</button>
+            <button class="standalone-btn close" onclick="closeStandaloneWindow()"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"></path></svg>关闭页面</button>
+        </div>
+    </div>
 
     <div id="toast-container"></div>
     <div id="global-tooltip"></div>
@@ -371,7 +490,10 @@
             <iframe id="preview-frame"></iframe>
             
             <div class="close-trigger-zone" id="closeTriggerZone">
-                <button id="closePreviewBtn" class="floating-close" onclick="closePreview()" data-tooltip="关闭渲染 (右键点击可切换角落避让)">✖</button>
+                <div class="floating-controls" id="floatingControls">
+                    <button id="openNewTabBtn" class="floating-btn open-tab" onclick="openCurrentInNewTab()" data-tooltip="在新窗口全屏阅读此文档">↗</button>
+                    <button id="closePreviewBtn" class="floating-btn close" onclick="closePreview()" data-tooltip="关闭渲染 (右键点击可切换整个控制组避让)">✖</button>
+                </div>
             </div>
         </div>
 
@@ -484,13 +606,35 @@
             applyViewMode();
             renderHistory();
             
-            // 🚀 路由直达支持：如果链接带了 ?https://... 则自动渲染
-            let query = window.location.search;
-            if (query && query.length > 1) {
-                let targetUrl = query.substring(1);
-                if (targetUrl.startsWith('url=')) targetUrl = targetUrl.substring(4);
-                input.value = decodeURIComponent(targetUrl);
-                setTimeout(() => renderPage(), 50);
+            // 🚀 路由直达与独立阅读模式判断
+            let params = new URLSearchParams(window.location.search);
+            let isStandalone = params.has('standalone') || window.location.search.includes('standalone=true');
+            
+            if (isStandalone) {
+                document.body.classList.add('standalone-mode');
+                // 从 URL 中提取 url 参数值或者解析整个 query 串
+                let targetUrl = '';
+                if (params.has('url')) {
+                    targetUrl = params.get('url');
+                } else {
+                    // 兼容旧的 ?standalone=true&https://... 或者是 ?https://...&standalone=true
+                    let cleanQuery = window.location.search.replace('?standalone=true&', '').replace('&standalone=true', '');
+                    if (cleanQuery.startsWith('?')) cleanQuery = cleanQuery.substring(1);
+                    targetUrl = decodeURIComponent(cleanQuery);
+                }
+                
+                if (targetUrl) {
+                    input.value = targetUrl;
+                    setTimeout(() => renderPage(), 50);
+                }
+            } else {
+                let query = window.location.search;
+                if (query && query.length > 1) {
+                    let targetUrl = query.substring(1);
+                    if (targetUrl.startsWith('url=')) targetUrl = targetUrl.substring(4);
+                    input.value = decodeURIComponent(targetUrl);
+                    setTimeout(() => renderPage(), 50);
+                }
             }
             
             input.addEventListener('input', (e) => {
@@ -617,32 +761,35 @@
                 globalTooltip.classList.remove('show');
             }, true);
 
-            // 智能避让：右键切换悬浮按钮角落
+            // 智能避让：右键切换整个悬浮按钮组的位置，防止遮挡内容
             let currentCorner = 0;
             const corners = [
-                { top: '0', right: '0', bottom: 'auto', left: 'auto', btnTop: '20px', btnRight: '20px', btnBottom: 'auto', btnLeft: 'auto' }, // TR
-                { top: '0', right: 'auto', bottom: 'auto', left: '0', btnTop: '20px', btnRight: 'auto', btnBottom: 'auto', btnLeft: '20px' }, // TL
-                { top: 'auto', right: '0', bottom: '0', left: 'auto', btnTop: 'auto', btnRight: '20px', btnBottom: '20px', btnLeft: 'auto' }, // BR
-                { top: 'auto', right: 'auto', bottom: '0', left: '0', btnTop: 'auto', btnRight: 'auto', btnBottom: '20px', btnLeft: '20px' }  // BL
+                { top: '0', right: '0', bottom: 'auto', left: 'auto', btnTop: '20px', btnRight: '20px', btnBottom: 'auto', btnLeft: 'auto', flexDirection: 'row' }, // TR
+                { top: '0', right: 'auto', bottom: 'auto', left: '0', btnTop: '20px', btnRight: 'auto', btnBottom: 'auto', btnLeft: '20px', flexDirection: 'row-reverse' }, // TL
+                { top: 'auto', right: '0', bottom: '0', left: 'auto', btnTop: 'auto', btnRight: '20px', btnBottom: '20px', btnLeft: 'auto', flexDirection: 'row' }, // BR
+                { top: 'auto', right: 'auto', bottom: '0', left: '0', btnTop: 'auto', btnRight: 'auto', btnBottom: '20px', btnLeft: '20px', flexDirection: 'row-reverse' }  // BL
             ];
-            document.getElementById('closePreviewBtn').addEventListener('contextmenu', (e) => {
+            
+            // 给整个控制区的所有按钮或者容器添加右键避让逻辑
+            document.getElementById('floatingControls').addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 currentCorner = (currentCorner + 1) % corners.length;
                 const pos = corners[currentCorner];
                 const zone = document.getElementById('closeTriggerZone');
-                const btn = document.getElementById('closePreviewBtn');
+                const controls = document.getElementById('floatingControls');
                 
                 zone.style.top = pos.top;
                 zone.style.right = pos.right;
                 zone.style.bottom = pos.bottom;
                 zone.style.left = pos.left;
                 
-                btn.style.top = pos.btnTop;
-                btn.style.right = pos.btnRight;
-                btn.style.bottom = pos.btnBottom;
-                btn.style.left = pos.btnLeft;
+                controls.style.top = pos.btnTop;
+                controls.style.right = pos.btnRight;
+                controls.style.bottom = pos.btnBottom;
+                controls.style.left = pos.btnLeft;
+                controls.style.flexDirection = pos.flexDirection;
                 
-                showToast('已自动切换至其他角落避让', 'success');
+                showToast('悬浮工具组已自动切换角落避让', 'success');
                 globalTooltip.classList.remove('show'); // 隐藏气泡
             });
         });
@@ -745,6 +892,45 @@
             window.currentRenderPath = null;
             clearMainInput(false);
             renderHistory(); 
+            // 🚀 退出预览状态时，移除 is-previewing 标记以恢复手机端的历史面板显示
+            document.body.classList.remove('is-previewing');
+        }
+
+        // 🚀 在新标签页打开当前的渲染文档（开启独立阅读模式）
+        function openCurrentInNewTab() {
+            if (!window.currentRenderPath) {
+                showToast("当前没有可打开的文档", "warning");
+                return;
+            }
+            let currentPath = window.currentRenderPath;
+            let theme = currentTheme;
+            let standaloneUrl = window.location.origin + window.location.pathname + 
+                '?standalone=true&url=' + encodeURIComponent(currentPath) + '&theme=' + theme;
+            window.open(standaloneUrl, '_blank');
+        }
+
+        // 🚀 独立阅读模式中，返回主渲染器
+        function goBackToMain() {
+            let params = new URLSearchParams(window.location.search);
+            let urlVal = params.get('url');
+            let mainUrl = window.location.origin + window.location.pathname;
+            // 携带当前文档回到主站，实现快速还原
+            if (urlVal) {
+                mainUrl += '?' + encodeURIComponent(urlVal);
+            }
+            window.location.href = mainUrl;
+        }
+
+        // 🚀 独立阅读模式中，关闭当前标签页
+        function closeStandaloneWindow() {
+            window.close();
+            // 部分浏览器对于非 JS open 的窗口不允许 close()，作为备用方案退回主站
+            setTimeout(() => {
+                showToast("此标签页无法直接关闭，正在为您返回主站...", "info");
+                setTimeout(() => {
+                    goBackToMain();
+                }, 1200);
+            }, 100);
         }
 
         function renderPage(customPath = null) {
@@ -779,6 +965,8 @@
             closeTriggerZone.style.display = 'block'; 
             loading.style.display = 'flex';
             loadingText.innerHTML = "正在拉取并解析数据...";
+            // 🚀 进入阅读/渲染模式时，挂载 is-previewing 标记以通过 CSS 自动优化手机端排版布局
+            document.body.classList.add('is-previewing');
 
             window.currentRenderPath = isGitHub ? pathValue : fullUrl;
 
@@ -948,6 +1136,12 @@
             if (history.length > 100) history.pop();
             localStorage.setItem('gh_html_history', JSON.stringify(history));
             renderHistory();
+
+            // 🚀 如果处于独立全屏阅读模式，动态更新控制条上的标题为当前文档的真实标题
+            let standaloneBarTitle = document.getElementById('standaloneTitle');
+            if (standaloneBarTitle) {
+                standaloneBarTitle.innerHTML = `<span class="pulse-dot"></span> 独立阅读：${title}`;
+            }
         }
 
         function checkDataMigration() {
