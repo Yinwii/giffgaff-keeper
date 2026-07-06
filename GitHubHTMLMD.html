@@ -23,7 +23,7 @@
     --text-main: #24292e; --text-muted: #586069; --link-color: #0366d6;
     --bg-panel: #fff; --bg-panel-secondary: #fafbfc; --bg-input: #f6f8fa; --bg-active: #f0fdf4;
     --shadow-color: rgba(0,0,0,0.04); --card-shadow: rgba(0,0,0,0.02);
-    --toast-bg: #24292e; --toast-text: #fff; --tooltip-bg: #24292e; --tooltip-text: #fff;a
+    --toast-bg: #24292e; --toast-text: #fff; --tooltip-bg: #24292e; --tooltip-text: #fff;
     --danger-bg: #ffeef0; --danger-border: #f1aeb5; --pin-active-bg: #fff0f2; --star-active-bg: #fff8f2;
     --grad-edge: rgba(255,255,255,0); --grad-solid: #fff;
     --grad-hover-edge: rgba(246,248,250,0); --grad-hover-solid: #f6f8fa;
@@ -85,13 +85,13 @@
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 🚀 复合悬浮控制区 */
         .close-trigger-zone { position: absolute; top: 0; right: 0; width: 180px; height: 180px; z-index: 100; display: none; }
         .floating-controls {
             position: absolute;
             top: 20px;
             right: 20px;
             display: flex;
+            flex-direction: row;
             gap: 10px;
             opacity: 0;
             transform: scale(0.8);
@@ -197,7 +197,101 @@
         .step-num { background: var(--link-color); color: var(--toast-text); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px; flex-shrink: 0; font-size: 0.8rem; }
 
         /* 右侧历史记录 */
-        .history-sidebar { width: 400px; background: var(--bg-panel-secondary); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 10; }
+        /* 🚀 侧栏收缩与扩展布局 */
+        .history-sidebar {
+            position: relative;
+            width: 400px;
+            background: var(--bg-panel-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s;
+        }
+        
+        /* 折叠状态 */
+        body.sidebar-collapsed .history-sidebar {
+            width: 0px !important;
+            border-left-color: transparent !important;
+        }
+        body.sidebar-collapsed .history-sidebar * {
+            pointer-events: none; /* 折叠后禁用内部交互 */
+        }
+        
+        /* 侧栏折叠手柄 */
+        .sidebar-toggle-handle {
+            position: absolute;
+            top: 50%;
+            left: -12px;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 56px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-right: none;
+            border-radius: 6px 0 0 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            color: var(--text-muted);
+            pointer-events: auto !important; /* 确保折叠后手柄仍可点击 */
+        }
+        .sidebar-toggle-handle:hover {
+            color: var(--link-color);
+            background: var(--bg-panel-secondary);
+            width: 14px;
+            left: -14px;
+        }
+        .sidebar-toggle-handle svg {
+            width: 10px;
+            height: 10px;
+            transition: transform 0.3s;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+        body.sidebar-collapsed .sidebar-toggle-handle svg {
+            transform: rotate(180deg);
+        }
+        
+        /* 移动端下的折叠适配 */
+        .mobile-sidebar-toggle-btn { display: none; }
+        @media (max-width: 768px) {
+            .sidebar-toggle-handle {
+                display: none; /* 移动端不采用侧边悬浮手柄 */
+            }
+            .history-sidebar {
+                width: 100% !important;
+                height: 45vh;
+                max-height: 350px;
+                transition: height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            }
+            body.sidebar-collapsed .history-sidebar {
+                height: 48px !important;
+                max-height: 48px !important;
+            }
+            .mobile-sidebar-toggle-btn {
+                display: block;
+                background: none;
+                border: 1px solid var(--border-color);
+                color: var(--text-muted);
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .mobile-sidebar-toggle-btn:hover {
+                background: var(--icon-hover-bg);
+                color: var(--text-main);
+            }
+        }
+
         .history-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); }
         .history-header-left { display: flex; align-items: center; gap: 10px; }
         .history-header h3 { margin: 0; font-size: 1.05rem; display: flex; align-items: center; gap:6px;}
@@ -336,14 +430,16 @@
         ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #aaa; }
 
+
+
         /* 移动端自适应适配 (Mobile Responsive Layout) */
         @media (max-width: 768px) {
             /* 改变主区域布局：侧边栏移到下半屏幕 */
             .main-content { flex-direction: column; }
             .history-sidebar { width: 100%; height: 45vh; max-height: 350px; border-left: none; border-top: 1px solid var(--border-color); transition: all 0.3s; }
             
-            /* 🚀 正在阅读/渲染文档时，隐藏手机端历史记录，给文档留下 100% 的全部高宽 */
-            body.is-previewing .history-sidebar { display: none !important; }
+            /* 🚀 正在阅读/渲染文档时，手机端历史记录侧栏受 sidebar-collapsed 折叠机制控制，展开时自动腾出预览区域 */
+            body.is-previewing .history-sidebar { display: flex !important; }
             body.is-previewing .main-content { height: 100%; }
 
             /* 顶部搜索栏调整：解除绝对定位，垂直排列，缩小组件 */
@@ -365,13 +461,14 @@
             .feature-card { padding: 15px; }
             
             /* 🚀 复合悬浮控制区在手机上不需要 Hover 触发，默认完全可见并调小尺寸 */
-            .close-trigger-zone { width: 120px; height: 120px; }
+            .close-trigger-zone { width: 80px; height: 160px; pointer-events: none; }
             .floating-controls {
                 opacity: 1 !important;
                 pointer-events: auto !important;
                 transform: scale(0.9) !important;
-                top: 10px !important;
+                top: 60px !important; /* 下移避免干涉复制按钮 */
                 right: 10px !important;
+                flex-direction: column !important; /* 右侧竖向排列 */
             }
             .floating-btn { width: 36px; height: 36px; font-size: 1rem; }
 
@@ -380,6 +477,70 @@
             .standalone-title { font-size: 0.85rem; }
             .standalone-btn { padding: 4px 8px; font-size: 0.75rem; }
             body.standalone-mode .main-content { height: calc(100% - 44px); }
+
+            /* 🚀 手机端历史侧栏折叠态细节控制，强力根除子元素挤压变形 */
+            body.sidebar-collapsed .history-sidebar,
+            .history-sidebar.sidebar-collapsed {
+                width: 100% !important; /* 覆盖全局的折叠宽度 0 */
+                height: 48px !important;
+                max-height: 48px !important;
+                min-height: 48px !important;
+                overflow: hidden !important;
+            }
+            body.sidebar-collapsed .history-sidebar * {
+                pointer-events: auto; /* 覆盖全局的折叠后禁用点击 */
+            }
+            /* 折叠时强力隐藏下方的搜索框和历史记录列表 */
+            body.sidebar-collapsed .history-sidebar .history-search,
+            body.sidebar-collapsed .history-sidebar .history-list {
+                display: none !important;
+            }
+            
+            /* 手机端强力隐藏PC专属的侧栏折叠手柄，腾出空间给原生 Header Banner */
+            .history-sidebar .sidebar-toggle-handle {
+                display: none !important;
+            }
+
+            /* 🚀 手机端下的 history-header 改造为原生 Banner 一行流 */
+            .history-header {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                height: 48px !important;
+                padding: 0 10px !important;
+                box-sizing: border-box !important;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                user-select: none;
+            }
+            body.sidebar-collapsed .history-sidebar .history-header:hover {
+                background-color: var(--icon-hover-bg, rgba(120, 120, 120, 0.08));
+            }
+            .history-header h3 {
+                font-size: 0.9rem !important;
+            }
+            .badge-count {
+                padding: 1px 6px !important;
+                font-size: 0.7rem !important;
+            }
+            .mobile-sidebar-toggle-btn {
+                padding: 2px 5px !important;
+                font-size: 0.7rem !important;
+                border-radius: 4px !important;
+            }
+            .history-header .icon-btn {
+                padding: 3px !important;
+                border-radius: 4px !important;
+            }
+            .history-header .icon-btn svg {
+                width: 15px !important;
+                height: 15px !important;
+            }
+            .clear-all-btn {
+                padding: 3px 5px !important;
+                font-size: 0.7rem !important;
+                border-radius: 4px !important;
+            }
         }
     </style>
 </head>
@@ -415,10 +576,21 @@
                 <svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M5.75 1h5.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0111.25 10h-5.5A1.75 1.75 0 014 8.25v-5.5C4 1.784 4.784 1 5.75 1zm5.5 1.5H5.75a.25.25 0 00-.25.25v5.5c0 .138.112.25.25.25h5.5a.25.25 0 00.25-.25v-5.5a.25.25 0 00-.25-.25zM1.5 4.75a.75.75 0 011.5 0v6.5c0 .138.112.25.25.25h6.5a.75.75 0 110 1.5h-6.5A1.75 1.75 0 011.5 11.25v-6.5z"></path></svg>
                 粘贴
             </button>
+            <button class="paste-btn" onclick="triggerLocalFileSelect()" data-tooltip="打开并阅读本地 MD/HTML/代码文件">
+                <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M2 1.75C2 .784 2.784 0 3.75 0h5.586c.464 0 .909.184 1.237.513l3.414 3.414c.329.328.513.773.513 1.237v8.086A1.75 1.75 0 0112.75 15h-9A1.75 1.75 0 012 13.25V1.75zm1.75-.25a.25.25 0 00-.25.25v11.5c0 .138.112.25.25.25h9a.25.25 0 00.25-.25V5.5h-2.5A1.75 1.75 0 018.75 3.75V1.5h-5zm5 2v-2h-.03L12.5 4.72v-.03h-2.5a.25.25 0 01-.25-.25z"></path></svg>
+                文件
+            </button>
+            <input type="file" id="localFileInput" style="display: none;" onchange="handleLocalFileSelect(event)" accept=".html,.htm,.md,.markdown,.txt,.js,.css,.json,.py,.java,.cpp,.h,.go,.sh,.bat">
             <button class="render-btn" onclick="renderPage()">一键渲染</button>
         </div>
 
         <div class="top-actions" style="position: absolute; right: 20px; display: flex; gap: 10px;">
+            <button id="toggleSidebarBtn" class="icon-btn" onclick="toggleSidebar()" data-tooltip="折叠/展开历史侧栏">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+            </button>
             <button id="themeToggleBtn" class="icon-btn" onclick="toggleTheme()" data-tooltip="切换亮暗主题">
                 <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -491,6 +663,12 @@
             
             <div class="close-trigger-zone" id="closeTriggerZone">
                 <div class="floating-controls" id="floatingControls">
+                    <button id="toggleLayoutBtn" class="floating-btn" style="background: #e36209; box-shadow: 0 4px 10px rgba(227, 98, 9, 0.3);" onclick="toggleRenderMode()" data-tooltip="切换预览/源码版式">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 15px; height: 15px; display: block;">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
                     <button id="openNewTabBtn" class="floating-btn open-tab" onclick="openCurrentInNewTab()" data-tooltip="在新窗口全屏阅读此文档">↗</button>
                     <button id="closePreviewBtn" class="floating-btn close" onclick="closePreview()" data-tooltip="关闭渲染 (右键点击可切换整个控制组避让)">✖</button>
                 </div>
@@ -499,15 +677,25 @@
 
         <!-- 右侧历史记录面板 -->
         <div class="history-sidebar">
-            <div class="history-header">
+            <!-- 🚀 PC 端侧边栏折叠手柄 -->
+            <div class="sidebar-toggle-handle" onclick="toggleSidebar()" data-tooltip="折叠/展开历史侧栏">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </div>
+            
+            <!-- 🚀 移动端折叠时专属的高定简约 Banner，消除挤压变形，提供极佳的手势展开入口 -->
+            <div class="history-header" onclick="handleHeaderClick(event)">
                 <div class="history-header-left">
                     <h3>📑 历史记录</h3>
                     <span id="historyCount" class="badge-count">共 0 条</span>
                 </div>
                 <div class="history-header-right">
+                    <!-- 🚀 移动端折叠控制按钮 -->
+                    <button class="mobile-sidebar-toggle-btn" onclick="toggleSidebar(event)" id="mobileToggleBtn">收起 🔼</button>
                     <!-- SVG 视图切换图标 -->
-                    <button id="viewToggleBtn" class="icon-btn" onclick="toggleViewMode()" data-tooltip="切换视图"></button>
-                    <button class="clear-all-btn" onclick="clearHistory()">清空所有</button>
+                    <button id="viewToggleBtn" class="icon-btn" onclick="toggleViewMode(event)" data-tooltip="切换视图"></button>
+                    <button class="clear-all-btn" onclick="clearHistory(event)">清空</button>
                 </div>
             </div>
             
@@ -538,6 +726,11 @@
         const viewToggleBtn = document.getElementById('viewToggleBtn');
         
         window.currentRenderPath = null;
+        
+        // 🚀 全局文档原始数据缓存，用于支持版式切换（预览 vs 源码模式）
+        window.currentRawText = "";
+        window.currentRawFilename = "";
+        window.currentRenderMode = "preview"; // 'preview' 或 'source'
 
         // 🚀 srcdoc 锚点跳转修复脚本：在 iframe 内部拦截所有 #anchor 链接点击，
         // 使用 scrollIntoView 实现页面内平滑跳转，彻底绕过 about:srcdoc 上下文导致的导航失效
@@ -594,6 +787,481 @@
             }
             // 兜底：直接追加到末尾
             return htmlStr + scriptTag;
+        }
+
+        // 🚀 核心：统一拼装带有代码行号、自适应宽度、以及完全原生无依赖文档内搜索框（Ctrl+F）的 Markdown/Code iframe 模板
+        function assembleMarkdownIframeHtml(parsedMd, mdTheme, hljsTheme, bodyBg) {
+            // 暗黑模式下搜索框的配色自适应
+            const searchStyleVars = currentTheme === 'dark' 
+                ? `--search-bg: #161b22; --search-border: #30363d; --search-input-bg: #0d1117; --search-text: #c9d1d9;`
+                : `--search-bg: #fff; --search-border: #e1e4e8; --search-input-bg: #fff; --search-text: #24292e;`;
+
+            // 🚀 暗色模式下代码块按钮的动态样式注入（iframe 内 body 无 dark 标记，只能通过模板变量区分）
+            const darkBtnStyles = currentTheme === 'dark' ? `
+                    .code-copy-btn, .code-wrap-btn {
+                        color: #ffffff !important;
+                        background: #21262d !important;
+                        border: none !important;
+                    }
+                    .code-copy-btn:hover, .code-wrap-btn:hover {
+                        background: #30363d !important;
+                        color: #ffffff !important;
+                    }
+            ` : '';
+
+            return `
+                <!DOCTYPE html><html><head><meta charset="utf-8">
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/${mdTheme}">
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${hljsTheme}">
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
+                <style>
+                    body { box-sizing: border-box; min-width: 200px; max-width: 1200px; margin: 0 auto; padding: 40px 45px; background: ${bodyBg}; position: relative; } 
+                    @media (max-width: 767px) { body { padding: 15px; } }
+                    
+                    /* 🚀 独立代码块行号渲染样式 */
+                    pre.has-line-numbers {
+                        display: flex !important;
+                        padding-left: 0 !important;
+                        position: relative;
+                        overflow-x: auto;
+                    }
+                    .line-numbers-col {
+                        display: flex;
+                        flex-direction: column;
+                        text-align: right;
+                        padding: 16px 8px 16px 12px;
+                        margin-right: 12px;
+                        background: rgba(120, 120, 120, 0.04);
+                        border-right: 1px solid var(--border-color, #e1e4e8);
+                        user-select: none;
+                        color: #858f9f;
+                        font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+                        font-size: 85%;
+                        line-height: 20px;
+                    }
+                    body[class*="dark"] .line-numbers-col,
+                    [data-theme="dark"] .line-numbers-col {
+                        border-right-color: #30363d;
+                        color: #8b949e;
+                        background: rgba(255, 255, 255, 0.03);
+                    }
+                    pre.has-line-numbers code {
+                        flex: 1;
+                        padding-left: 0 !important;
+                        margin: 0 !important;
+                        line-height: 20px !important;
+                        border: none !important;
+                        background: none !important;
+                        overflow-x: visible !important;
+                    }
+                    
+                    /* 🚀 代码块右上角绝对定位复制按钮及折行控制按钮 */
+                    pre {
+                        position: relative;
+                        transition: padding-left 0.2s ease;
+                    }
+                    .code-copy-btn, .code-wrap-btn {
+                        position: absolute;
+                        top: 8px;
+                        opacity: 0;
+                        transition: opacity 0.2s, background 0.2s, color 0.2s, border-color 0.2s;
+                        background: rgba(120, 120, 120, 0.08);
+                        border: 1px solid var(--border-color, #e1e4e8);
+                        border-radius: 6px;
+                        color: #586069;
+                        padding: 0 8px;
+                        height: 26px;
+                        box-sizing: border-box;
+                        cursor: pointer;
+                        z-index: 10;
+                        outline: none;
+                        user-select: none;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.75rem;
+                        font-family: -apple-system, sans-serif;
+                    }
+                    .code-copy-btn {
+                        right: 8px;
+                    }
+                    .code-wrap-btn {
+                        right: 48px; /* 错开并排显示 */
+                    }
+                    pre:hover .code-copy-btn, pre:hover .code-wrap-btn {
+                        opacity: 1;
+                    }
+                    .code-copy-btn:hover, .code-wrap-btn:hover {
+                        background: rgba(120, 120, 120, 0.15);
+                        color: var(--search-text, #24292e);
+                    }
+                    .code-copy-btn.copied {
+                        background: #2ea44f !important;
+                        color: #fff !important;
+                        border-color: #2ea44f !important;
+                    }
+                    .code-wrap-btn.active {
+                        background: #388bfd !important;
+                        color: #fff !important;
+                        border-color: #388bfd !important;
+                    }
+                    
+                    
+                    /* 🚀 折行控制激活状态样式 */
+                    pre.word-wrap {
+                        padding-left: 16px !important; /* 隐藏左侧行栏后，恢复舒适边距 */
+                    }
+                    pre.word-wrap code {
+                        white-space: pre-wrap !important;
+                        word-break: break-all !important;
+                    }
+                    pre.word-wrap .line-numbers-col {
+                        display: none !important; /* 折行时隐藏行号，完全防范高度错折行对齐 Bug */
+                    }
+                    
+                    /* 🚀 注入 iframe 内的文档搜索栏样式 */
+                    .doc-search-trigger {
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        width: 42px;
+                        height: 42px;
+                        background: #2ea44f;
+                        color: #fff;
+                        border: none;
+                        border-radius: 50%;
+                        cursor: pointer;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 99999;
+                        font-size: 1.1rem;
+                        transition: all 0.2s;
+                        outline: none;
+                    }
+                    .doc-search-trigger:hover { transform: scale(1.1); background: #2c974b; }
+                    
+                    .doc-search-bar {
+                        position: fixed;
+                        top: 20px;
+                        left: 50%;
+                        transform: translateX(-50%) translateY(-10px);
+                        ${searchStyleVars}
+                        background: var(--search-bg);
+                        border: 1px solid var(--search-border);
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                        border-radius: 8px;
+                        padding: 8px 12px;
+                        display: none;
+                        align-items: center;
+                        gap: 8px;
+                        z-index: 100000;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                        color: var(--search-text);
+                        transition: transform 0.2s ease, opacity 0.2s ease;
+                        opacity: 0;
+                    }
+                    .doc-search-bar.show { 
+                        display: flex !important; 
+                        transform: translateX(-50%) translateY(0); 
+                        opacity: 1;
+                    }
+                    
+                    #doc-search-input {
+                        border: 1px solid var(--search-border);
+                        background: var(--search-input-bg);
+                        color: var(--search-text);
+                        padding: 6px 10px;
+                        border-radius: 6px;
+                        font-size: 0.85rem;
+                        outline: none;
+                        width: 160px;
+                    }
+                    #doc-search-input:focus { border-color: #0366d6; }
+                    #doc-search-index { font-size: 0.75rem; color: #586069; min-width: 40px; text-align: center; }
+                    
+                    .doc-search-nav, .doc-search-close {
+                        background: none;
+                        border: none;
+                        cursor: pointer;
+                        color: #586069;
+                        padding: 4px;
+                        border-radius: 4px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.8rem;
+                        width: 24px;
+                        height: 24px;
+                    }
+                    .doc-search-nav:hover, .doc-search-close:hover { background: rgba(120,120,120,0.1); color: var(--search-text); }
+                    
+                    mark.search-highlight {
+                        background-color: #ffdf5d !important;
+                        color: #000 !important;
+                        border-radius: 2px;
+                        box-shadow: 0 0 0 1px #e3b000;
+                    }
+                    mark.search-highlight.current {
+                        background-color: #ff9632 !important;
+                        box-shadow: 0 0 0 1px #e65100;
+                    }
+                    
+                    /* 🚀 手机端 iframe 内文档搜索及触发按钮位置自适应 */
+                    @media (max-width: 767px) {
+                        .doc-search-trigger {
+                            bottom: 70px !important; /* 向上提高，悬空在历史记录侧栏的 48px Banner 之上，彻底避免重叠 */
+                            right: 16px !important;
+                            width: 38px !important;
+                            height: 38px !important;
+                            font-size: 1rem !important;
+                        }
+                    }
+                    ${darkBtnStyles}
+                </style>
+                </head><body class="markdown-body">${parsedMd}
+                
+                <!-- 🚀 搜索浮窗 DOM -->
+                <div id="doc-search-bar" class="doc-search-bar">
+                    <input type="text" id="doc-search-input" placeholder="在文档中查找..." autocomplete="off">
+                    <span id="doc-search-index">0/0</span>
+                    <button class="doc-search-nav" onclick="navigateSearch(-1)">▲</button>
+                    <button class="doc-search-nav" onclick="navigateSearch(1)">▼</button>
+                    <button class="doc-search-close" onclick="closeSearchBar()">✖</button>
+                </div>
+                <button id="doc-search-trigger" class="doc-search-trigger" onclick="openSearchBar()" title="在文档中查找 (Ctrl+F)">🔍</button>
+
+                <script>
+                    hljs.highlightAll();
+                    
+                    // 🚀 动态安全注入代码块独立行号侧栏，完美防范 HTML 标签撕裂 Bug
+                    function addCodeLineNumbers() {
+                        document.querySelectorAll('pre code').forEach(codeBlock => {
+                            if (codeBlock.parentNode.classList.contains('has-line-numbers')) return;
+                            const text = codeBlock.textContent;
+                            const lines = text.replace(/\\r?\\n$/, '').split(/\\r?\\n/);
+                            const lineCount = lines.length;
+                            
+                            const nums = [];
+                            for (let i = 1; i <= lineCount; i++) {
+                                nums.push('<span>' + i + '</span>');
+                            }
+                            
+                            const numCol = document.createElement('div');
+                            numCol.className = 'line-numbers-col';
+                            numCol.innerHTML = nums.join('');
+                            
+                            const pre = codeBlock.parentNode;
+                            pre.insertBefore(numCol, codeBlock);
+                            pre.classList.add('has-line-numbers');
+
+                            // 🚀 注入代码块右上角绝对定位复制按钮
+                            const copyBtn = document.createElement('button');
+                            copyBtn.className = 'code-copy-btn';
+                            copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M5.75 1h5.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0111.25 10h-5.5A1.75 1.75 0 014 8.25v-5.5C4 1.784 4.784 1 5.75 1zm5.5 1.5H5.75a.25.25 0 00-.25.25v5.5c0 .138.112.25.25.25h5.5a.25.25 0 00.25-.25v-5.5a.25.25 0 00-.25-.25zM1.5 4.75a.75.75 0 011.5 0v6.5c0 .138.112.25.25.25h6.5a.75.75 0 110 1.5h-6.5A1.75 1.75 0 011.5 11.25v-6.5z"></path></svg>';
+                            copyBtn.setAttribute('title', '复制代码内容');
+                            
+                            function showSuccess(btn) {
+                                btn.classList.add('copied');
+                                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg>';
+                                setTimeout(() => {
+                                    btn.classList.remove('copied');
+                                    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M5.75 1h5.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0111.25 10h-5.5A1.75 1.75 0 014 8.25v-5.5C4 1.784 4.784 1 5.75 1zm5.5 1.5H5.75a.25.25 0 00-.25.25v5.5c0 .138.112.25.25.25h5.5a.25.25 0 00.25-.25v-5.5a.25.25 0 00-.25-.25zM1.5 4.75a.75.75 0 011.5 0v6.5c0 .138.112.25.25.25h6.5a.75.75 0 110 1.5h-6.5A1.75 1.75 0 011.5 11.25v-6.5z"></path></svg>';
+                                }, 2000);
+                            }
+                            
+                            function fallback(text, btn) {
+                                const ta = document.createElement('textarea');
+                                ta.value = text;
+                                ta.style.position = 'fixed';
+                                ta.style.opacity = '0';
+                                document.body.appendChild(ta);
+                                ta.select();
+                                try {
+                                    document.execCommand('copy');
+                                    showSuccess(btn);
+                                } catch (err) {}
+                                document.body.removeChild(ta);
+                            }
+                            
+                            copyBtn.onclick = function(e) {
+                                e.stopPropagation();
+                                const text = codeBlock.textContent;
+                                if (navigator.clipboard) {
+                                    navigator.clipboard.writeText(text).then(() => showSuccess(copyBtn))
+                                    .catch(() => fallback(text, copyBtn));
+                                } else {
+                                    fallback(text, copyBtn);
+                                }
+                            };
+                            
+                            pre.appendChild(copyBtn);
+                            
+                            // 🚀 注入代码块右上角绝对定位折行控制按钮
+                            const wrapBtn = document.createElement('button');
+                            wrapBtn.className = 'code-wrap-btn';
+                            wrapBtn.innerHTML = 'Wrap';
+                            wrapBtn.setAttribute('title', '切换自动折行');
+                            wrapBtn.onclick = function(e) {
+                                e.stopPropagation();
+                                const isWrapped = pre.classList.toggle('word-wrap');
+                                wrapBtn.textContent = isWrapped ? 'Unwrap' : 'Wrap';
+                                if (isWrapped) {
+                                    wrapBtn.classList.add('active');
+                                } else {
+                                    wrapBtn.classList.remove('active');
+                                }
+                            };
+                            pre.appendChild(wrapBtn);
+                        });
+                    }
+                    addCodeLineNumbers();
+                    
+                    // 🚀 注入 iframe 内的文档高亮搜索逻辑
+                    let matches = [];
+                    let currentIndex = -1;
+                    
+                    const searchBar = document.getElementById('doc-search-bar');
+                    const searchInput = document.getElementById('doc-search-input');
+                    const searchIndex = document.getElementById('doc-search-index');
+                    const searchTrigger = document.getElementById('doc-search-trigger');
+                    
+                    window.openSearchBar = function() {
+                        searchBar.classList.add('show');
+                        searchInput.focus();
+                        searchInput.select();
+                    };
+                    
+                    window.closeSearchBar = function() {
+                        searchBar.classList.remove('show');
+                        clearMatches();
+                        searchInput.value = '';
+                    };
+                    
+                    // 拦截 Ctrl + F 快捷键
+                    document.addEventListener('keydown', (e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+                            e.preventDefault();
+                            openSearchBar();
+                        }
+                    });
+                    
+                    searchInput.addEventListener('input', (e) => {
+                        doSearch(e.target.value.trim());
+                    });
+                    
+                    searchInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            navigateSearch(e.shiftKey ? -1 : 1);
+                        } else if (e.key === 'Escape') {
+                            closeSearchBar();
+                        }
+                    });
+                    
+                    function clearMatches() {
+                        const marks = document.querySelectorAll('mark.search-highlight');
+                        marks.forEach(mark => {
+                            const parent = mark.parentNode;
+                            if (parent) {
+                                parent.replaceChild(document.createTextNode(mark.textContent), mark);
+                                parent.normalize();
+                            }
+                        });
+                        matches = [];
+                        currentIndex = -1;
+                        updateIndexText();
+                    }
+                    
+                    function doSearch(keyword) {
+                        clearMatches();
+                        if (!keyword || keyword.length === 0) return;
+                        
+                        const walk = document.createTreeWalker(
+                            document.body,
+                            NodeFilter.SHOW_TEXT,
+                            {
+                                acceptNode: function(node) {
+                                    if (node.parentNode.closest('#doc-search-bar') || node.parentNode.closest('#doc-search-trigger') || node.parentNode.closest('style') || node.parentNode.closest('script')) {
+                                        return NodeFilter.FILTER_REJECT;
+                                    }
+                                    return node.textContent.toLowerCase().includes(keyword.toLowerCase()) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+                                }
+                            }
+                        );
+                        
+                        const textNodes = [];
+                        let currentNode;
+                        while (currentNode = walk.nextNode()) {
+                            textNodes.push(currentNode);
+                        }
+                        
+                        textNodes.forEach(node => {
+                            const text = node.textContent;
+                            const regex = new RegExp('(' + keyword.replace(/[-\\/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&') + ')', 'gi');
+                            const parent = node.parentNode;
+                            if (!parent) return;
+                            
+                            const fragments = document.createDocumentFragment();
+                            let lastIndex = 0;
+                            
+                            text.replace(regex, (match, p1, offset) => {
+                                if (offset > lastIndex) {
+                                    fragments.appendChild(document.createTextNode(text.substring(lastIndex, offset)));
+                                }
+                                const mark = document.createElement('mark');
+                                mark.className = 'search-highlight';
+                                mark.textContent = match;
+                                fragments.appendChild(mark);
+                                lastIndex = offset + match.length;
+                                return match;
+                            });
+                            
+                            if (lastIndex < text.length) {
+                                fragments.appendChild(document.createTextNode(text.substring(lastIndex)));
+                            }
+                            
+                            parent.replaceChild(fragments, node);
+                        });
+                        
+                        matches = Array.from(document.querySelectorAll('mark.search-highlight'));
+                        if (matches.length > 0) {
+                            currentIndex = 0;
+                            highlightCurrent();
+                        }
+                        updateIndexText();
+                    }
+                    
+                    function highlightCurrent() {
+                        matches.forEach((m, idx) => {
+                            if (idx === currentIndex) {
+                                m.classList.add('current');
+                                m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            } else {
+                                m.classList.remove('current');
+                            }
+                        });
+                    }
+                    
+                    window.navigateSearch = function(direction) {
+                        if (matches.length === 0) return;
+                        currentIndex = (currentIndex + direction + matches.length) % matches.length;
+                        highlightCurrent();
+                        updateIndexText();
+                    };
+                    
+                    function updateIndexText() {
+                        if (matches.length === 0) {
+                            searchIndex.textContent = '0/0';
+                        } else {
+                            searchIndex.textContent = (currentIndex + 1) + '/' + matches.length;
+                        }
+                    }
+                <\/script>
+                <script>${SRCDOC_ANCHOR_FIX_SCRIPT}<\/script>
+                </body></html>
+            `;
         }
         let currentViewMode = localStorage.getItem('gh_history_view') || 'card';
 
@@ -654,7 +1322,17 @@
                     loading.style.display = 'none';
                 }
             };
+
         };
+
+        // 🚀 手机端点击历史记录头部也可以一键展开或折叠侧边栏（精细排除子控件，完全防范事件双重调用）
+        function handleHeaderClick(event) {
+            if (event.target.closest('.icon-btn') || event.target.closest('.clear-all-btn') || event.target.closest('.mobile-sidebar-toggle-btn')) {
+                event.stopPropagation();
+                return;
+            }
+            toggleSidebar(event);
+        }
 
         function applyViewMode() {
             if (currentViewMode === 'list') {
@@ -669,7 +1347,8 @@
             viewToggleBtn.removeAttribute('title');
         }
 
-        function toggleViewMode() {
+        function toggleViewMode(event) {
+            if (event) event.stopPropagation();
             currentViewMode = currentViewMode === 'list' ? 'card' : 'list';
             localStorage.setItem('gh_history_view', currentViewMode);
             applyViewMode();
@@ -824,6 +1503,29 @@
                 showToast('☀️ 已切换至亮色模式', 'success');
             }
             localStorage.setItem('gh_theme_mode', currentTheme);
+
+            // 🚀 主动刷新 iframe 内的高亮与 Markdown 样式，实现沉浸式彻底切换
+            if (window.currentRawText && window.currentRawFilename) {
+                const filename = window.currentRawFilename;
+                const textData = window.currentRawText;
+                const ext = filename.split('.').pop().toLowerCase();
+                const isMarkdown = ext === 'md' || ext === 'markdown';
+                const mediaExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'pdf', 'zip', 'tar', 'gz', 'rar', '7z', 'mp4', 'mp3', 'webm', 'ogg', 'woff', 'woff2', 'ttf', 'eot', 'wasm'];
+                const isHtml = ext === 'html' || ext === 'htm';
+                const isCode = (window.currentRenderMode === 'source') || (!isHtml && !isMarkdown && !mediaExts.includes(ext));
+
+                if (isMarkdown || isCode) {
+                    let mdContent = isCode ? "```" + ext + "\n" + textData + "\n```" : textData;
+                    const parsedMd = marked.parse(mdContent);
+                    const mdTheme = currentTheme === 'dark' ? 'github-markdown-dark.min.css' : 'github-markdown-light.min.css';
+                    const hljsTheme = currentTheme === 'dark' ? 'github-dark.min.css' : 'github.min.css';
+                    const bodyBg = currentTheme === 'dark' ? '#0d1117' : '#fff';
+                    const finalHtml = assembleMarkdownIframeHtml(parsedMd, mdTheme, hljsTheme, bodyBg);
+                    const iframeElement = document.getElementById('preview-frame');
+                    iframeElement.removeAttribute('src');
+                    iframeElement.srcdoc = finalHtml;
+                }
+            }
         }
 
         function getDomainName(urlStr) {
@@ -967,6 +1669,10 @@
             loadingText.innerHTML = "正在拉取并解析数据...";
             // 🚀 进入阅读/渲染模式时，挂载 is-previewing 标记以通过 CSS 自动优化手机端排版布局
             document.body.classList.add('is-previewing');
+            // 🚀 仅在手机端渲染文档时，默认折叠收纳侧栏为 Banner，PC端保持原状不做隐藏限制
+            if (window.innerWidth <= 768) {
+                document.body.classList.add('sidebar-collapsed');
+            }
 
             window.currentRenderPath = isGitHub ? pathValue : fullUrl;
 
@@ -999,17 +1705,7 @@
                             const hljsTheme = currentTheme === 'dark' ? 'github-dark.min.css' : 'github.min.css';
                             const bodyBg = currentTheme === 'dark' ? '#0d1117' : '#fff';
                             
-                            finalHtml = `
-                                <!DOCTYPE html><html><head><meta charset="utf-8">
-                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/${mdTheme}">
-                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${hljsTheme}">
-                                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
-                                <style>body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; padding: 45px; background: ${bodyBg}; } @media (max-width: 767px) { body { padding: 15px; } }</style>
-                                </head><body class="markdown-body">${parsedMd}
-                                <script>hljs.highlightAll();<\/script>
-                                <script>${SRCDOC_ANCHOR_FIX_SCRIPT}<\/script>
-                                </body></html>
-                            `;
+                            finalHtml = assembleMarkdownIframeHtml(parsedMd, mdTheme, hljsTheme, bodyBg);
                             if (isCode) {
                                 docTitle = filename || "代码片段";
                             } else {
@@ -1021,6 +1717,11 @@
                             finalHtml = injectAnchorFixScript(textData);
                             docTitle = extractTitleOrFilename(textData, cleanPath);
                         }
+
+                        // 🚀 缓存当前正在阅读的源数据，支持一键切换版式
+                        window.currentRawText = textData;
+                        window.currentRawFilename = filename || "document.txt";
+                        window.currentRenderMode = "preview";
 
                         iframe.removeAttribute('src');
                         iframe.srcdoc = finalHtml;
@@ -1216,6 +1917,7 @@
                 historyCount.innerText = `共 ${history.length} 条`;
             }
 
+
             let pinned = filteredHistory.filter(i => i.isPinned);
             let starred = filteredHistory.filter(i => i.isStar && !i.isPinned);
             let normal = filteredHistory.filter(i => !i.isStar && !i.isPinned);
@@ -1231,23 +1933,38 @@
                 let isCurrentReading = (item.path === window.currentRenderPath);
                 li.className = `history-card ${(item.isPinned || item.isStar) ? 'is-active' : ''} ${isCurrentReading ? 'selected-card' : ''}`;
                 
-                // 🚀 强制修正错乱的 Github 标识逻辑
-                const isRealGh = item.isGh || item.path.includes("github.com");
+                // 🚀 识别是否为本地离线导入文件
+                const isLocalFile = item.path.startsWith("local://");
+                const isRealGh = !isLocalFile && (item.isGh || item.path.includes("github.com"));
                 
-                const domainName = isRealGh ? 'GitHub' : getDomainName(item.path);
-                const badgeClass = isRealGh ? 'gh' : 'web';
-                const fullUrl = isRealGh ? `https://github.com/${item.path}` : item.path;
-
-                // 外站使用哈希动态分配颜色
-                let dynamicStyle = '';
-                if(!isRealGh) {
-                    const bgColor = getColorForDomain(domainName);
-                    const textColor = getTextColorForDomain(domainName);
-                    dynamicStyle = `style="background-color:${bgColor}; color:${textColor}; border-color:transparent;"`;
+                let domainName = "";
+                let badgeClass = "";
+                let fullUrl = "";
+                let dynamicStyle = "";
+                
+                if (isLocalFile) {
+                    domainName = "本地";
+                    badgeClass = "local";
+                    fullUrl = "";
+                    dynamicStyle = `style="background-color: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color);"`;
+                } else {
+                    domainName = isRealGh ? 'GitHub' : getDomainName(item.path);
+                    badgeClass = isRealGh ? 'gh' : 'web';
+                    fullUrl = isRealGh ? `https://github.com/${item.path}` : item.path;
+                    
+                    if(!isRealGh) {
+                        const bgColor = getColorForDomain(domainName);
+                        const textColor = getTextColorForDomain(domainName);
+                        dynamicStyle = `style="background-color:${bgColor}; color:${textColor}; border-color:transparent;"`;
+                    }
                 }
 
                 const displayTitle = highlightText(item.title.replace(/^外站:\s*/, ''), keyword);
                 const displayPath = highlightText(item.path, keyword);
+                
+                // 本地文件无下载/访问动作，复制动作复制文件名，外站和Github照常显示
+                const copyActionVal = isLocalFile ? item.title : fullUrl;
+                const hideActionStyle = isLocalFile ? `style="display:none;"` : '';
 
                 li.innerHTML = `
                     <div class="hc-content" onclick="loadFromHistory('${item.path}', ${isRealGh})">
@@ -1270,15 +1987,15 @@
                     </div>
                     
                     <div class="hc-actions">
-                        <button class="hc-btn" onclick="copyLink(this, '${fullUrl}', event)" data-tooltip="复制链接">
+                        <button class="hc-btn" onclick="copyLink(this, '${copyActionVal}', event)" data-tooltip="${isLocalFile ? '复制文件名' : '复制链接'}">
                             <svg width="14" height="14" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M5.75 1h5.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0111.25 10h-5.5A1.75 1.75 0 014 8.25v-5.5C4 1.784 4.784 1 5.75 1zm5.5 1.5H5.75a.25.25 0 00-.25.25v5.5c0 .138.112.25.25.25h5.5a.25.25 0 00.25-.25v-5.5a.25.25 0 00-.25-.25zM1.5 4.75a.75.75 0 011.5 0v6.5c0 .138.112.25.25.25h6.5a.75.75 0 110 1.5h-6.5A1.75 1.75 0 011.5 11.25v-6.5z"></path></svg>
                             复制
                         </button>
-                        <button class="hc-btn" onclick="window.open('${fullUrl}', '_blank'); event.stopPropagation();" data-tooltip="访问源">
+                        <button class="hc-btn" onclick="window.open('${fullUrl}', '_blank'); event.stopPropagation();" data-tooltip="访问源" ${hideActionStyle}>
                             <svg width="14" height="14" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M10.604 1h4.146a.25.25 0 01.25.25v4.146a.25.25 0 01-.427.177L13.03 4.03 9.28 7.78a.75.75 0 01-1.06-1.06l3.75-3.75-1.543-1.543A.25.25 0 0110.604 1zM3.75 2A1.75 1.75 0 002 3.75v8.5c0 .966.784 1.75 1.75 1.75h8.5A1.75 1.75 0 0014 12.25v-3.5a.75.75 0 00-1.5 0v3.5a.25.25 0 01-.25.25h-8.5a.25.25 0 01-.25-.25v-8.5a.25.25 0 01.25-.25h3.5a.75.75 0 000-1.5h-3.5z"></path></svg>
                             访问
                         </button>
-                        <button class="hc-btn" onclick="downloadFile(this, '${item.path}', ${isRealGh}, event)" data-tooltip="直接下载">
+                        <button class="hc-btn" onclick="downloadFile(this, '${item.path}', ${isRealGh}, event)" data-tooltip="直接下载" ${hideActionStyle}>
                             <svg width="14" height="14" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM3.75 13a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5z"></path></svg>
                             下载
                         </button>
@@ -1289,6 +2006,20 @@
         }
 
         function loadFromHistory(path, isGh) {
+            // 🚀 支持本地离线文件加载
+            if (path.startsWith("local://")) {
+                let history = JSON.parse(localStorage.getItem('gh_html_history')) || [];
+                let item = history.find(i => i.path === path);
+                if (item && item.localContent) {
+                    // 🚀 从 path 切除前缀获取真实文件名，确保后缀判断正确，不会被误判为源码，亦不会产生重复卡片
+                    let filename = path.substring(8);
+                    renderLocalContent(filename, item.localContent);
+                } else {
+                    showToast("此离线文件内容过大，请重新点击 [文件] 按钮选择导入", "warning");
+                }
+                return;
+            }
+
             if (isGh) {
                 urlPrefix.innerText = 'https://github.com/';
                 input.value = path;
@@ -1297,6 +2028,119 @@
             }
             toggleClearBtn('urlInput', 'clearUrlBtn');
             renderPage();
+        }
+
+        // 🚀 触发本地文件上传控件
+        function triggerLocalFileSelect() {
+            document.getElementById('localFileInput').click();
+        }
+
+        // 🚀 处理本地文件导入解析与渲染
+        function handleLocalFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            const filename = file.name;
+            const ext = filename.split('.').pop().toLowerCase();
+
+            showToast("正在读取本地文件...", "info");
+
+            reader.onload = function(e) {
+                const textData = e.target.result;
+                renderLocalContent(filename, textData);
+            };
+
+            reader.onerror = function() {
+                showToast("本地文件读取失败！", "error");
+            };
+
+            reader.readAsText(file);
+            event.target.value = ''; // 重置 input 以允许再次导入同名文件
+        }
+
+        // 🚀 核心：渲染本地文件文本（支持 Markdown 及各类源码高亮）
+        function renderLocalContent(filename, textData) {
+            const ext = filename.split('.').pop().toLowerCase();
+            let finalHtml = "", docTitle = filename;
+            const isMarkdown = ext === 'md' || ext === 'markdown';
+            const isHtml = ext === 'html' || ext === 'htm';
+            
+            const mediaExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'pdf', 'zip', 'tar', 'gz', 'rar', '7z', 'mp4', 'mp3', 'webm', 'ogg', 'woff', 'woff2', 'ttf', 'eot', 'wasm'];
+            const isCode = !isHtml && !isMarkdown && !mediaExts.includes(ext);
+
+            if (isMarkdown || isCode) {
+                let mdContent = isCode ? `\`\`\`${ext}\n${textData}\n\`\`\`` : textData;
+                const parsedMd = marked.parse(mdContent);
+                const mdTheme = currentTheme === 'dark' ? 'github-markdown-dark.min.css' : 'github-markdown-light.min.css';
+                const hljsTheme = currentTheme === 'dark' ? 'github-dark.min.css' : 'github.min.css';
+                const bodyBg = currentTheme === 'dark' ? '#0d1117' : '#fff';
+                
+                finalHtml = assembleMarkdownIframeHtml(parsedMd, mdTheme, hljsTheme, bodyBg);
+                if (!isCode) {
+                    const match = textData.match(/^#\s+(.+)/m);
+                    docTitle = match ? match[1].trim() : filename;
+                }
+            } else {
+                finalHtml = injectAnchorFixScript(textData);
+                docTitle = extractTitleOrFilename(textData, filename);
+            }
+
+            welcomeGuide.style.display = 'none';
+            iframe.style.display = 'block';
+            closeTriggerZone.style.display = 'block'; 
+            loading.style.display = 'none';
+            
+            iframe.removeAttribute('src');
+            iframe.srcdoc = finalHtml;
+            
+            // 🚀 缓存当前本地离线文件的源数据，用于支持一键切换版式
+            window.currentRawText = textData;
+            window.currentRawFilename = filename;
+            window.currentRenderMode = "preview";
+
+            window.currentRenderPath = "local://" + filename;
+            document.body.classList.add('is-previewing');
+            // 🚀 仅在手机端渲染本地文件时，默认折叠收纳侧栏为 Banner，PC端保持原状不做隐藏限制
+            if (window.innerWidth <= 768) {
+                document.body.classList.add('sidebar-collapsed');
+            }
+
+            // 限制文件小于 100KB 时在 localStorage 中离线缓存其文本
+            let cacheContent = textData.length < 102400 ? textData : "";
+            saveLocalFileToHistory("local://" + filename, docTitle, cacheContent);
+            showToast("本地离线文件已成功渲染！", "success");
+        }
+
+        // 🚀 保存本地文件浏览记录到 localStorage（带文本内容缓存）
+        function saveLocalFileToHistory(path, title, content) {
+            let history = JSON.parse(localStorage.getItem('gh_html_history')) || [];
+            let existingIndex = history.findIndex(item => item.path === path);
+
+            if (existingIndex > -1) {
+                history[existingIndex].title = title;
+                history[existingIndex].localContent = content; // 更新缓存
+            } else {
+                history.unshift({ path, title, isPinned: false, isStar: false, isGh: false, prefix: "", localContent: content });
+            }
+            
+            if (history.length > 100) history.pop();
+            localStorage.setItem('gh_html_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        // 🚀 折叠/展开侧边历史记录栏
+        function toggleSidebar(event) {
+            if (event) event.stopPropagation();
+            document.body.classList.toggle('sidebar-collapsed');
+            const collapsed = document.body.classList.contains('sidebar-collapsed');
+            
+            // 同步更新移动端按钮的文本展示
+            const mobileBtn = document.getElementById('mobileToggleBtn');
+            if (mobileBtn) {
+                mobileBtn.innerText = collapsed ? '展开 🔽' : '收起 🔼';
+            }
+            showToast(collapsed ? '已折叠历史栏' : '已展开历史栏', 'success');
         }
 
         function copyLink(btn, url, event) {
@@ -1331,6 +2175,49 @@
                 showToast("下载失败！可能是网络原因或文件不存在。", "error");
             }
         }
+
+        // 🚀 一键在“预览模式”和“源码模式”之间切换版式展示
+        function toggleRenderMode() {
+            if (!window.currentRawText) {
+                showToast("当前没有可供切换版式的文档内容", "warning");
+                return;
+            }
+
+            const filename = window.currentRawFilename;
+            const textData = window.currentRawText;
+            const ext = filename.split('.').pop().toLowerCase();
+            
+            // 切换展示模式
+            window.currentRenderMode = (window.currentRenderMode === 'preview') ? 'source' : 'preview';
+            showToast(window.currentRenderMode === 'preview' ? "已切换至预览版式 👁️" : "已切换至源码版式 📝", "success");
+            
+            const isMarkdown = ext === 'md' || ext === 'markdown';
+            const isHtml = ext === 'html' || ext === 'htm';
+            
+            // 多媒体排除
+            const mediaExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'pdf', 'zip', 'tar', 'gz', 'rar', '7z', 'mp4', 'mp3', 'webm', 'ogg', 'woff', 'woff2', 'ttf', 'eot', 'wasm'];
+            
+            // 强制源码判断：如果用户手动切到源码模式，或者该文件后缀原本就是纯文本代码文件
+            const isCode = (window.currentRenderMode === 'source') || (!isHtml && !isMarkdown && !mediaExts.includes(ext));
+            
+            let finalHtml = "";
+            if (isMarkdown || isCode) {
+                let mdContent = isCode ? "```" + ext + "\n" + textData + "\n```" : textData;
+                const parsedMd = marked.parse(mdContent);
+                const mdTheme = currentTheme === 'dark' ? 'github-markdown-dark.min.css' : 'github-markdown-light.min.css';
+                const hljsTheme = currentTheme === 'dark' ? 'github-dark.min.css' : 'github.min.css';
+                const bodyBg = currentTheme === 'dark' ? '#0d1117' : '#fff';
+                
+                finalHtml = assembleMarkdownIframeHtml(parsedMd, mdTheme, hljsTheme, bodyBg);
+            } else {
+                // HTML 页面渲染
+                finalHtml = injectAnchorFixScript(textData);
+            }
+            
+            // 更新 iframe 视口
+            iframe.removeAttribute('src');
+            iframe.srcdoc = finalHtml;
+        }
     </script>
 
     <!-- 自定义确认弹窗 -->
@@ -1346,7 +2233,8 @@
     </div>
 
     <script>
-        function clearHistory() {
+        function clearHistory(event) {
+            if (event) event.stopPropagation();
             document.getElementById('custom-modal-overlay').classList.add('show');
         }
         function closeModal() {
