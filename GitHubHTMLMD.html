@@ -55,6 +55,7 @@
     --action-bar-bg: #161b22; --action-bar-selected-bg: #1a2f22; --action-bar-selected-border: #234830;
 }
 
+
         body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); display: flex; flex-direction: column; }
 
         /* 顶部栏 */
@@ -79,7 +80,16 @@
 
         /* 主区域 */
         .main-content { display: flex; flex: 1; overflow: hidden; position: relative; }
-        .preview-area { flex: 1; position: relative; background: var(--bg-panel); overflow-y: auto;}
+        .preview-area { flex: 1; position: relative; background: var(--bg-panel); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+        .preview-area::-webkit-scrollbar { display: none; }
+        .preview-area.is-scrolling { scrollbar-width: thin; scrollbar-color: rgba(128,128,128,0.3) transparent; }
+        .preview-area.is-scrolling::-webkit-scrollbar { display: block; width: 6px; }
+        .preview-area.is-scrolling::-webkit-scrollbar-track { background: transparent; }
+        .preview-area.is-scrolling::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.3); border-radius: 3px; }
+        .preview-area.is-scrolling::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.5); }
+        [data-theme='dark'] .preview-area.is-scrolling { scrollbar-color: rgba(255,255,255,0.15) transparent; }
+        [data-theme='dark'] .preview-area.is-scrolling::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+        [data-theme='dark'] .preview-area.is-scrolling::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
         #preview-frame { width: 100%; height: 100%; border: none; display: none; position: absolute; z-index: 2; background: var(--bg-panel);}
         #loading { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--loading-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
@@ -315,7 +325,16 @@
         .search-icon svg { width: 14px; height: 14px; }
         .history-search input { flex: 1; border: none; padding: 8px 0; font-size: 0.9rem; outline: none; background: transparent; font-family: inherit; }
 
-        .history-list { flex: 1; overflow-y: auto; padding: 15px; list-style: none; margin: 0; }
+        .history-list { flex: 1; overflow-y: auto; padding: 15px; list-style: none; margin: 0; scrollbar-width: none; -ms-overflow-style: none; }
+        .history-list::-webkit-scrollbar { display: none; }
+        .history-list.is-scrolling { scrollbar-width: thin; scrollbar-color: rgba(128,128,128,0.3) transparent; }
+        .history-list.is-scrolling::-webkit-scrollbar { display: block; width: 6px; }
+        .history-list.is-scrolling::-webkit-scrollbar-track { background: transparent; }
+        .history-list.is-scrolling::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.3); border-radius: 3px; }
+        .history-list.is-scrolling::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.5); }
+        [data-theme='dark'] .history-list.is-scrolling { scrollbar-color: rgba(255,255,255,0.15) transparent; }
+        [data-theme='dark'] .history-list.is-scrolling::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+        [data-theme='dark'] .history-list.is-scrolling::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
         .history-empty { text-align: center; color: #6a737d; margin-top: 30px; font-size: 0.95rem;}
 
         /* 卡片视图 UI */
@@ -724,6 +743,8 @@
         const historyList = document.getElementById('historyList');
         const historyCount = document.getElementById('historyCount');
         const viewToggleBtn = document.getElementById('viewToggleBtn');
+
+
         
         window.currentRenderPath = null;
         
@@ -809,12 +830,33 @@
                     }
             ` : '';
 
+            // 🚀 iframe 内部滚动条美化（暗色模式：深色纤细滚动条；亮色模式：浅灰纤细滚动条）
+            // 默认隐藏，滚动时显示，与主页面 preview-area 保持一致
+            const scrollbarStyles = currentTheme === 'dark' ? `
+                    html { scrollbar-width: none; -ms-overflow-style: none; }
+                    ::-webkit-scrollbar { display: none; }
+                    html.is-scrolling { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
+                    html.is-scrolling::-webkit-scrollbar { display: block; width: 6px; }
+                    html.is-scrolling::-webkit-scrollbar-track { background: transparent; }
+                    html.is-scrolling::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+                    html.is-scrolling::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+            ` : `
+                    html { scrollbar-width: none; -ms-overflow-style: none; }
+                    ::-webkit-scrollbar { display: none; }
+                    html.is-scrolling { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
+                    html.is-scrolling::-webkit-scrollbar { display: block; width: 6px; }
+                    html.is-scrolling::-webkit-scrollbar-track { background: transparent; }
+                    html.is-scrolling::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+                    html.is-scrolling::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+            `;
+
             return `
                 <!DOCTYPE html><html><head><meta charset="utf-8">
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/${mdTheme}">
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${hljsTheme}">
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js">\x3C/script\x3E
                 <style>
+                    ${scrollbarStyles}
                     body { box-sizing: border-box; min-width: 200px; max-width: 1200px; margin: 0 auto; padding: 40px 45px; background: ${bodyBg}; position: relative; } 
                     @media (max-width: 767px) { body { padding: 15px; } }
                     
@@ -1258,8 +1300,18 @@
                             searchIndex.textContent = (currentIndex + 1) + '/' + matches.length;
                         }
                     }
-                <\/script>
-                <script>${SRCDOC_ANCHOR_FIX_SCRIPT}<\/script>
+                ${'</scr' + 'ipt>'}
+                <script>
+                    let scrollTimer;
+                    window.addEventListener('scroll', function() {
+                        document.documentElement.classList.add('is-scrolling');
+                        clearTimeout(scrollTimer);
+                        scrollTimer = setTimeout(function() {
+                            document.documentElement.classList.remove('is-scrolling');
+                        }, 1000);
+                    });
+                    ${SRCDOC_ANCHOR_FIX_SCRIPT}
+                ${'</scr' + 'ipt>'}
                 </body></html>
             `;
         }
@@ -1270,6 +1322,27 @@
         const ICON_LIST = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`;
 
         window.onload = () => {
+            // 🚀 预览区域滚动条智能显隐：滚动时显示，停止滚动后 1s 隐藏
+            const previewArea = document.querySelector('.preview-area');
+            let previewScrollTimer;
+            previewArea.addEventListener('scroll', () => {
+                previewArea.classList.add('is-scrolling');
+                clearTimeout(previewScrollTimer);
+                previewScrollTimer = setTimeout(() => {
+                    previewArea.classList.remove('is-scrolling');
+                }, 1000);
+            });
+            
+            const historyList = document.getElementById('historyList');
+            let historyScrollTimer;
+            historyList.addEventListener('scroll', () => {
+                historyList.classList.add('is-scrolling');
+                clearTimeout(historyScrollTimer);
+                historyScrollTimer = setTimeout(() => {
+                    historyList.classList.remove('is-scrolling');
+                }, 1000);
+            });
+            
             checkDataMigration();
             applyViewMode();
             renderHistory();
