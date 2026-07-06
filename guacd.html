@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apache Guacamole 全球分布式混合架构部署指南</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #007acc;
+            --bg: #f5f7f9;
+            --surface: #ffffff;
+            --code-bg: #1e1e1e;
+            --code-color: #d4d4d4;
+            --border: #e1e4e8;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: var(--bg);
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        h1, h2, h3 {
+            color: var(--primary);
+            margin-top: 1.5em;
+        }
+        h1 {
+            font-size: 2.2em;
+            text-align: center;
+            margin-bottom: 1em;
+            padding-bottom: 0.5em;
+            border-bottom: 3px solid var(--accent);
+        }
+        h2 {
+            border-left: 5px solid var(--accent);
+            padding-left: 10px;
+            background: linear-gradient(90deg, rgba(0,122,204,0.1) 0%, rgba(255,255,255,0) 100%);
+        }
+        .card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-color);
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: "Consolas", "Monaco", monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        code {
+            font-family: "Consolas", "Monaco", monospace;
+            background-color: rgba(0,122,204,0.1);
+            color: var(--accent);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .highlight { color: #ce9178; } /* String color for code */
+        .keyword { color: #569cd6; } /* Keyword color for code */
+        
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffeeba;
+            color: #856404;
+        }
+        .alert-info {
+            background-color: #d1ecf1;
+            border-left: 5px solid #17a2b8;
+            color: #0c5460;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: white;
+            vertical-align: middle;
+        }
+        .badge-main { background-color: #e74c3c; }
+        .badge-edge { background-color: #27ae60; }
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+    <h1>Apache Guacamole 全球分布式混合架构部署指南</h1>
+
+    <div class="card">
+        <h2>一、 方案介绍</h2>
+        <p>本方案专为拥有全球多地节点（如美西 LA、SJC，欧洲 FRA、DE 等）的网络环境设计。采用 <strong>“第三方集成 Web 面板 + 官方原生底层节点”</strong> 的混搭微服务架构。</p>
+        <ul>
+            <li><span class="badge badge-main">主控中心 (LA)</span>：使用 <code>oznu/guacamole</code> 镜像。提供统一的 Web 交互界面、数据库存储、账号与权限管理。</li>
+            <li><span class="badge badge-edge">边缘节点 (FRA/SJC/DE)</span>：使用 <code>guacamole/guacd</code> 原生镜像。仅运行 C 语言编写的核心转码守护进程，不提供 Web 服务，专职负责本机房内的 RDP/VNC 画面抓取与极速压缩。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>二、 核心优势</h2>
+        <div class="grid-2">
+            <div>
+                <h3>🚀 极致流畅，告别卡顿</h3>
+                <p>原生 RDP 沉重的流量在边缘机房（如法兰克福）内部以 0 延迟消化。跨国公网传输的仅是 <code>guacd</code> 极致压缩后的 HTML5 流媒体，写代码、查网页等场景丝滑跟手，带宽占用极低。</p>
+            </div>
+            <div>
+                <h3>🛡️ 统一管控，凭证不落地</h3>
+                <p>全球所有服务器无需对外暴露 3389 (RDP) 或 22 (SSH) 端口。团队成员只需访问主控域名的 Web 账号，即可直连对应授权的桌面，无法获取服务器真实密码，彻底阻断勒索病毒爆破。</p>
+            </div>
+            <div>
+                <h3>📉 资源占用极限压缩</h3>
+                <p>边缘节点（VPS）无需运行臃肿的 Tomcat 和 Java 虚拟机，仅需运行不到几十兆内存的 <code>guacd</code> 进程，最大程度节约海外 VPS 宝贵的计算资源。</p>
+            </div>
+            <div>
+                <h3>🛠️ 运维管理零负担</h3>
+                <p>彻底告别每个节点一套独立面板的孤岛状态。所有服务器的连接配置、会话录像、用户组分配，都在 LA 的主控节点一站式完成。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>三、 部署命令与防火墙配置</h2>
+        
+        <h3>1. 主控中心节点 (以 LA 为例)</h3>
+        <p>部署包含 Tomcat 与 数据库的集成环境，对外提供 Web 访问（端口映射为 8080）。</p>
+        <pre><code>docker run -d \
+  --name guacamole-master \
+  --restart always \
+  -p <span class="keyword">8080</span>:8080 \
+  -v /opt/guacamole:/config \
+  oznu/guacamole</code></pre>
+
+        <h3>2. 边缘干活节点 (以 FRA 为例)</h3>
+        <p>部署极简转码组件，暴露 4822 端口供主控调用。</p>
+        <pre><code>docker run -d \
+  --name guacd-edge \
+  --restart always \
+  -p <span class="keyword">4822</span>:4822 \
+  guacamole/guacd</code></pre>
+
+        <div class="alert alert-warning">
+            <strong>安全加固（必做）：</strong> 边缘节点的 4822 端口严禁直接向全网开放。必须配置防火墙（UFW/iptables），或使用 Tailscale 组网，仅允许 LA 主控的 IP 访问。
+        </div>
+        <p><strong>UFW 防火墙配置示例（在 FRA 服务器执行）：</strong></p>
+        <pre><code><span class="highlight"># 仅允许 LA 主控的公网 IP 访问 4822 端口</span>
+ufw allow from &lt;LA主控服务器公网IP&gt; to any port 4822
+ufw reload</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>四、 反向代理配置 (仅需在主控节点进行)</h2>
+        <p>Guacamole 高度依赖 <strong>WebSocket</strong> 来传输画面。如果反代配置不当，会导致连接直接断开或强降级为极度卡顿的 HTTP 轮询。以下提供两种主流反代方案：</p>
+
+        <h3>方案 A：原生 Nginx 配置 (nginx.conf)</h3>
+        <p>在你的 Nginx 配置文件中的 <code>server</code> 块内添加以下 <code>location</code> 规则，注意 <code>Upgrade</code> 相关的头信息不可省略：</p>
+        <pre><code>server {
+    listen 443 ssl http2;
+    server_name <span class="highlight">desktop.yourdomain.com</span>;
+    
+    <span class="highlight"># SSL 证书配置省略...</span>
+
+    location / {
+        proxy_pass http://127.0.0.1:8080/;
+        proxy_buffering off;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $http_host;
+        
+        <span class="highlight"># 核心：开启 WebSocket 支持</span>
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection <span class="highlight">"upgrade"</span>;
+        
+        <span class="highlight"># 防止连接超时断开</span>
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+}</code></pre>
+
+        <h3>方案 B：Nginx Proxy Manager (NPM) 图形化配置</h3>
+        <p>如果你使用 NPM 面板，只需在添加 Proxy Host 时进行以下勾选：</p>
+        <ol>
+            <li><strong>Details 选项卡：</strong>
+                <ul>
+                    <li>Domain Names: 填写你的域名 (如 <code>desktop.yourdomain.com</code>)</li>
+                    <li>Scheme: <code>http</code></li>
+                    <li>Forward Hostname / IP: 填写主控容器的内网 IP 或 <code>172.17.0.1</code> (Docker网关)</li>
+                    <li>Forward Port: <code>8080</code></li>
+                    <li><strong>核心开关：</strong> 务必勾选 <strong>Websockets Support</strong> ✅</li>
+                </ul>
+            </li>
+            <li><strong>SSL 选项卡：</strong>
+                <ul>
+                    <li>申请或选择已有的证书，勾选 <strong>Force SSL</strong>。</li>
+                </ul>
+            </li>
+            <li>点击 <strong>Save</strong> 保存即可生效。</li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h2>五、 Web 面板连接配置实战 (LA 调用 FRA)</h2>
+        <p>浏览器访问主控域名并使用 <code>guacadmin</code> 登录后，进入【设置 -> 连接 -> 新建连接】。以连接 FRA 节点内网的一台 Windows (RDP) 为例，配置如下：</p>
+        
+        <div class="alert alert-info">
+            <strong>核心逻辑提示：</strong> 在 LA 面板填写的“目标主机 IP”，是站在 FRA 节点的视角看的。
+        </div>
+
+        <ol>
+            <li><strong>参数 (Parameters) - 网络：</strong>
+                <ul>
+                    <li>主机名 (Hostname)：填写 <code>127.0.0.1</code> (因为 <code>guacd</code> 就跑在目标宿主机上)</li>
+                    <li>端口 (Port)：填写 <code>3389</code></li>
+                </ul>
+            </li>
+            <li><strong>参数 (Parameters) - 身份验证：</strong>
+                <ul>
+                    <li>用户名 (Username)：填写 FRA Windows 系统的管理员账号 (如 <code>Administrator</code>)</li>
+                    <li>密码 (Password)：填写对应的系统密码</li>
+                    <li>安全模式 (Security mode)：对于较新的 Windows 建议选择 <code>NLA (Network Level Authentication)</code>，勾选“忽略服务器证书 (Ignore server certificate)”。</li>
+                </ul>
+            </li>
+            <li><strong>参数 (Parameters) - Guacamole 代理参数 (guacd) （滚动到最底部）：</strong>
+                <ul>
+                    <li>主机名 (Hostname)：填写 <strong>FRA 节点的公网 IP</strong> (或 Tailscale 虚拟 IP)</li>
+                    <li>端口 (Port)：填写 <code>4822</code></li>
+                </ul>
+            </li>
+        </ol>
+        <p>配置完成后保存。在首页点击该连接，主控将瞬间唤醒 FRA 的守护进程，实现极速的跨国流畅访问。</p>
+    </div>
+
+</body>
+</html>
+
