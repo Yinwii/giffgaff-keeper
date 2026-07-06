@@ -113,8 +113,10 @@
         .history-header-right { display: flex; align-items: center; gap: 8px; }
         
         /* 视图切换按钮 */
-        .icon-btn { background: none; border: 1px solid transparent; color: #586069; cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .icon-btn:hover { background: var(--icon-hover-bg); color: var(--text-main); }
+        .icon-btn { background: none; border: 1px solid transparent; color: #586069; cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; -webkit-tap-highlight-color: transparent; outline: none; }
+        .icon-btn:focus-visible { box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3); }
+        @media (hover: hover) { .icon-btn:hover { background: var(--icon-hover-bg); color: var(--text-main); } }
+        .icon-btn:active { background: var(--icon-hover-bg); color: var(--text-main); }
         .icon-btn svg { width: 18px; height: 18px; }
         .clear-all-btn { background: none; border: none; color: #cb2431; cursor: pointer; font-size: 0.85rem; padding: 6px 10px; border-radius: 6px; transition: background 0.2s; font-weight: 500;}
         .clear-all-btn:hover { background: var(--danger-bg); }
@@ -414,6 +416,63 @@
         const viewToggleBtn = document.getElementById('viewToggleBtn');
         
         window.currentRenderPath = null;
+
+        // 🚀 srcdoc 锚点跳转修复脚本：在 iframe 内部拦截所有 #anchor 链接点击，
+        // 使用 scrollIntoView 实现页面内平滑跳转，彻底绕过 about:srcdoc 上下文导致的导航失效
+        const SRCDOC_ANCHOR_FIX_SCRIPT = `
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('a[href]');
+                if (!link) return;
+                var href = link.getAttribute('href');
+                if (!href) return;
+
+                // 处理纯锚点链接 (#xxx)
+                var anchorId = null;
+                if (href.startsWith('#')) {
+                    anchorId = href.substring(1);
+                } else {
+                    // 处理包含完整 URL 但指向自身页面锚点的链接 (如 https://...page.html#section)
+                    try {
+                        var urlObj = new URL(href, 'http://placeholder');
+                        if (urlObj.hash) {
+                            anchorId = urlObj.hash.substring(1);
+                        }
+                    } catch(ex) {}
+                }
+
+                if (anchorId) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // 优先用 id 查找，其次用 name 属性查找
+                    var target = document.getElementById(anchorId)
+                              || document.getElementById(decodeURIComponent(anchorId))
+                              || document.querySelector('a[name="' + CSS.escape(anchorId) + '"]')
+                              || document.querySelector('a[name="' + CSS.escape(decodeURIComponent(anchorId)) + '"]');
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }, true);
+        `;
+
+        // 为纯 HTML 文件注入锚点修复脚本（使用 lastIndexOf 精准定位最后一个闭合标签，
+        // 避免 .replace() 误匹配到 JS 字符串内的 '</body>' 字面量从而破坏代码结构）
+        function injectAnchorFixScript(htmlStr) {
+            var scriptTag = '<scr' + 'ipt>' + SRCDOC_ANCHOR_FIX_SCRIPT + '</scr' + 'ipt>';
+            var lowerHtml = htmlStr.toLowerCase();
+            // 优先在最后一个 </body> 前注入
+            var bodyIdx = lowerHtml.lastIndexOf('</body>');
+            if (bodyIdx !== -1) {
+                return htmlStr.slice(0, bodyIdx) + scriptTag + htmlStr.slice(bodyIdx);
+            }
+            // 次选在最后一个 </html> 前注入
+            var htmlIdx = lowerHtml.lastIndexOf('</html>');
+            if (htmlIdx !== -1) {
+                return htmlStr.slice(0, htmlIdx) + scriptTag + htmlStr.slice(htmlIdx);
+            }
+            // 兜底：直接追加到末尾
+            return htmlStr + scriptTag;
+        }
         let currentViewMode = localStorage.getItem('gh_history_view') || 'card';
 
         // 卡片(四宫格) / 列表(三横排) 图标
@@ -611,9 +670,11 @@
             if (currentTheme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
                 document.getElementById('themeIcon').innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+                showToast('🌙 已切换至暗色模式', 'success');
             } else {
                 document.documentElement.removeAttribute('data-theme');
                 document.getElementById('themeIcon').innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+                showToast('☀️ 已切换至亮色模式', 'success');
             }
             localStorage.setItem('gh_theme_mode', currentTheme);
         }
@@ -758,6 +819,7 @@
                                 <style>body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; padding: 45px; background: ${bodyBg}; } @media (max-width: 767px) { body { padding: 15px; } }</style>
                                 </head><body class="markdown-body">${parsedMd}
                                 <script>hljs.highlightAll();<\/script>
+                                <script>${SRCDOC_ANCHOR_FIX_SCRIPT}<\/script>
                                 </body></html>
                             `;
                             if (isCode) {
@@ -767,7 +829,8 @@
                                 docTitle = match ? match[1].trim() : (filename || "Markdown 文档");
                             }
                         } else {
-                            finalHtml = textData;
+                            // 为 HTML 文件注入锚点修复脚本，解决 srcdoc 模式下目录跳转失效
+                            finalHtml = injectAnchorFixScript(textData);
                             docTitle = extractTitleOrFilename(textData, cleanPath);
                         }
 
