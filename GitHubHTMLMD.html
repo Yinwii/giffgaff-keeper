@@ -711,7 +711,7 @@
                 </div>
                 <div class="history-header-right">
                     <!-- 🚀 移动端折叠控制按钮 -->
-                    <button class="mobile-sidebar-toggle-btn" onclick="toggleSidebar(event)" id="mobileToggleBtn">收起 🔼</button>
+                    <button class="mobile-sidebar-toggle-btn" onclick="toggleSidebar(event)" id="mobileToggleBtn">展开 🔽</button>
                     <!-- SVG 视图切换图标 -->
                     <button id="viewToggleBtn" class="icon-btn" onclick="toggleViewMode(event)" data-tooltip="切换视图"></button>
                     <button class="clear-all-btn" onclick="clearHistory(event)">清空</button>
@@ -1448,6 +1448,10 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // 🚀 手机端默认收起历史侧栏为 Header Banner
+            if (window.innerWidth <= 768) {
+                document.body.classList.add('sidebar-collapsed');
+            }
             if (currentTheme === 'dark') {
                 document.getElementById('themeIcon').innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
             }
