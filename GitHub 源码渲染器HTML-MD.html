@@ -903,10 +903,6 @@
                     }
                     
                     /* 🚀 代码块右上角绝对定位复制按钮及折行控制按钮 */
-                    pre {
-                        position: relative;
-                        transition: padding-left 0.2s ease;
-                    }
                     .code-copy-btn, .code-wrap-btn {
                         position: absolute;
                         top: 4px; /* 调整为 4px 使其在 30px 统计栏中完美垂直居中 */
@@ -953,6 +949,56 @@
                         border-color: #388bfd !important;
                     }
                     
+                    /* 🚀 真正的全局悬浮高对比度 Tooltip 气泡（完美防裁切、防闪烁、0.3s延时） */
+                    #global-tooltip {
+                        position: absolute;
+                        background: #24292e;
+                        color: #ffffff;
+                        padding: 6px 10px;
+                        border-radius: 6px;
+                        font-size: 11px;
+                        white-space: nowrap;
+                        opacity: 0;
+                        visibility: hidden;
+                        transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+                        transition-delay: 0.3s;
+                        transform: translate(-50%, -100%) scale(0.95);
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                        z-index: 2147483647; /* 保证最上层 */
+                        pointer-events: none; /* 🔴绝对核心：鼠标穿透气泡本体，彻底杀死 mouseover 闪烁循环 Bug */
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                        line-height: 1.2;
+                    }
+                    #global-tooltip::after {
+                        content: '';
+                        position: absolute;
+                        top: 100%;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        border-width: 5px 5px 0 5px;
+                        border-style: solid;
+                        border-color: #24292e transparent transparent transparent;
+                    }
+                    #global-tooltip.show {
+                        opacity: 1;
+                        visibility: visible;
+                        transform: translate(-50%, -100%) scale(1);
+                    }
+                    
+                    /* 智能动态适应：小屏或顶部遮挡时向下方弹出的变体 */
+                    #global-tooltip.tooltip-bottom {
+                        transform: translate(-50%, 0) scale(0.95);
+                    }
+                    #global-tooltip.tooltip-bottom.show {
+                        transform: translate(-50%, 0) scale(1);
+                    }
+                    #global-tooltip.tooltip-bottom::after {
+                        top: auto;
+                        bottom: 100%;
+                        border-width: 0 5px 5px 5px;
+                        border-color: transparent transparent #24292e transparent;
+                    }
+                    
                     /* 🚀 代码块顶部统计信息栏绝对定位在 pre 内部顶端，无缝共享外框圆角，消除多余外部框线 */
                     .code-info-bar {
                         position: absolute;
@@ -979,6 +1025,8 @@
                     pre.has-line-numbers {
                         padding-top: 38px !important; /* 从 36px 调整为 38px 确保布局美观 */
                     }
+                    
+
                     
                     /* 🚀 折行控制激活状态样式 */
                     pre.word-wrap {
@@ -1113,7 +1161,7 @@
                         document.querySelectorAll('pre code').forEach(codeBlock => {
                             if (codeBlock.parentNode.classList.contains('has-line-numbers')) return;
                             const text = codeBlock.textContent;
-                            const lines = text.replace(/\\r?\\n$/, '').split(/\\r?\\n/);
+                            const lines = text.replace(/\r?\n$/, '').split(/\r?\n/);
                             const lineCount = lines.length;
                             
                             const nums = [];
@@ -1126,6 +1174,13 @@
                             numCol.innerHTML = nums.join('');
                             
                             const pre = codeBlock.parentNode;
+                            
+                            // 🚀 创建外层 wrapper 用以摆脱 pre 的 overflow 裁剪限制
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'code-block-wrapper';
+                            pre.parentNode.insertBefore(wrapper, pre);
+                            wrapper.appendChild(pre);
+
                             pre.insertBefore(numCol, codeBlock);
                             pre.classList.add('has-line-numbers');
 
@@ -1209,11 +1264,12 @@
                             const wrapBtn = document.createElement('button');
                             wrapBtn.className = 'code-wrap-btn';
                             wrapBtn.innerHTML = 'Wrap';
-                            wrapBtn.setAttribute('title', '切换自动折行');
+                            wrapBtn.setAttribute('data-tooltip', '折行显示代码');
                             wrapBtn.onclick = function(e) {
                                 e.stopPropagation();
                                 const isWrapped = pre.classList.toggle('word-wrap');
                                 wrapBtn.textContent = isWrapped ? 'Unwrap' : 'Wrap';
+                                wrapBtn.setAttribute('data-tooltip', isWrapped ? '还原单行显示' : '折行显示代码');
                                 if (isWrapped) {
                                     wrapBtn.classList.add('active');
                                 } else {
@@ -1224,6 +1280,48 @@
                         });
                     }
                     addCodeLineNumbers();
+                    
+                    // 🚀 全局单例事件代理 Tooltip 逻辑（0修改代码块 DOM，完全防裁切、零闪烁）
+                    const globalTooltip = document.createElement('div');
+                    globalTooltip.id = 'global-tooltip';
+                    document.body.appendChild(globalTooltip);
+
+                    document.addEventListener('mouseover', function(e) {
+                        const target = e.target.closest('[data-tooltip]');
+                        if (target) {
+                            const rect = target.getBoundingClientRect();
+                            globalTooltip.textContent = target.getAttribute('data-tooltip');
+                            
+                            let topPos;
+                            // 🚀 智能自适应判断：如果是小屏(<=767)或距离视窗顶部过近(<30px)，则强制在下方弹出防止遮挡
+                            if (window.innerWidth <= 767 || rect.top < 30) {
+                                globalTooltip.classList.add('tooltip-bottom');
+                                topPos = rect.bottom + window.scrollY + 8;
+                            } else {
+                                // 大屏常态：保持上方弹出
+                                globalTooltip.classList.remove('tooltip-bottom');
+                                topPos = rect.top + window.scrollY - 8; 
+                            }
+                            
+                            let leftPos = rect.left + window.scrollX + (rect.width / 2);
+                            
+                            // 靠右侧的复制按钮防视口裁切，微调偏移
+                            if (rect.right > window.innerWidth - 30) {
+                                leftPos -= 10;
+                            }
+
+                            globalTooltip.style.top = topPos + 'px';
+                            globalTooltip.style.left = leftPos + 'px';
+                            globalTooltip.classList.add('show');
+                        }
+                    });
+                    
+                    document.addEventListener('mouseout', function(e) {
+                        const target = e.target.closest('[data-tooltip]');
+                        if (target) {
+                            globalTooltip.classList.remove('show');
+                        }
+                    });
                     
                     // 🚀 注入 iframe 内的文档高亮搜索逻辑
                     let matches = [];
