@@ -1878,6 +1878,11 @@
                 iframe.removeAttribute('srcdoc');
                 iframe.src = fullUrl;
                 
+                // 🚀 进入外链加载时，先将旧的源码缓存清空，防止错误显示上一份文档的源码
+                window.currentRawText = "";
+                window.currentRawFilename = "";
+                window.currentRenderMode = "preview";
+                
                 let fallbackTitle = "";
                 try {
                     // 智能解析外链甚至嵌套的URL来获取准确的文件名
@@ -1901,7 +1906,7 @@
                 // 强制标记 isGh = false
                 saveToHistory(fullUrl, fallbackTitle, false, "");
                 
-                // 🚀 后台静默尝试抓取真实的网页标题（跨域代理穿透与嵌套解包）
+                // 🚀 后台静默尝试抓取真实的网页标题（跨域代理穿透与双轨自适应）
                 let targetUrl = fullUrl;
                 try {
                     let urlObj = new URL(fullUrl.startsWith('http') ? fullUrl : 'http://' + fullUrl);
@@ -1910,43 +1915,73 @@
                     }
                 } catch(e) {}
 
-                let fetchUrl = targetUrl;
                 let isRawGithub = false;
+                let directFetchUrl = targetUrl;
                 try {
                     let targetObj = new URL(targetUrl);
                     if (targetObj.hostname === 'github.com') {
-                        fetchUrl = `https://raw.githubusercontent.com${targetObj.pathname.replace('/blob/', '/')}`;
+                        directFetchUrl = `https://raw.githubusercontent.com${targetObj.pathname.replace('/blob/', '/')}`;
                         isRawGithub = true;
-                    } else if (!targetObj.hostname.includes('raw.githubusercontent.com')) {
-                        fetchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
                     }
                 } catch(e) {}
 
-                fetch(fetchUrl)
-                    .then(res => fetchUrl.includes('allorigins.win') ? res.json() : res.text())
-                    .then(data => {
-                        let htmlContent = typeof data === 'string' ? data : (data.contents || '');
-                        if (htmlContent) {
-                            let docTitle = "";
-                            const titleMatch = htmlContent.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-                            if (titleMatch) docTitle = titleMatch[1].trim();
-                            
-                            if (!docTitle || docTitle.includes('Just a moment')) {
-                                const h1Match = htmlContent.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-                                if (h1Match) docTitle = h1Match[1].replace(/<[^>]+>/g, '').trim();
-                            }
+                // 统一数据处理函数
+                function processHtmlData(htmlContent) {
+                    if (!htmlContent) return;
+                    // 🚀 缓存外链源码，使得非 GitHub 网页也能够一键“版式切换”阅读其 HTML 源码
+                    window.currentRawText = htmlContent;
+                    window.currentRawFilename = targetUrl.split('/').filter(Boolean).pop() || "index.html";
 
-                            if (isRawGithub && !docTitle) {
-                                docTitle = extractTitleOrFilename(htmlContent, fetchUrl);
-                            }
-                            
-                            // 忽略 Cloudflare 防护盾页面和无意义标题
-                            const ignoreList = ['未命名', 'Just a moment', 'Attention Required', 'Cloudflare'];
-                            if (docTitle && !ignoreList.some(kw => docTitle.includes(kw)) && docTitle !== fallbackTitle) {
-                                saveToHistory(fullUrl, docTitle, false, "");
-                            }
-                        }
-                    }).catch(e => {});
+                    let docTitle = "";
+                    const titleMatch = htmlContent.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+                    if (titleMatch) docTitle = titleMatch[1].trim();
+                    
+                    if (!docTitle || docTitle.includes('Just a moment')) {
+                        const h1Match = htmlContent.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+                        if (h1Match) docTitle = h1Match[1].replace(/<[^>]+>/g, '').trim();
+                    }
+
+                    if (isRawGithub && !docTitle) {
+                        docTitle = extractTitleOrFilename(htmlContent, directFetchUrl);
+                    }
+                    
+                    // 忽略 Cloudflare 防护盾页面和无意义标题
+                    const ignoreList = ['未命名', 'Just a moment', 'Attention Required', 'Cloudflare'];
+                    if (docTitle && !ignoreList.some(kw => docTitle.includes(kw)) && docTitle !== fallbackTitle) {
+                        saveToHistory(fullUrl, docTitle, false, "");
+                    }
+                }
+
+                // 🚀 执行双轨 Fallback 拉取逻辑
+                if (isRawGithub) {
+                    // GitHub 资源直连，无需代理
+                    fetch(directFetchUrl)
+                        .then(res => res.text())
+                        .then(text => processHtmlData(text))
+                        .catch(() => {});
+                } else {
+                    // 非 GitHub 资源：优先直连（适合 GitHub Pages 等开启了 CORS 的静态站，速度快极稳）
+                    fetch(targetUrl)
+                        .then(res => {
+                            if (!res.ok) throw new Error();
+                            return res.text();
+                        })
+                        .then(text => processHtmlData(text))
+                        .catch(() => {
+                            // 直连失败（如被 CORS 跨域拦截），降级使用 api.allorigins.win 代理
+                            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                            fetch(proxyUrl)
+                                .then(res => {
+                                    if (!res.ok) throw new Error();
+                                    return res.json();
+                                })
+                                .then(data => {
+                                    const text = data.contents || '';
+                                    processHtmlData(text);
+                                })
+                                .catch(() => {});
+                        });
+                }
             }
         }
 
