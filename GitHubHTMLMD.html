@@ -817,6 +817,11 @@
                 ? `--search-bg: #161b22; --search-border: #30363d; --search-input-bg: #0d1117; --search-text: #c9d1d9;`
                 : `--search-bg: #fff; --search-border: #e1e4e8; --search-input-bg: #fff; --search-text: #24292e;`;
 
+            // 🚀 顶部统计信息栏的配色自适应（支持双亮暗色高定，提升对比度并消除顶部框线突兀感）
+            const infoBarBg = currentTheme === 'dark' ? 'rgba(22, 27, 34, 0.8)' : 'rgba(246, 248, 250, 0.8)';
+            const infoBarBorder = currentTheme === 'dark' ? '#30363d' : '#d1d5da';
+            const infoBarText = currentTheme === 'dark' ? '#c9d1d9' : '#444d56';
+
             // 🚀 暗色模式下代码块按钮的动态样式注入（iframe 内 body 无 dark 标记，只能通过模板变量区分）
             const darkBtnStyles = currentTheme === 'dark' ? `
                     .code-copy-btn, .code-wrap-btn {
@@ -904,15 +909,15 @@
                     }
                     .code-copy-btn, .code-wrap-btn {
                         position: absolute;
-                        top: 8px;
+                        top: 4px; /* 调整为 4px 使其在 30px 统计栏中完美垂直居中 */
                         opacity: 0;
                         transition: opacity 0.2s, background 0.2s, color 0.2s, border-color 0.2s;
                         background: rgba(120, 120, 120, 0.08);
                         border: 1px solid var(--border-color, #e1e4e8);
-                        border-radius: 6px;
+                        border-radius: 4px; /* 缩减圆角以匹配高度 */
                         color: #586069;
                         padding: 0 8px;
-                        height: 26px;
+                        height: 22px; /* 高度从 26px 调整为 22px */
                         box-sizing: border-box;
                         cursor: pointer;
                         z-index: 10;
@@ -921,7 +926,7 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        font-size: 0.75rem;
+                        font-size: 0.7rem; /* 字体从 0.75rem 微调至 0.7rem */
                         font-family: -apple-system, sans-serif;
                     }
                     .code-copy-btn {
@@ -948,6 +953,32 @@
                         border-color: #388bfd !important;
                     }
                     
+                    /* 🚀 代码块顶部统计信息栏绝对定位在 pre 内部顶端，无缝共享外框圆角，消除多余外部框线 */
+                    .code-info-bar {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        height: 30px; /* 高度从 28px 调整为 30px，与 22px 按钮搭配更具呼吸感 */
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 0 16px;
+                        font-size: 11px;
+                        color: ${infoBarText};
+                        background: ${infoBarBg};
+                        border-bottom: 1px solid ${infoBarBorder};
+                        border-top-left-radius: 5px;
+                        border-top-right-radius: 5px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                        user-select: none;
+                        box-sizing: border-box;
+                        z-index: 5;
+                    }
+                    /* 当存在信息栏时，pre 留出顶部 padding 空间，防止遮挡代码 */
+                    pre.has-line-numbers {
+                        padding-top: 38px !important; /* 从 36px 调整为 38px 确保布局美观 */
+                    }
                     
                     /* 🚀 折行控制激活状态样式 */
                     pre.word-wrap {
@@ -1097,6 +1128,40 @@
                             const pre = codeBlock.parentNode;
                             pre.insertBefore(numCol, codeBlock);
                             pre.classList.add('has-line-numbers');
+
+                            // 🚀 动态安全注入代码块顶部统计信息栏
+                            if (lineCount >= 3) {
+                                const infoBar = document.createElement('div');
+                                infoBar.className = 'code-info-bar';
+                                
+                                const charCount = text.length;
+                                let sizeStr = '';
+                                if (charCount < 1024) {
+                                    sizeStr = charCount + ' B';
+                                } else {
+                                    sizeStr = (charCount / 1024).toFixed(2) + ' KB';
+                                }
+                                
+                                let lang = 'TEXT';
+                                codeBlock.classList.forEach(cls => {
+                                    if (cls.startsWith('language-')) {
+                                        lang = cls.replace('language-', '').toUpperCase();
+                                    }
+                                });
+                                if (lang === 'MARKDOWN') lang = 'MD';
+                                if (lang === 'JAVASCRIPT') lang = 'JS';
+                                if (lang === 'TYPESCRIPT') lang = 'TS';
+                                
+                                infoBar.innerHTML = '<div class="code-info-left">' +
+                                    '<span>📊 共 ' + lineCount + ' 行</span>' +
+                                    '<span style="margin: 0 8px; color: var(--border-color, #e1e4e8); opacity: 0.5;">|</span>' +
+                                    '<span>🔤 ' + charCount + ' 字符 (' + sizeStr + ')</span>' +
+                                    '</div>' +
+                                    '<div class="code-info-right" style="font-weight: 600; font-size: 10px; letter-spacing: 0.5px; opacity: 0.7; margin-right: 120px;">' +
+                                    lang +
+                                    '</div>';
+                                pre.insertBefore(infoBar, pre.firstChild);
+                            }
 
                             // 🚀 注入代码块右上角绝对定位复制按钮
                             const copyBtn = document.createElement('button');
