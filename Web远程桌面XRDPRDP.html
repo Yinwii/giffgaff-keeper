@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web 远程桌面 (XRDP/RDP) 终极配置指南</title>
+    
+    <!-- 完美支持的 SVG Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%233b82f6' d='M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z'/%3E%3C/svg%3E">
+
+    <!-- 引入 Highlight.js 样式 (Atom One Dark 主题) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --primary-color: #3b82f6;
+            --border-color: #e2e8f0;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.6; color: var(--text-color); background-color: var(--bg-color); margin: 0; padding: 40px 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        h1 { color: #0f172a; font-size: 2.2rem; text-align: center; margin-bottom: 0.2em; margin-top: 0; }
+        .subtitle { text-align: center; color: #64748b; margin-bottom: 2.5em; padding-bottom: 1.5em; border-bottom: 2px solid var(--border-color); font-size: 1.1rem; }
+        h2 { color: #0f172a; font-size: 1.4rem; margin-top: 2.5rem; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;}
+        h3 { color: #334155; font-size: 1.15rem; margin-top: 1.5rem; border-left: 4px solid var(--primary-color); padding-left: 10px;}
+        h4 { margin-top: 1.2em; margin-bottom: 0.5em; color: #0f172a; font-size: 1.1rem; }
+        p, li { font-size: 1rem; color: #475569; }
+        .alert { background-color: #eff6ff; border-left: 4px solid var(--primary-color); padding: 16px; border-radius: 4px; margin: 20px 0; }
+        .alert strong { color: #1e3a8a; }
+        
+        pre { position: relative; border-radius: 8px; margin: 1.5rem 0; background-color: #282c34 !important; padding: 0; overflow: hidden; }
+        pre code { display: block; padding: 20px; overflow-x: auto; color: #abb2bf !important; font-family: "Fira Code", Consolas, Monaco, monospace; font-size: 0.95rem; line-height: 1.5; }
+        
+        .copy-button { position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; padding: 5px 12px; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; z-index: 10; }
+        .copy-button:hover { background: rgba(255, 255, 255, 0.3); }
+        .copy-button.copied { background: #10b981; border-color: #10b981; }
+        
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; color: white;}
+        .bg-main { background-color: #dc2626; }
+        .bg-edge { background-color: #16a34a; }
+        .bg-rdp { background-color: #0284c7; }
+        .bg-ssh { background-color: #7c3aed; }
+        .highlight-red { color: #e11d48; font-weight: bold; }
+        .scenario-box { background: #fdf2f8; border: 1px solid #fbcfe8; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.95rem; color: #831843;}
+        
+        .npm-step { background: #f1f5f9; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px; }
+        kbd { background: #cbd5e1; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; font-family: monospace; }
+        
+        .tip-card { text-align: left; color: #475569; font-size: 0.95rem; padding: 20px; background-color: #f1f5f9; border-radius: 8px; margin-bottom: 15px; }
+        .tip-card h4 { margin-top: 0; margin-bottom: 10px; color: #0f172a; font-size: 1.05rem; }
+
+        .feature-card { padding: 16px; border-radius: 8px; margin-bottom: 15px; border: 1px solid; }
+        .fc-win { background-color: #f0f9ff; border-color: #bae6fd; }
+        .fc-win h4 { color: #0369a1; margin-top: 0; margin-bottom: 10px; font-size: 1.1rem; }
+        .fc-lin { background-color: #fdf4ff; border-color: #fbcfe8; }
+        .fc-lin h4 { color: #86198f; margin-top: 0; margin-bottom: 10px; font-size: 1.1rem; }
+        .fc-warn { background-color: #fffbeb; border-color: #fde68a; }
+        .fc-warn h4 { color: #b45309; margin-top: 0; margin-bottom: 10px; font-size: 1.1rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;}
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95rem; margin-bottom: 15px; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        th { background-color: #f8fafc; color: #0f172a; }
+
+        .alert-warning { background-color: #fffbeb; border-left: 5px solid var(--warning); border-color: var(--warning); color: #92400e; }
+        .alert-info { background-color: #eff6ff; border-left: 5px solid var(--primary-color); border-color: var(--primary-color); color: #1e3a8a; }
+        .alert-success { background-color: #f0fdf4; border-left: 5px solid var(--success); border-color: var(--success); color: #166534; }
+        code.inline { font-family: "Consolas", monospace; background-color: rgba(59,130,246,0.1); color: var(--primary-color); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Web 远程桌面 (XRDP/RDP) 终极配置指南</h1>
+    <div class="subtitle">面向单机直连部署 & 多区域节点 (US/EU) 的高可用分布式混合架构</div>
+    
+    <div class="alert">
+        <strong>架构原理：</strong>传统反向代理无法直接转发纯 TCP 的 RDP 协议。我们需要部署 <b>Apache Guacamole</b>（HTML5 远程桌面网关容器），将局域网内的 Linux/Windows 画面实时翻译成网页。最终实现：访问 <code>https://域名</code> 即可在任何浏览器中丝滑操控电脑。<br><br>
+        <strong>分布式架构支持：</strong>本方案完美支持单机直连部署，以及跨国分布式节点调用（极大降低公网画面延迟、减少海外主机性能消耗）。
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 一、架构概览与核心优势 (来自 guacd.html / guacd1.html / guacd2.html / ai_studio_code 系列) -->
+    <!-- ============================================================ -->
+    <h2>一、 架构概览与核心优势</h2>
+    <p>本方案采用 <strong>"第三方集成 Web 面板 + 官方原生底层节点"</strong> 的混搭微服务架构，完美兼容 <b>单机局域网部署</b> 以及 <b>跨国分布式多节点架构 (如美西主控 + 欧洲远端节点)</b>。不仅解决了跨国直连高延迟、易丢包的痛点，更统一了全球机器的权限入口。</p>
+    <ul>
+        <li><span class="badge bg-main">主控中心 (LA)</span>：使用 <code>oznu/guacamole</code> 镜像。提供统一的 Web 交互界面、数据库存储、账号与权限管理。此节点即可顺手接管同城低延迟的所有机器。</li>
+        <li><span class="badge bg-edge">远端节点 (FRA/DE等)</span>：使用 <code>guacamole/guacd</code> 原生镜像。仅运行 C 语言转码守护进程，不提供 Web 服务，专职负责本机房内的 RDP/SSH 画面抓取与极速压缩。</li>
+    </ul>
+
+    <div class="grid-2">
+        <div>
+            <h3>🚀 极致流畅，告别卡顿</h3>
+            <p>原生 RDP/SSH 庞大的流量在远端机房或局域网内部 0 延迟消化。跨国公网传输的仅是 <code>guacd</code> 极致压缩后的 HTML5 流媒体，写代码、查网页等场景丝滑跟手，带宽占用极低。</p>
+        </div>
+        <div>
+            <h3>🛡️ 统一管控，凭证不落地</h3>
+            <p>全球所有被控机无需暴露 3389 或 22 高危端口。凭证由主控数据库统一保管，团队成员只需访问主控域名的 Web 账号，即可直连对应授权的桌面，无法获取服务器真实密码，彻底阻断勒索病毒爆破。</p>
+        </div>
+        <div>
+            <h3>📉 资源占用极限压缩</h3>
+            <p>远端节点（VPS）无需运行臃肿的 Tomcat 和 Java 虚拟机，仅需运行不到 20MB 内存的 <code>guacd</code> 守护进程，最大程度节约海外 VPS 宝贵的计算资源。</p>
+        </div>
+        <div>
+            <h3>👥 无痛免客户端与多租户</h3>
+            <p>PC、手机、平板无需安装任何软件，浏览器即开即用。原生支持 RBAC（基于角色的访问控制），完美适配项目团队。同一台服务器可分配给多名开发人员，实现工作空间的物理级隔离。</p>
+        </div>
+        <div>
+            <h3>🛠️ 运维管理零负担</h3>
+            <p>彻底告别每个节点一套独立面板的孤岛状态。所有服务器的连接配置、会话录像、用户组分配，都在 LA 的主控节点一站式完成。</p>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 步骤 1：部署 Guacamole 网页网关服务 -->
+    <!-- ============================================================ -->
+    <h2>步骤 1：部署 Guacamole 网页网关服务</h2>
+    
+    <h3>方案 A：主控中心 / 单机全能部署 (必装)</h3>
+    <p>使用包含面板与数据库的 <span class="badge bg-main">整合版镜像</span>。在一台运行着 Docker 的 Linux 机器上执行以下命令，启动"翻译官"服务。如果是单机环境，部署这一个就可以直接接管本地的所有服务器了，无需再做转发。</p>
+    <pre><code class="language-bash"># 一键启动 Guacamole 容器（映射到本机 8080 端口，自带配置面板）
+docker run -d \
+  --name guacamole \
+  --restart always \
+  -p 8080:8080 \
+  -v /opt/guacamole:/config \
+  oznu/guacamole</code></pre>
+
+    <h3>方案 B：远端干活节点 - 纯净版 (分布式架构专属，最推荐，省资源)</h3>
+    <p>如果您在全球有多地机房（如美西主控、欧洲远端），为了追求极致延迟，可在远端服务器仅部署底层转码核心，暴露 4822 端口供主控跨国调用。无 Web 面板，专门向主控提供极速代理服务。</p>
+    <pre><code class="language-bash"># 部署纯净版转码进程（极低资源占用，无面板）
+docker run -d \
+  --name guacd-edge \
+  --restart always \
+  -p 4822:4822 \
+  guacamole/guacd</code></pre>
+
+    <h3>方案 C：远端干活节点 - 全能双开版 (可选)</h3>
+    <p>使用整合版镜像，但<strong>同时暴露出 4822 端口</strong>。这样远端节点既有自己的 8080 独立登录页面，又能充当 LA 主控的代理节点。适合需要保留 FRA 自己独立面板的场景。</p>
+    <pre><code class="language-bash"># 全能双开版：既做代理，又保留自己的面板
+docker run -d \
+  --name guacamole-master-node \
+  --restart always \
+  -p 8080:8080 \
+  -p 4822:4822 \
+  -v /opt/guacamole:/config \
+  oznu/guacamole
+# 核心：-p 4822:4822 对外暴露底层转码端口供 LA 主控跨国调用</code></pre>
+
+    <div class="alert alert-warning" style="padding: 12px; margin-top: -5px;">
+        <strong>⚠️ 安全加固（必做）：</strong><br>
+        无论是方案 B 还是 C，远端节点的 4822 端口严禁直接向全网开放。必须配置 UFW 防火墙或使用 Tailscale 组网，仅允许主控 IP 访问。在远端机执行：<br>
+        <code>ufw allow from &lt;LA主控服务器公网IP&gt; to any port 4822</code><br>
+        <code>ufw reload</code>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 步骤 2：配置 Nginx HTTPS 反向代理 -->
+    <!-- ============================================================ -->
+    <h2>步骤 2：配置 Nginx HTTPS 反向代理 (三选一)</h2>
+    
+    <div class="scenario-box">
+        <strong>🌐 环境前置注意：</strong>
+        <br>如果使用 <b>家庭DDNS (无公网IP服务器)</b>，请务必前往主路由器后台，将外网的 <code>80</code> 和 <code>443</code> 端口映射到运行 Nginx 的内网机器 IP 上。公网服务器无需此操作。
+    </div>
+
+    <h3>👉 方式 A：使用 Nginx Proxy Manager (强烈推荐)</h3>
+    <div class="npm-step">
+        <strong>1. Details (基本设置) 选项卡</strong>
+        <ul style="margin-top: 8px;">
+            <li>Domain Names: 填写你的域名 <kbd>xrdp.yourdomain.com</kbd></li>
+            <li>Scheme: 选择 <kbd>http</kbd></li>
+            <li>Forward Hostname / IP: 填 <kbd>127.0.0.1</kbd> (单机) 或 <kbd>Guacamole的内网IP</kbd> (局域网)。也可以使用 Docker 网关 <kbd>172.17.0.1</kbd>。</li>
+            <li>Forward Port: 填入 <kbd>8080</kbd></li>
+            <li><span class="highlight-red">★ 灵魂操作：必须勾选开启 <kbd>Websockets Support</kbd> (不开启进去必黑屏断开)</span></li>
+        </ul>
+        <strong>2. SSL 选项卡</strong>：申请证书，并勾选 <kbd>Force SSL</kbd> 和 <kbd>HTTP/2 Support</kbd>。
+        <br><br>
+        <strong>🔥 高阶直达配置 (可选)：</strong><br>
+        如果你想输入域名敲回车后<strong>跳过主页，瞬间直达桌面</strong>：进入 <b>Advanced</b> 选项卡，粘贴以下精准重定向代码（请将后面的乱码换成你实际连接的 Base64 后缀）：
+        <pre style="margin-top: 8px; margin-bottom: 0;"><code class="language-nginx">location = / {
+    return 302 /index.html#/client/MgBjAHBvc3RncmVzcWw=;
+}</code></pre>
+    </div>
+
+    <h3>👉 方式 B：使用 Lucky 软路由面板 (图形化跳转)</h3>
+    <p>Lucky 面板不允许直接写入 Nginx 指令，在其"Web服务规则"下，必须创建 <strong>两条子规则（一上一下严格排序）</strong> 才能实现直达：</p>
+    <div class="npm-step">
+        <ul style="margin-top: 0;">
+            <li><strong>1. 重定向规则（排在上方）：</strong> 
+                <br>匹配类型选 <b>精确匹配</b>。服务类型选 <code>重定向</code>。前端路径填 <kbd>你的域名/</kbd> <b>(⚠️必须带斜杠)</b>。目标地址填入完整直达链接 <kbd>https://你的域名/#/client/MgBj...</kbd>，状态码设为 302。
+            </li>
+            <li style="margin-top: 10px;"><strong>2. 反向代理规则（排在下方）：</strong> 
+                <br>服务类型选 <code>反向代理</code>。前端填 <b>不带斜杠</b> 的域名。后端地址填入 Guacamole 的内网 IP 与端口 (如 <kbd>http://192.168.31.249:8080</kbd>)。
+            </li>
+        </ul>
+    </div>
+
+    <h3>👉 方式 C：手写 Nginx 配置文件 (适合老玩家)</h3>
+    <pre><code class="language-nginx">server {
+    listen 80;
+    listen 443 ssl http2;
+    server_name xrdp.yourdomain.com; # 换成你的域名
+
+    ssl_certificate /path/to/fullchain.pem;
+    ssl_certificate_key /path/to/privkey.pem;
+
+    if ($scheme = http) { return 301 https://$host$request_uri; }
+
+    # (可选) 精确重定向，实现输入域名瞬间直达桌面
+    location = / {
+        return 302 /index.html#/client/MgBjAHBvc3RncmVzcWw=;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8080/;
+        proxy_buffering off;
+        proxy_http_version 1.1;
+        
+        # ▼▼▼ WebSocket 支持 (灵魂代码) ▼▼▼
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+}</code></pre>
+
+    <!-- ============================================================ -->
+    <!-- 步骤 3：基础连接设置 (Windows & Linux) -->
+    <!-- ============================================================ -->
+    <h2>步骤 3：基础连接设置 (Windows & Linux)</h2>
+
+    <!-- 首次登录引导 (来自 ai_studio_code...112537) -->
+    <ol>
+        <li>在外网用浏览器打开：<code>https://xrdp.yourdomain.com</code></li>
+        <li>默认登录账号密码均为 <span class="badge" style="background-color:#0369a1;">guacadmin</span>（<b>首次进入后请立即修改密码</b>）。</li>
+        <li>点击右上角用户名 -> <strong>设置 (Settings)</strong> -> <strong>连接 (Connections)</strong> -> <strong>新建连接</strong>。</li>
+    </ol>
+
+    <div class="alert alert-info" style="margin-bottom: 20px;">
+        <strong>⚠️ GUACD 参数填写铁律 (请对号入座)：</strong><br>
+        👉 <strong>单机/局域网部署：</strong> 在连接页面底部的 `GUACAMOLE PROXY PARAMETERS (GUACD)` 必须【<b>完全留空</b>】！因为底层翻译官已内置在容器中。<br>
+        👉 <strong>跨国分布式调用：</strong> 如果是主控调用远端节点（如 LA 调用 FRA），这里的 Hostname 必须填【<b>FRA 远端节点的公网/内网 IP</b>】，端口填 <code class="inline">4822</code>。
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>配置区块</th>
+                <th><span class="badge bg-rdp">Windows (RDP 桌面)</span></th>
+                <th><span class="badge bg-ssh">Linux (SSH 终端 / XRDP)</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>基础网络</strong></td>
+                <td>主机名: <code>127.0.0.1</code> 或 目标真实内网IP<br>端口: <code>3389</code></td>
+                <td>主机名: <code>127.0.0.1</code> 或 目标真实内网IP<br>端口: <code>22</code> (SSH) 或 <code>3389</code> (XRDP)</td>
+            </tr>
+            <tr>
+                <td><strong>身份验证</strong></td>
+                <td>安全模式: <span class="highlight-red">强制选 NLA</span><br>打勾: 忽略服务器证书验证<br>用户名: <code>Administrator</code> 密码: <code>***</code></td>
+                <td>安全模式: <code>Any</code> 或 <code>TLS</code><br>打勾: 忽略服务器证书验证<br>用户名: <code>root</code>，直接粘贴密码或私钥 (Private Key)。</td>
+            </tr>
+            <tr>
+                <td><strong>代理(guacd)</strong><br><em>页面最底部</em></td>
+                <td colspan="2">
+                    👉 <strong>分布式调用：</strong>主机名填 <strong>FRA 节点的公网/内网 IP</strong>（或 Tailscale 虚拟 IP），端口填 <code>4822</code>。<br>
+                    👉 <strong>本地局域网/单机：</strong>此处必须【<b>完全留空</b>】，绝不要填任何字符！
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ============================================================ -->
+    <!-- 步骤 3.5：分布式连接配置实战 (LA 调用 FRA) -->
+    <!-- ============================================================ -->
+    <h2>步骤 3.5：分布式连接配置实战 (LA 调用 FRA)</h2>
+    <p>浏览器访问主控域名并使用 <code>guacadmin</code> 登录后，进入【设置 -> 连接 -> 新建连接】。以连接 FRA 节点内网的一台 Windows (RDP) 为例，配置如下：</p>
+    
+    <div class="alert alert-info">
+        <strong>核心逻辑提示：</strong> 在 LA 面板填写的"目标主机 IP"，是站在 FRA 节点 <code>guacd</code> 的视角来看的。因为 <code>guacd</code> 就跑在目标宿主机上，所以通常填写 <code>127.0.0.1</code>。
+    </div>
+
+    <div class="grid-2">
+        <div>
+            <h3><span class="badge bg-rdp">RDP 桌面配置</span></h3>
+            <ol>
+                <li><strong>协议：</strong> 选择 <code>RDP</code></li>
+                <li><strong>网络：</strong> 主机名填 <code>127.0.0.1</code>，端口填 <code>3389</code>。</li>
+                <li><strong>身份验证：</strong> 填写 Windows 系统账号密码（如 <code>Administrator</code>）。安全模式建议选 <code>NLA</code> 并勾选忽略证书。</li>
+                <li><strong>代理参数 (guacd)：</strong> 主机名填 <strong>FRA 的公网/内网 IP</strong>，端口填 <code>4822</code>。</li>
+            </ol>
+        </div>
+        <div>
+            <h3><span class="badge bg-ssh">SSH 终端配置</span></h3>
+            <ol>
+                <li><strong>协议：</strong> 选择 <code>SSH</code></li>
+                <li><strong>网络：</strong> 主机名填 <code>127.0.0.1</code>，端口填 <code>22</code>。</li>
+                <li><strong>身份验证：</strong> 填写 Linux 的账号密码（或直接粘贴 Private Key 私钥，更安全）。</li>
+                <li><strong>代理参数 (guacd)：</strong> 主机名填 <strong>FRA 的公网/内网 IP</strong>，端口填 <code>4822</code>。</li>
+            </ol>
+        </div>
+    </div>
+    <p>配置完成后保存。在首页点击该连接，主控将瞬间唤醒 FRA 的守护进程，实现极速的跨国流畅访问。</p>
+
+    <!-- ============================================================ -->
+    <!-- 步骤 4：进阶模块 - 剪贴板与文件共享 -->
+    <!-- ============================================================ -->
+    <h2>步骤 4：进阶模块 - 剪贴板与文件共享</h2>
+    <p>Guacamole 完美支持跨端复制粘贴以及拖拽传文件。请在编辑连接页面的对应区块进行如下设置：</p>
+
+    <!-- 剪贴板模块 -->
+    <div class="feature-card" style="background-color: #f8fafc; border-color: #cbd5e1;">
+        <h4 style="margin-top:0; color:#334155;">📋 剪贴板双向同步 (全平台通用)</h4>
+        <ul style="margin: 0; color:#475569; padding-left: 20px;">
+            <li><strong>状态：</strong>默认已开启！只要你在浏览器环境中使用了 HTTPS 协议，浏览器会自动允许读取剪贴板。</li>
+            <li><strong>使用方法：</strong>直接跨屏幕使用 <kbd>Ctrl+C</kbd> 和 <kbd>Ctrl+V</kbd> 复制纯文本即可。</li>
+            <li><strong>💡 隐藏快捷键：</strong>在桌面内按下 <kbd>Ctrl+Alt+Shift</kbd> 可呼出隐藏侧边栏。侧边栏内提供了一个专用的剪贴板文本框，可用于查看当前同步的文本，或在快捷键被系统拦截时手动输入文本。</li>
+            <li><strong>📱 移动端：</strong>侧边栏内的文本框即为双向剪贴板。长按粘贴内容进去，即可发送到远程机器；远程复制的内容，也会出现在这里供手机复制。</li>
+        </ul>
+    </div>
+
+    <!-- 磁盘/文件共享模块 -->
+    <div class="feature-card fc-win">
+        <h4>📁 Windows 专属：开启"虚拟磁盘"文件传输</h4>
+        <p style="margin-top:0; font-size: 0.95rem;">Windows 原生支持极其顺滑的 RDP 虚拟磁盘映射，无需配置复杂的 SFTP 即可实现秒传。</p>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li><strong>配置方法：</strong>在编辑页往下滚动到 <b>"设备重定向 (Device Redirection)"</b>。</li>
+            <li>勾选 <b>启用虚拟磁盘 (Enable drive) ✅</b>。</li>
+            <li>在 <b>Drive name (虚拟磁盘名称)</b> 填入自定义名称，如 <code>GuacDrive</code>。</li>
+            <li><span class="highlight-red">🚨 核心排雷：</span> <b>Drive path (虚拟盘路径) 必须完全清空留白！</b> 只需确保最下方勾选了 <b>"自动建立虚拟盘"</b>，系统内会自动挂载为一个独立的网络驱动器。</li>
+            <li><strong>拖拽上传：</strong>进入桌面后，直接将本地电脑的文件<strong>拖拽进浏览器窗口</strong>，文件会自动落入"我的电脑"中的 <code>GuacDrive</code> 盘符内。</li>
+            <li><strong>跨屏下载：</strong>若要将远程文件下载到本地，只需打开 <code>GuacDrive</code> 盘，将文件拖入系统自动生成的 <b><code>Download</code></b> 文件夹中，浏览器便会自动触发弹窗下载。</li>
+        </ul>
+    </div>
+
+    <!-- Linux 文件共享模块 -->
+    <div class="feature-card fc-lin">
+        <h4>🐧 Linux (XRDP) 专属：开启 SFTP 文件传输</h4>
+        <p style="margin-top:0; font-size: 0.95rem;">Linux 系统下必须通过 SSH 的 SFTP 辅助通道才能实现文件传输。</p>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li><strong>配置方法：</strong>在编辑页滚动到最底部的 <b>"SFTP"</b> 区域。</li>
+            <li>勾选 <b>启用 SFTP (Enable SFTP) ✅</b>。</li>
+            <li><b>主机名</b> 填 Linux IP，<b>端口</b> 填 <code>22</code>。</li>
+            <li>填入 Linux 系统的登录 <b>用户名</b> 和 <b>密码</b>。</li>
+            <li><b>文件系统根目录</b> 填入 <code>/</code>，以便获取完整硬盘访问权限。</li>
+            <li><strong>使用方法：</strong>
+                <br>上传文件：直接将本地文件<b>拖拽到浏览器终端区域</b>，右下角会弹出进度条，文件自动上传到服务器中。
+                <br>浏览与下载：按下 <kbd>Ctrl+Alt+Shift</kbd> 呼出侧边栏，在文件区会以网页目录的形式展开服务器文件，双击即可下载到本地。
+            </li>
+        </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 步骤 5：高阶操控与画质调优 -->
+    <!-- ============================================================ -->
+    <h2>步骤 5：高阶操控与画质调优</h2>
+
+    <div class="grid-2">
+        <div class="feature-card" style="border-color: #cbd5e1; background-color: #f8fafc; margin-bottom: 0;">
+            <h4 style="color: #0369a1;">🖥️ Windows 视觉画质优化</h4>
+            <p style="margin-top:0; font-size: 0.95rem; color:#475569;">远程桌面默认为了省流会强制关闭消耗带宽的视觉特效，导致黑屏或字体发虚。如果您身处高速千兆局域网，请在 <b>"性能 (Performance)"</b> 区域务必打勾开启以下 5 项，瞬间恢复极致物理机画质：</p>
+            <ul style="margin-bottom:0; font-size: 0.95rem; color:#475569; padding-left: 20px;">
+                <li>✅ <b>启用桌面墙纸 (Enable wallpaper)</b> 👉 解决背景纯黑的问题，恢复原生壁纸。</li>
+                <li>✅ <b>启用字体平滑 (ClearType)</b> 👉 解决中文字体发虚、退化成马赛克的问题，恢复圆润清晰。</li>
+                <li>✅ <b>启用桌面组合效果 (Aero)</b> 👉 极其推荐！开启 Win10/11 的 UI 硬件加速、窗口阴影和毛玻璃半透明效果。</li>
+                <li>✅ <b>启用全窗口拖拽 (Enable full-window drag)</b> 👉 拖拽窗口时实时显示其内容，而不是只显示一个虚线框。</li>
+                <li>✅ <b>启用菜单动画 (Enable menu animations)</b> 👉 让右键菜单弹出时有平滑过渡的淡入淡出动画。</li>
+            </ul>
+        </div>
+
+        <div class="feature-card" style="border-color: #cbd5e1; background-color: #f8fafc; margin-bottom: 0;">
+            <h4 style="color: #1e293b;">📱 移动端专属手势与键盘</h4>
+            <p style="margin-top:0; font-size: 0.95rem; color:#475569;">Guacamole 对移动端无键盘环境做了深度适配，完美适配手机/平板：</p>
+            <ul style="margin-bottom:0; font-size: 0.95rem; color:#475569; padding-left: 20px;">
+                <li><strong>呼出侧边栏：</strong> 在屏幕最左侧边缘，手指<strong>向右滑动</strong>，即可唤出黑色控制面板。</li>
+                <li><strong>防误触虚拟鼠标：</strong> 侧边栏内将"鼠标模拟 (Mouse Emulation)"切换为 <b>触摸板 (Touchpad)</b>。此时整个手机屏幕将变成笔记本的触控板，滑行控制指针，单指轻敲为左键，双指轻敲为右键。</li>
+                <li><strong>输入法呼出：</strong> 侧边栏顶部点击"文本输入 (Text Input)"，即可唤出手机自带键盘，敲击代码或命令毫无压力。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 核心排雷与防坑指南 -->
+    <!-- ============================================================ -->
+    <h2>🟣 核心排雷与防坑指南 (必看)</h2>
+    
+    <div class="feature-card fc-warn">
+        <h4>🚨 致命坑点 1：GUACD 参数千万别乱填！</h4>
+        <p style="margin:0;">在连接设置的最上方有一个区域叫 <b><code>GUACAMOLE PROXY PARAMETERS (GUACD)</code></b>。<br>
+        <strong>铁律：</strong> 如果你是单机或局域网部署，这一栏的 Hostname 和 Port 必须【<b>永远保持完全空白</b>】！底层翻译官已内置。如果你乱填公网 IP，连接时会直接卡死并报"服务器太久没有应答"。<br>
+        <i>(仅当你是跨国分布式架构，主控调用边缘节点时，此处才填远端节点的 IP。)</i></p>
+    </div>
+
+    <div class="feature-card fc-warn">
+        <h4>🚨 致命坑点 2：手机端访问直达链接报 404 错误</h4>
+        <p style="margin:0;">如果你把 <code>/#/client/MgBj...</code> 这种直达链接直接发到微信/QQ，或者用手机自带浏览器打开，可能会直接报错 <b>404 Not Found</b>。<br>
+        <strong>原因：</strong>这是手机软件自作聪明的 Bug。它们会偷偷把链接里的本地路由符号 <code>#</code> 强制转码成 <code>%23</code> 并发给服务器，导致 Tomcat 报错。<br>
+        <strong>解决办法：</strong>手动在手机地址栏把 <code>%23</code> 改回 <code>#</code> 即可。或者乖乖配置好 Nginx/Lucky 重定向（步骤二），彻底告别此 Bug。</p>
+    </div>
+
+    <div class="feature-card fc-warn">
+        <h4>🚨 致命坑点 3：Linux (SSH) 连接报 "Handshake failed" 或 "Host key not found"（网页提示内部错误）</h4>
+        <p style="margin-bottom: 10px;">当你使用较新版本的目标 Linux 主机（如 Ubuntu 22.04+、Debian 12+）配合较旧的 Guacamole 容器时，会因为安全算法策略冲突导致<strong>连接瞬间中断并报错</strong>。请依次排查并解决这两个核心阶段的握手问题：</p>
+        
+        <p style="margin-bottom: 5px;"><strong>一、问题 1：后台日志报 <code>SSH handshake failed</code>（握手失败）</strong></p>
+        <p style="margin-top:0; margin-bottom:5px; font-size: 0.95rem;"><strong>原因：</strong>新版系统禁用了不安全的 SHA-1 签名（即 <code>ssh-rsa</code> 主机密钥类型），而较旧的 Guacamole 容器底层客户端（如 <code>libssh2</code>）在连接时只支持并请求 <code>ssh-rsa</code> 和 <code>ssh-dss</code>。这会导致 SSH 握手直接失败。</p>
+        <p style="margin-top:0; margin-bottom:10px; font-size: 0.95rem;"><strong>解决办法（在目标宿主机启用兼容）：</strong>在被连接的目标 Linux 主机上运行以下一键脚本。该方法采用独立的 <code>.d</code> 子配置文件，能够安全避开主配置文件 <code>sshd_config</code> 结尾处的 <code>Match</code> 作用域限制：</p>
+        <pre><code class="language-bash"># 一键写入算法兼容配置，并重载套接字与 SSH 服务
+echo -e "HostKeyAlgorithms +ssh-rsa\nPubkeyAcceptedKeyTypes +ssh-rsa" > /etc/ssh/sshd_config.d/guac-compat.conf
+sshd -t && systemctl daemon-reload && systemctl restart ssh.socket && systemctl restart ssh</code></pre>
+        <p style="margin-bottom: 10px; font-size: 0.95rem;">运行以下命令验证（输出的长字符串中必须成功包含 <code>ssh-rsa</code>）：</p>
+        <pre><code class="language-bash">sshd -T | grep -i hostkeyalgorithms</code></pre>
+ 
+        <p style="margin-bottom: 5px; margin-top:15px;"><strong>二、问题 2：后台日志报 <code>Host key not found</code> 或 <code>Host key did not match</code></strong></p>
+        <p style="margin-top:0; margin-bottom:5px; font-size: 0.95rem;"><strong>原因：</strong>算法协商通过后，Guacamole 的 SSH 客户端为了防止中间人攻击，要求验证目标机的主机密钥（Host Key）。若此时连接配置中的 "Public host key" 为空，且容器未配置自动信任，连接依然会被强制掐断。</p>
+        <p style="margin-top:0; margin-bottom:10px; font-size: 0.95rem;"><strong>解决办法：</strong>在目标 Linux 主机上运行以下命令，获取宿主机真实的 <strong>RSA</strong> 格式公钥：</p>
+        <pre><code class="language-bash">cat /etc/ssh/ssh_host_rsa_key.pub</code></pre>
+        <p style="margin-bottom: 0; font-size: 0.95rem;">完整复制输出的整行内容（形如 <code>ssh-rsa AAAAB3Nz... root@hostname</code>）。回到 Guacamole 网页端的连接编辑页面，将其完整粘贴到 <strong>"Public host key (Base64)"</strong> 字段中保存，即可彻底解决此报错。</p>
+
+        <p style="margin-bottom: 5px; margin-top:15px;"><strong>三、免验证备选方案（防坑关键）：Public host key (Base64) 保持留空</strong></p>
+        <p style="margin-top:0; margin-bottom:0; font-size: 0.95rem;">只要在第一步中修复了宿主机的 <code>ssh-rsa</code> 兼容性，在 Guacamole 的连接配置中，<strong>"Public host key (Base64)" 字段建议首先完全保持空白（不要填写任何内容）</strong>。
+        <br>在绝大多数整合版镜像（如 <code>oznu/guacamole</code>）中，留空该字段会自动让系统信任或绕过主机密钥校验，实现一键直连。手动填入不匹配或格式错误的密钥指纹反而会导致连接报 <code>Host key did not match</code> 错误。因此，如果留空无法直连，再采用步骤二的获取真实公钥进行绑定。</p>
+    </div>
+
+    <div class="feature-card fc-win">
+        <h4>🛡️ 终极安全防范与多租户协作</h4>
+        <p style="margin-bottom: 8px;"><strong>团队隔离：</strong> 系统底层新建多个子账号（dev_01, dev_02）。在 Web 面板创建对应连接，并分配给不同的开发人员 Web 账号，完美实现工作空间的物理级隔离。</p>
+        <p style="margin-bottom: 0;"><strong>关门打狗：</strong> 既然你已经配置好了安全加密的 443 网页访问通道，请务必前往云服务器控制台（或家庭路由器），<strong>将原本暴露在外网的 <code>3389</code> 端口彻底关闭或删除映射！</strong> 将 3389 藏在内网，可以 100% 杜绝来自公网的勒索病毒扫描和密码暴力破解。</p>
+    </div>
+
+    <div class="feature-card fc-lin">
+        <h4>💡 进阶玩法：套用 Cloudflare 免费 CDN</h4>
+        <p style="margin-bottom: 0;">因为 Guacamole 将 RDP 完美转换为了纯正的 HTTPS/WebSocket 流量，你可以把域名直接接入 <strong>Cloudflare CDN</strong>（点亮橙色云朵）。这不仅自带全球网络加速，还能彻底隐藏你真实的公网 IP，极大提升服务器的隐蔽性。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 团队多用户协作配置 (来自 guacd1.html / guacd2.html) -->
+    <!-- ============================================================ -->
+    <h2>📋 团队多用户协作与权限隔离 (RBAC)</h2>
+    <p>为项目开发团队分配环境，系统底层账号结合 Guacamole 的权限映射，可以完美实现开发资源的多租户隔离分配。</p>
+    
+    <div class="alert alert-success">
+        <strong>实现逻辑：</strong> 操作系统底层新建多个独立用户 -> Guacamole 创建对应数量的连接 -> 将这些连接分别分配给不同的团队成员 Web 账号。
+    </div>
+
+    <ol>
+        <li><strong>系统底层准备：</strong> 
+            <ul>
+                <li><strong>Linux端：</strong> 直接在系统内通过 <code>useradd</code> 创建多个开发人员的子账号。由于 Linux 天生支持多用户并发 SSH，互不干扰。</li>
+                <li><strong>Windows端：</strong> 需要运行 Windows Server，并在系统内创建多个普通用户。Server 版支持多人同时 RDP 远程登录并拥有各自独立的桌面环境。</li>
+            </ul>
+        </li>
+        <li><strong>创建一对一连接：</strong> 在 Guacamole 面板，为同一台机器创建多个连接。网络配置完全相同（同 IP 同端口），但 <strong>身份验证 (Authentication)</strong> 部分分别填写刚创建的不同子账号密码。</li>
+        <li><strong>按角色分配 Web 账号：</strong> 进入【设置 -> 用户】，为团队成员创建独立的 Web 账号，并在权限列表中，仅勾选分配给他的那一台特定的"专属连接"。</li>
+    </ol>
+    <p><em>效果：团队成员使用自己的 Web 账号登录后，首页仅显示自己的开发环境。点击进入后，代码与文件均处于物理隔离状态，完美实现多租户管理。</em></p>
+
+    <hr>
+    <div style="text-align: center; color: #6b7280; font-size: 0.95rem; padding-bottom: 20px;">
+        💡 <strong>管理增效提示：</strong> 独立的开发工作空间不仅避免了环境冲突，也能让项目组的管理更加结果导向——由于环境与代码是物理隔离的，无需过度关注基础考勤打卡，而是将评估重心完全聚焦于各个环境实际产出的核心 KPI 结果。离职或调岗时，只需在后台一键停用 Web 账号即可完成权限回收。
+    </div>
+
+</div>
+
+<!-- 引入 Highlight.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>
+    // 初始化代码高亮
+    hljs.highlightAll();
+
+    // 动态添加"一键复制"按钮（支持双轨 Fallback 机制，兼容非安全上下文）
+    document.querySelectorAll('pre').forEach((block) => {
+        const button = document.createElement('button');
+        button.className = 'copy-button';
+        button.innerText = '复制';
+        block.appendChild(button);
+
+        button.addEventListener('click', () => {
+            const code = block.querySelector('code').innerText;
+            
+            // 现代 API 优先
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(() => {
+                    button.innerText = '已复制!';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.innerText = '复制';
+                        button.classList.remove('copied');
+                    }, 2000);
+                }).catch(() => {
+                    // Fallback: 传统 DOM 方式
+                    fallbackCopy(code, button);
+                });
+            } else {
+                // Fallback: 传统 DOM 方式
+                fallbackCopy(code, button);
+            }
+        });
+    });
+
+    // 传统 DOM 复制（兼容非 HTTPS / 内网 IP 直连环境）
+    function fallbackCopy(text, button) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            button.innerText = '已复制!';
+            button.classList.add('copied');
+            setTimeout(() => {
+                button.innerText = '复制';
+                button.classList.remove('copied');
+            }, 2000);
+        } catch (err) {
+            console.error('复制失败', err);
+            button.innerText = '失败';
+        }
+        document.body.removeChild(textarea);
+    }
+</script>
+</body>
+</html>
