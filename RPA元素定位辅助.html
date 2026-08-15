@@ -239,9 +239,29 @@
         document.getElementById('resultsArea').style.display = 'block';
     }
 
+    // 兼容非 HTTPS / file:// 环境：navigator.clipboard 可能不可用
+    function copyFallback(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+
     async function copyFinal(id, btn) {
         const c = document.getElementById(id).innerText;
-        await navigator.clipboard.writeText(c);
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(c);
+            } else {
+                copyFallback(c);
+            }
+        } catch(e) {
+            copyFallback(c);
+        }
         const old = btn.innerText;
         btn.innerText = "已复制";
         setTimeout(() => btn.innerText = old, 1000);
