@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPA 元素定位辅助</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #eff6ff;
+            --success: #10b981;
+            --bg-body: #f1f5f9;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --code-bg: #1e293b;
+            --font-mono: "Cascadia Code", "Fira Code", Consolas, monospace;
+        }
+
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background-color: var(--bg-body);
+            display: flex; justify-content: center; padding: 25px; margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            width: 100%; max-width: 750px; background: white; padding: 28px;
+            border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        }
+
+        h2 { color: var(--primary); font-size: 20px; margin: 0 0 20px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .label { font-size: 14px; font-weight: bold; color: var(--text-main); }
+        
+        /* 右上角示例 */
+        #exampleTag { 
+            font-size: 11px; color: #9a3412; background: #fff7ed; padding: 2px 10px; 
+            border-radius: 6px; border: 1px solid #ffedd5; font-family: var(--font-mono);
+            visibility: hidden; opacity: 0; transition: 0.2s;
+        }
+
+        textarea {
+            width: 100%; height: 95px; padding: 14px; border: 1px solid #cbd5e1; border-radius: 10px;
+            font-family: var(--font-mono); font-size: 13px; box-sizing: border-box; resize: none;
+            background: #fafafa; transition: 0.2s;
+        }
+        textarea:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(37,99,235,0.08); }
+        textarea::placeholder { font-family: sans-serif; color: #94a3b8; font-size: 13px; letter-spacing: 0.5px; }
+
+        /* 修正后的提示文字：标准字体，非斜体 */
+        .step-tip { 
+            font-size: 12px; color: #64748b; margin: 8px 0 15px 0; display: block; 
+            font-style: normal !important; 
+            letter-spacing: 0.3px;
+        }
+
+        .toolbar { display: flex; gap: 10px; margin-bottom: 25px; }
+        
+        /* 步骤1按钮基础样式 */
+        .btn {
+            cursor: pointer; border-radius: 8px; font-weight: 600; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #cbd5e1;
+            background: white; color: var(--text-sub); padding: 8px 18px; font-size: 13px;
+        }
+        /* 点击缩放反馈 */
+        .btn:active { transform: scale(0.94); }
+        .btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+        .btn-main { background: var(--primary); color: white; border: none; flex-grow: 1; font-size: 14px; }
+        .btn-main:hover { background: #1d4ed8; }
+        
+        /* 按钮反馈状态 */
+        .btn-flash { background: var(--success) !important; color: white !important; border-color: var(--success) !important; }
+
+        .wait-box { border: 2px dashed #e2e8f0; border-radius: 12px; padding: 45px; text-align: center; color: #94a3b8; font-size: 14px; }
+
+        #resultsArea { display: none; }
+        
+        /* 结果项容器 */
+        .result-item { 
+            margin-bottom: 24px; 
+            padding-left: 14px; 
+            padding-right: 14px; 
+            position: relative;
+            background: #f1f5f9;
+            border-radius: 6px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .res-title { font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 10px; display: block; }
+        
+        .code-block {
+            background: var(--code-bg); border-radius: 12px; padding: 15px; position: relative;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .code-text {
+            font-family: var(--font-mono); font-size: 13px; color: #e2e8f0;
+            display: block; word-break: break-all; margin-right: 60px; line-height: 1.6;
+        }
+
+        .copy-tag {
+            position: absolute; right: 10px; top: 12px; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15); color: white; padding: 4px 10px; border-radius: 6px;
+            font-size: 11px; cursor: pointer; transition: 0.2s;
+        }
+        .copy-tag:hover { background: var(--primary); border-color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🤖 RPA 元素定位辅助</h2>
+
+    <div class="section-header">
+        <span class="label">步骤 1: 粘贴源代码</span>
+        <span id="exampleTag">&lt;span&gt;github_248960&lt;/span&gt;</span>
+    </div>
+
+    <textarea id="htmlInput" placeholder="在此粘贴代码..." oninput="syncTag()"></textarea>
+    
+    <!-- 提示文字：标准字体，非斜体 -->
+    <span class="step-tip">提示：支持直接从 Chrome 开发者工具右键 "Copy element" 得到的代码。</span>
+
+    <div class="toolbar">
+        <button id="btnPaste" class="btn" onclick="actPaste()">📋 粘贴</button>
+        <button id="btnCopy" class="btn" onclick="actCopyRaw()">📋 复制</button>
+        <button id="btnClear" class="btn" onclick="actClear()">🧹 清空</button>
+        <button class="btn btn-main" onclick="actGen()">⚡ 立即生成定位符</button>
+    </div>
+
+    <div class="label" style="margin-bottom: 15px;">步骤 2: 生成结果 (按稳定性排序)</div>
+    
+    <div id="waitBox" class="wait-box">等待输入并生成...</div>
+
+    <div id="resultsArea">
+        <div class="result-item">
+            <span class="res-title">推荐：XPath 包含匹配 (抗干扰最强)</span>
+            <div class="code-block">
+                <code class="code-text" id="out-1"></code>
+                <button class="copy-tag" onclick="copyFinal('out-1', this)">复制</button>
+            </div>
+        </div>
+
+        <div class="result-item">
+            <span class="res-title">穿透：向上寻找父级按钮</span>
+            <div class="code-block">
+                <code class="code-text" id="out-2"></code>
+                <button class="copy-tag" onclick="copyFinal('out-2', this)">复制</button>
+            </div>
+        </div>
+
+        <div class="result-item">
+            <span class="res-title">精准：全文本绝对匹配</span>
+            <div class="code-block">
+                <code class="code-text" id="out-3"></code>
+                <button class="copy-tag" onclick="copyFinal('out-3', this)">复制</button>
+            </div>
+        </div>
+
+        <div class="result-item">
+            <span class="res-title">现代：CSS Selector (:has-text)</span>
+            <div class="code-block">
+                <code class="code-text" id="out-4"></code>
+                <button class="copy-tag" onclick="copyFinal('out-4', this)">复制</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const input = document.getElementById('htmlInput');
+    const tag = document.getElementById('exampleTag');
+
+    function syncTag() {
+        if (input.value.trim()) {
+            tag.style.visibility = "visible"; tag.style.opacity = "1";
+        } else {
+            tag.style.visibility = "hidden"; tag.style.opacity = "0";
+        }
+    }
+
+    // 统一按钮回馈动画
+    function feedback(id, msg) {
+        const b = document.getElementById(id);
+        const old = b.innerHTML;
+        b.innerHTML = "✅ " + msg;
+        b.classList.add('btn-flash');
+        setTimeout(() => {
+            b.innerHTML = old;
+            b.classList.remove('btn-flash');
+        }, 800);
+    }
+
+    async function actPaste() {
+        try {
+            const t = await navigator.clipboard.readText();
+            input.value = t;
+            syncTag(); actGen();
+            feedback('btnPaste', '已粘贴');
+        } catch(e) { alert("请 Ctrl+V 粘贴"); }
+    }
+
+    async function actCopyRaw() {
+        if(!input.value) return;
+        await navigator.clipboard.writeText(input.value);
+        feedback('btnCopy', '已复制');
+    }
+
+    function actClear() {
+        input.value = ""; syncTag();
+        document.getElementById('resultsArea').style.display = 'none';
+        document.getElementById('waitBox').style.display = 'block';
+        feedback('btnClear', '已清空');
+    }
+
+    function actGen() {
+        const val = input.value.trim();
+        if(!val) return;
+
+        let elTag = "span", txt = val;
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(val, 'text/html');
+            const el = doc.body.firstElementChild;
+            if(el) {
+                elTag = el.tagName.toLowerCase();
+                txt = el.innerText.trim();
+            }
+        } catch(e) {}
+
+        document.getElementById('out-1').innerText = `//${elTag}[contains(text(), "${txt}")]`;
+        document.getElementById('out-2').innerText = `//${elTag}[contains(text(), "${txt}")]/ancestor::button`;
+        document.getElementById('out-3').innerText = `//${elTag}[text()="${txt}"]`;
+        document.getElementById('out-4').innerText = `${elTag}:has-text("${txt}")`;
+
+        document.getElementById('waitBox').style.display = 'none';
+        document.getElementById('resultsArea').style.display = 'block';
+    }
+
+    async function copyFinal(id, btn) {
+        const c = document.getElementById(id).innerText;
+        await navigator.clipboard.writeText(c);
+        const old = btn.innerText;
+        btn.innerText = "已复制";
+        setTimeout(() => btn.innerText = old, 1000);
+    }
+</script>
+
+</body>
+</html>
