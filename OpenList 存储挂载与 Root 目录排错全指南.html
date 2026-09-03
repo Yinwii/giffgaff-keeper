@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenList 存储挂载与 Root 目录排错全指南</title>
+  
+  <!-- 内嵌免外部依赖的 SVG Favicon 图标 -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z'/%3E%3C/svg%3E">
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --bg-card: #ffffff;
+      --bg-body: #f8fafc;
+      --code-bg: #0f172a;
+      --warning-bg: #fffbeb;
+      --warning-border: #fef3c7;
+      --warning-text: #b45309;
+      --danger-bg: #fef2f2;
+      --danger-border: #fee2e2;
+      --danger-text: #b91c1c;
+      --success-bg: #f0fdf4;
+      --success-border: #dcfce7;
+      --success-text: #15803d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text-main);
+      background-color: var(--bg-body);
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 920px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 2rem; }
+    header h1 { font-size: 1.85rem; color: #0f172a; margin-bottom: 0.5rem; }
+    header p { color: var(--text-muted); font-size: 0.95rem; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: #0f172a;
+      border-bottom: 2px solid #eff6ff;
+      padding-bottom: 0.5rem;
+    }
+
+    h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; color: #334155; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* 代码块与复制按钮组件 */
+    .code-container {
+      position: relative;
+      background-color: var(--code-bg);
+      border-radius: 8px;
+      margin: 0.75rem 0 1rem;
+      overflow: hidden;
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1e293b;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      font-family: Consolas, Monaco, monospace;
+    }
+
+    .copy-btn {
+      background-color: #334155;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .copy-btn:hover { background-color: var(--primary); border-color: var(--primary); }
+    .copy-btn.copied { background-color: #16a34a; border-color: #16a34a; }
+
+    pre {
+      padding: 1rem;
+      margin: 0;
+      overflow-x: auto;
+      color: #e2e8f0;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    code {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      background: #f1f5f9;
+      color: #dc2626;
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+
+    /* 提示框 */
+    .alert { padding: 0.85rem 1rem; border-radius: 8px; margin: 1rem 0; font-size: 0.92rem; }
+    .alert-warning { background-color: var(--warning-bg); border: 1px solid var(--warning-border); color: var(--warning-text); }
+    .alert-danger { background-color: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger-text); }
+
+    /* 表格 */
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; }
+    th, td { border: 1px solid var(--border); padding: 0.65rem 0.75rem; text-align: left; }
+    th { background-color: #f8fafc; color: #334155; }
+    .badge-error { background: #fee2e2; color: #dc2626; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>OpenList 存储挂载与 Root 目录排错全指南</h1>
+      <p>包含 Docker CLI、Docker Compose 部署规范与常见五大高频报错排查</p>
+    </header>
+
+    <!-- 部署方案 -->
+    <section class="card">
+      <h2>🚀 标准部署配置（支持一键复制）</h2>
+      
+      <h3>方案 A：Docker Compose（推荐）</h3>
+      <p>在目录中创建 <code>docker-compose.yml</code> 并粘贴：</p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>docker-compose.yml</span>
+          <button class="copy-btn" onclick="copySnippet(this, 'compose-code')">复制配置</button>
+        </div>
+        <pre><code id="compose-code">services:
+  openlist:
+    image: openlistteam/openlist:latest
+    container_name: openlist
+    restart: unless-stopped
+    user: "0:0"
+    ports:
+      - "5244:5244"
+    volumes:
+      - /etc/openlist:/opt/openlist/data
+      - /:/host
+    environment:
+      - UMASK=022</code></pre>
+      </div>
+
+      <h3>方案 B：Docker CLI 命令行运行</h3>
+      <div class="code-container">
+        <div class="code-header">
+          <span>Bash</span>
+          <button class="copy-btn" onclick="copySnippet(this, 'cli-code')">复制代码</button>
+        </div>
+        <pre><code id="cli-code">docker run -d --restart=unless-stopped \
+  --name="openlist" \
+  --user 0:0 \
+  -p 5244:5244 \
+  -v /etc/openlist:/opt/openlist/data \
+  -v /:/host \
+  -e UMASK=022 \
+  openlistteam/openlist:latest</code></pre>
+      </div>
+
+      <div class="alert alert-warning">
+        <strong>⚠️ 安全提醒：</strong> 挂载宿主机整机拥有极高管理权限。若只用于浏览/下载、无需增删系统文件，强烈建议将挂载点设为只读模式：<code>- /:/host:ro</code>。
+      </div>
+    </section>
+
+    <!-- 网页后台设置 -->
+    <section class="card">
+      <h2>⚙️ OpenList 网页后台参数正确设置</h2>
+      <p>进入后台（端口 5244）&rarr; <strong>存储</strong> &rarr; <strong>添加</strong> &rarr; 驱动选择 <strong>本机存储 (Local)</strong>：</p>
+      <table>
+        <thead>
+          <tr>
+            <th>配置字段</th>
+            <th>填写值</th>
+            <th>核心说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>挂载路径</strong></td>
+            <td><code>/</code> 或 <code>/host</code></td>
+            <td>OpenList 网页端呈现的根目录名称。</td>
+          </tr>
+          <tr>
+            <td><strong>根文件夹路径</strong></td>
+            <td><code>/host</code> 或 <code>/host/root</code></td>
+            <td>
+              <span class="badge-error">切勿填 / 或 /root</span><br>
+              必须填写<strong>容器内部的挂载位置</strong>（即 <code>/host</code>），填 <code>/root</code> 访问的是容器自带的空目录。
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 五大问题深度排查 -->
+    <section class="card">
+      <h2>🛠️ 常见五大高频问题深度排查</h2>
+
+      <h3>1. 启动失败并无限退出 (v4.1.0+ 报错)</h3>
+      <div class="alert alert-danger">
+        <code>Error: Current user does not have write and/or execute permissions for the ./data directory: /opt/openlist/data</code>
+      </div>
+      <ul>
+        <li><strong>原因：</strong>OpenList 4.1.0+ 默认以非 root 用户 (UID 1001) 运行。宿主机 <code>/etc/openlist</code> 由 root 创建，容器内用户无权写入。</li>
+        <li><strong>方案：</strong>在 Docker 运行参数加上 <code>--user 0:0</code>（推荐），或在宿主机执行 <code>chmod -R 777 /etc/openlist</code>。</li>
+      </ul>
+
+      <h3>2. 访问 root 提示 Permission Denied</h3>
+      <ul>
+        <li><strong>原因：</strong>Linux 系统的 <code>/root</code> 目录默认权限为严格的 <code>700</code>（仅 root 用户可读写）。</li>
+        <li><strong>方案：</strong>启动时指定 root 身份：命令行加入 <code>--user 0:0</code>，或 Compose 中声明 <code>user: "0:0"</code>。</li>
+      </ul>
+
+      <h3>3. 成功进入 root 目录，但里面完全是空的？</h3>
+      <ol>
+        <li><strong>填错了路径：</strong>后台“根文件夹路径”写成了 <code>/root</code>（访问的是容器内部空环境），正确应为 <code>/host/root</code>。</li>
+        <li><strong>全是隐藏文件：</strong>Linux 的 <code>/root</code> 默认主要是 <code>.bashrc</code>、<code>.ssh</code> 等点开头隐藏文件，OpenList 默认策略会将其过滤。可在宿主机终端执行 <code>touch /root/test.txt</code> 验证。</li>
+        <li><strong>历史错误缓存：</strong>无权访问时的失败状态被缓存，在网页右上角点击 <strong>🔄 刷新图标</strong> 强制更新。</li>
+      </ol>
+
+      <h3>4. 为什么不能直接将整机挂载到容器根目录 -v /:/ ？</h3>
+      <p>Docker 容器启动依赖基础镜像环境。若直接将外部根目录覆盖容器内部的 <code>/</code>，原容器环境依赖和 OpenList 二进制程序文件会被宿主机直接冲垮，导致容器崩溃无法启动。</p>
+
+      <h3>5. 查看报错日志时，为什么内容极少且死循环刷屏？</h3>
+      <ul>
+        <li><strong>程序未启动即被拦截：</strong>错误由镜像自带的 <code>entrypoint.sh</code> 脚本抛出并执行 <code>exit 1</code>，OpenList 主程序根本尚未加载，因此不会生成业务堆栈日志。</li>
+        <li><strong>死循环重启冲掉日志：</strong>容器配置了重启策略，在反复退出与拉起时不断打印退出提示，导致管理脚本在通过 <code>--tail</code> 查看时，历史输出全被大量重复的报错顶出屏幕。</li>
+      </ul>
+    </section>
+  </div>
+
+  <script>
+    function copySnippet(button, codeElementId) {
+      const codeElement = document.getElementById(codeElementId);
+      const textToCopy = codeElement.innerText;
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const originalText = button.innerText;
+        button.innerText = '已复制!';
+        button.classList.add('copied');
+        
+        setTimeout(() => {
+          button.innerText = originalText;
+          button.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        console.error('复制失败:', err);
+      });
+    }
+  </script>
+</body>
+</html>
