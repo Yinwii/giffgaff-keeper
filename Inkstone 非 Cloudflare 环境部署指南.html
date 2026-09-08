@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inkstone 非 Cloudflare 环境部署指南</title>
+  <link rel="icon" href="https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent-color: #0ea5e9;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --badge-bg: #e0f2fe;
+      --badge-text: #0369a1;
+      --success-badge-bg: #dcfce7;
+      --success-badge-text: #15803d;
+      --warn-badge-bg: #fef3c7;
+      --warn-badge-text: #b45309;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      --icon-hover-bg: rgba(0, 0, 0, 0.05);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #0b0f19;
+      --bg-surface: #111827;
+      --bg-card: #1f2937;
+      --text-primary: #f9fafb;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --border-color: #374151;
+      --primary-color: #60a5fa;
+      --primary-hover: #3b82f6;
+      --accent-color: #38bdf8;
+      --code-bg: #030712;
+      --code-text: #f3f4f6;
+      --badge-bg: #1e293b;
+      --badge-text: #38bdf8;
+      --success-badge-bg: #064e3b;
+      --success-badge-text: #4ade80;
+      --warn-badge-bg: #451a03;
+      --warn-badge-text: #fbbf24;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+      --icon-hover-bg: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .theme-toggle-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-toggle-btn:hover {
+      background-color: var(--icon-hover-bg);
+      color: var(--text-primary);
+    }
+
+    .theme-toggle-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 5rem;
+    }
+
+    .hero-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      margin-bottom: 2.5rem;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
+    }
+
+    .hero-title {
+      font-size: 2.1rem;
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.025em;
+    }
+
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      max-width: 850px;
+    }
+
+    .section-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--text-primary);
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      background-color: var(--badge-bg);
+      color: var(--badge-text);
+      display: inline-block;
+    }
+
+    .badge-success {
+      background-color: var(--success-badge-bg);
+      color: var(--success-badge-text);
+    }
+
+    .badge-warn {
+      background-color: var(--warn-badge-bg);
+      color: var(--warn-badge-text);
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin: 1.25rem 0;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .code-container {
+      position: relative;
+      margin: 1.25rem 0;
+      border-radius: 10px;
+      background-color: var(--code-bg);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background-color: rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    pre {
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'Fira Code', Consolas, Monaco, monospace;
+      font-size: 0.9rem;
+      color: var(--code-text);
+      line-height: 1.6;
+    }
+
+    code {
+      font-family: 'Fira Code', Consolas, monospace;
+      font-size: 0.9em;
+      background: var(--bg-primary);
+      color: var(--accent-color);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: none;
+      color: inherit;
+    }
+
+    .steps-list {
+      list-style: none;
+      counter-reset: step-counter;
+      padding-left: 0;
+    }
+
+    .step-item {
+      position: relative;
+      padding-left: 2.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .step-item::before {
+      counter-increment: step-counter;
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1.85rem;
+      height: 1.85rem;
+      border-radius: 50%;
+      background: var(--primary-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .tab-box {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+
+    .tab-header {
+      display: flex;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      padding: 0.6rem 1.2rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+      background: var(--bg-surface);
+    }
+
+    .tab-content {
+      padding: 1rem;
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+      margin: 1.25rem 0;
+      border-left: 4px solid;
+      background-color: var(--bg-primary);
+    }
+
+    .alert-info {
+      border-left-color: var(--primary-color);
+    }
+
+    .alert-warning {
+      border-left-color: #f59e0b;
+    }
+
+    .alert-success {
+      border-left-color: #10b981;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background-color: #0f172a;
+      color: #ffffff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      font-size: 0.9rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 1.6rem;
+      }
+      .section-card {
+        padding: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 头部导航 -->
+  <header>
+    <div class="header-inner">
+      <a href="#" class="brand">
+        <div class="brand-logo">🪨</div>
+        <span>Inkstone 部署指南</span>
+      </a>
+      <div class="actions">
+        <button id="themeToggle" class="theme-toggle-btn" title="切换深浅主题" aria-label="切换深浅主题">
+          <!-- 动态注入月亮或太阳 SVG -->
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- 顶部概览 -->
+    <div class="hero-card">
+      <h1 class="hero-title">Inkstone 非 Cloudflare 环境部署指南</h1>
+      <p class="hero-subtitle">
+        当面临 Cloudflare 账号限制或需要完全私有化自托管知识库时，本指南提供通过 <strong>VPS 容器化本地仿真（全功能生产态）</strong> 与 <strong>GitHub Pages（纯前端离线体验版）</strong> 的完整实操与维护方案。
+      </p>
+    </div>
+
+    <!-- 方案对比 -->
+    <div class="section-card">
+      <h2 class="section-title">📊 方案核心特性对比</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>部署方案</th>
+              <th>功能完整度</th>
+              <th>数据存储介质</th>
+              <th>多设备云同步</th>
+              <th>访问响应</th>
+              <th>适用场景</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>VPS 容器化 (生产预编译态)</strong></td>
+              <td><span class="badge badge-success">100% 全功能</span></td>
+              <td>宿主机本地 SQLite / 磁盘</td>
+              <td>✅ 完美支持 (WebSocket)</td>
+              <td>⚡ 毫秒级秒开</td>
+              <td>个人与团队私有知识库、多端实时同步</td>
+            </tr>
+            <tr>
+              <td><strong>GitHub Pages</strong></td>
+              <td><span class="badge badge-warn">~50% 离线演示</span></td>
+              <td>浏览器 IndexedDB</td>
+              <td>❌ 不支持 (单机离线)</td>
+              <td>⚡ 静态秒开</td>
+              <td>个人单设备写作、静态演示、免服务器</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert alert-info">
+        <strong>💡 原理提示：</strong> Cloudflare 官方开源了底层运行时 <code>workerd</code> 与本地仿真引擎 <code>Miniflare</code>。Inkstone 在 VPS 上通过本地构建期预编译，配合 Vite Preview 模式，实现<strong>零延迟秒开、低内存占用、零账号依赖的 100% 本地闭环</strong>。
+      </div>
+    </div>
+
+    <!-- 方案一：VPS Docker 部署 -->
+    <div class="section-card">
+      <h2 class="section-title">🚀 方案 A：VPS 容器化一键部署（强烈推荐，生产预编译秒开）</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.25rem;">
+        通过 SSH 连接进入 VPS 终端后，您可以选择以下任一方式完成目录与配置文件的创建（<strong>Debian Glibc 镜像 + 构建期预编译</strong>）：
+      </p>
+
+      <!-- 选项卡：三种实操写入方式 -->
+      <div class="tab-box">
+        <div class="tab-header">
+          <button class="tab-btn active" onclick="switchTab(event, 'tab-cmd')">🌟 方式 1：终端一键写入（最推荐）</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-nano')">方式 2：使用 nano 编辑器</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-panel')">方式 3：宝塔 / 1Panel 面板</button>
+        </div>
+
+        <div id="tab-cmd" class="tab-content active">
+          <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+            直接在 VPS 终端复制并运行以下整段指令，将自动创建 <code>/opt/inkstone</code> 目录并写入经过生产态优化的 <code>Dockerfile</code> 与 <code>docker-compose.yml</code>：
+          </p>
+          <div class="code-container">
+            <div class="code-header">
+              <span>Terminal Command (生产态秒开版)</span>
+              <button class="copy-btn" onclick="copyCode(this)">复制</button>
+            </div>
+            <pre><code># 1. 创建专用目录并进入
+mkdir -p /opt/inkstone && cd /opt/inkstone
+
+# 2. 一键创建生产态 Dockerfile (预编译 CodeMirror/Mermaid 等大包，秒开无卡顿)
+cat << 'EOF' > Dockerfile
+FROM node:24-slim
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://github.com/Yinwii/inkstone.git . && \
+    npm install
+
+RUN npm run build:kv
+
+EXPOSE 8787
+VOLUME ["/app/.wrangler/state"]
+
+CMD ["npx", "vite", "preview", "--mode", "kv", "--host", "0.0.0.0", "--port", "8787"]
+EOF
+
+# 3. 一键创建 docker-compose.yml
+cat << 'EOF' > docker-compose.yml
+services:
+  inkstone:
+    build: .
+    container_name: inkstone-server
+    restart: unless-stopped
+    ports:
+      - "48787:8787"
+    volumes:
+      - ./data:/app/.wrangler/state
+    environment:
+      - NODE_ENV=production
+EOF
+
+# 4. 查看创建结果
+ls -la</code></pre>
+          </div>
+        </div>
+
+        <div id="tab-nano" class="tab-content">
+          <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+            1. 创建目录：<code>mkdir -p /opt/inkstone && cd /opt/inkstone</code><br>
+            2. 新建 Dockerfile：<code>nano Dockerfile</code>，粘贴配置代码后按 <code>Ctrl + O</code> 回车保存，<code>Ctrl + X</code> 退出。<br>
+            3. 新建 compose：<code>nano docker-compose.yml</code>，粘贴配置代码后同样 <code>Ctrl + O</code> 回车保存，<code>Ctrl + X</code> 退出。
+          </p>
+        </div>
+
+        <div id="tab-panel" class="tab-content">
+          <p style="font-size: 0.9rem; color: var(--text-secondary);">
+            1. 打开宝塔/1Panel的 <strong>「文件」</strong> 页面，进入 <code>/opt</code> 目录。<br>
+            2. 点击 <strong>「新建目录」</strong>，命名为 <code>inkstone</code> 并进入。<br>
+            3. 分别点击 <strong>「新建文件」</strong>，创建 <code>Dockerfile</code> 和 <code>docker-compose.yml</code> 并粘贴对应内容保存。
+          </p>
+        </div>
+      </div>
+
+      <ul class="steps-list" style="margin-top: 2rem;">
+        <li class="step-item">
+          <div class="step-title">一键启动容器服务</div>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">在 <code>/opt/inkstone</code> 目录下执行：</p>
+          <div class="code-container">
+            <div class="code-header">
+              <span>Terminal</span>
+              <button class="copy-btn" onclick="copyCode(this)">复制</button>
+            </div>
+            <pre><code># 构建镜像并启动容器
+docker compose build --no-cache
+docker compose up -d
+
+# 查看运行日志
+docker compose logs -f</code></pre>
+          </div>
+          <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+            启动成功后，即可在浏览器直接访问：<code>http://&lt;你的VPS公网IP&gt;:48787</code>
+          </p>
+        </li>
+
+        <li class="step-item">
+          <div class="step-title">数据持久化与自动定时备份</div>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">所有笔记、用户数据、附件均在宿主机 <code>/opt/inkstone/data</code> 目录，添加每日定时备份指令：</p>
+          <div class="code-container">
+            <div class="code-header">
+              <span>Crontab Backup</span>
+              <button class="copy-btn" onclick="copyCode(this)">复制</button>
+            </div>
+            <pre><code># 每日凌晨 3:00 自动备份，只保留最近 7 天
+(crontab -l 2>/dev/null; echo "0 3 * * * tar -czvf /opt/backup_inkstone_\$(date +\%Y\%m\%d).tar.gz /opt/inkstone/data >/dev/null 2>&1") | crontab -</code></pre>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 方案二：VPS 原生 Node.js + PM2 部署 -->
+    <div class="section-card">
+      <h2 class="section-title">⚡ 方案 B：VPS 原生环境部署 (Node.js + PM2 / systemd)</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+        适合已安装 Node.js 且不使用 Docker 的服务器环境：
+      </p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span>Native Setup & PM2 Start</span>
+          <button class="copy-btn" onclick="copyCode(this)">复制</button>
+        </div>
+        <pre><code># 1. 克隆代码并安装依赖
+git clone https://github.com/Yinwii/inkstone.git /opt/inkstone
+cd /opt/inkstone
+npm install
+
+# 2. 编译生产资源
+npm run build:kv
+
+# 3. 使用 PM2 启动生产服务
+npm install -g pm2
+pm2 start "npx vite preview --mode kv --host 0.0.0.0 --port 48787" --name inkstone
+pm2 save && pm2 startup</code></pre>
+      </div>
+    </div>
+
+    <!-- 初始账号与密码设定 -->
+    <div class="section-card">
+      <h2 class="section-title">🔑 初始账号与密码设定说明</h2>
+      <div class="alert alert-success">
+        <strong>💡 Inkstone 没有预设的默认账号或弱密码，采用“所有者自初始化”机制：</strong>
+      </div>
+      <ol style="padding-left: 1.5rem; color: var(--text-secondary); line-height: 1.8;">
+        <li>
+          <strong>首次访问自动引导</strong>：启动服务后，首次通过浏览器打开 <code>http://&lt;你的VPS公网IP&gt;:48787</code>，系统检测到底层数据库为空，会自动展示 <strong>「创建所有者账号」</strong> 页面（提示：<em>创建你的所有者账号，这一步只会出现一次</em>）。
+        </li>
+        <li>
+          <strong>账号密码自主设定</strong>：
+          <ul>
+            <li><strong>用户名</strong>：由你自行输入（例如 <code>admin</code>、<code>owner</code> 或你的昵称）。</li>
+            <li><strong>密码</strong>：由你自行输入（要求<strong>至少 8 位</strong>字符）。</li>
+          </ul>
+        </li>
+        <li>
+          <strong>成为管理员</strong>：提交后该账号自动成为此实例的最高管理员（Owner），后续多设备登录均使用刚才设定的账号密码。
+        </li>
+      </ol>
+    </div>
+
+    <!-- 深度科普：为什么不是每个开源项目都能这样部署 -->
+    <div class="section-card">
+      <h2 class="section-title">🧠 深度科普：为什么不是每个开源项目都能这样本地部署？</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+        一个开源项目能否成功通过本地 Docker 容器化独立运行，必须经过以下 <strong>4 项核心指标</strong> 的检验：
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>核心指标</th>
+              <th>合格标准</th>
+              <th>不合格项目的典型表现</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>① 依赖可闭环</strong></td>
+              <td>所有依赖包可通过 npm/pip 等公开拉取，无私有或付费 SDK</td>
+              <td>缺少商业 License 密钥，构建时报 401 错误</td>
+            </tr>
+            <tr>
+              <td><strong>② 运行时可模拟</strong></td>
+              <td>云原生 API（如 Serverless）有官方或开源的本地模拟层</td>
+              <td>强依赖 AWS DynamoDB / 微信云原生且无本地模拟器</td>
+            </tr>
+            <tr>
+              <td><strong>③ 网络可穿透</strong></td>
+              <td>服务端支持监听 <code>0.0.0.0</code> 且端口可配置</td>
+              <td>写死只能监听 <code>127.0.0.1</code> 导致容器外无法访问</td>
+            </tr>
+            <tr>
+              <td><strong>④ 数据可外挂</strong></td>
+              <td>数据库文件支持指定目录，能完美持久化在宿主机 Volume</td>
+              <td>数据保存在容器内部未指定目录，重启升级即丢数据</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 后续项目更新升级 (三种升级方案) -->
+    <div class="section-card">
+      <h2 class="section-title">🔄 后续项目有更新时的升级维护指南</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.25rem;">
+        所有笔记与账号数据均存放在 <code>data/</code> 目录，任何升级操作<strong>绝对不会丢失已有笔记与用户数据</strong>：
+      </p>
+
+      <div class="tab-box">
+        <div class="tab-header">
+          <button class="tab-btn active" onclick="switchTab(event, 'update-docker')">方案 A：Docker 容器升级</button>
+          <button class="tab-btn" onclick="switchTab(event, 'update-pm2')">方案 B：原生 Node.js + PM2 升级</button>
+          <button class="tab-btn" onclick="switchTab(event, 'update-pages')">方案 C：GitHub Pages 升级</button>
+        </div>
+
+        <div id="update-docker" class="tab-content active">
+          <div class="code-container">
+            <div class="code-header">
+              <span>Docker Upgrade Commands</span>
+              <button class="copy-btn" onclick="copyCode(this)">复制</button>
+            </div>
+            <pre><code>cd /opt/inkstone
+
+# 1. 备份数据
+tar -czvf backup_before_update.tar.gz ./data
+
+# 2. 强制拉取最新代码重新构建镜像
+docker compose build --no-cache
+
+# 3. 平滑重启容器
+docker compose up -d
+
+# 4. 清理旧镜像
+docker image prune -f</code></pre>
+          </div>
+        </div>
+
+        <div id="update-pm2" class="tab-content">
+          <div class="code-container">
+            <div class="code-header">
+              <span>Node.js / PM2 Upgrade Commands</span>
+              <button class="copy-btn" onclick="copyCode(this)">复制</button>
+            </div>
+            <pre><code>cd /opt/inkstone
+
+# 1. 备份数据
+tar -czvf backup_before_update.tar.gz ./data
+
+# 2. 从 GitHub 拉取最新提交
+git pull origin main
+
+# 3. 安装新增依赖并重新打包
+npm install
+npm run build:kv
+
+# 4. 重启 PM2 守护进程 (或 systemctl restart inkstone)
+pm2 restart inkstone</code></pre>
+          </div>
+        </div>
+
+        <div id="update-pages" class="tab-content">
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7;">
+            1. 打开你的 GitHub Fork 仓库页面。<br>
+            2. 点击仓库右上角的 <strong>「Sync fork」</strong> -> <strong>「Update branch」</strong>。<br>
+            3. GitHub Actions 会自动触发重新编译并部署，2 分钟内自动完成更新。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nginx 反向代理 -->
+    <div class="section-card">
+      <h2 class="section-title">🌐 Nginx 反向代理与 SSL (含 WebSocket 支持)</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+        若需配置自定义域名与 HTTPS，请务必启用 <code>Upgrade</code> 和 <code>Connection</code> 标头以确保实时多端协同与 WebSocket 正常：
+      </p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span>/etc/nginx/conf.d/inkstone.conf</span>
+          <button class="copy-btn" onclick="copyCode(this)">复制</button>
+        </div>
+        <pre><code>server {
+    listen 80;
+    server_name notes.yourdomain.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name notes.yourdomain.com;
+
+    ssl_certificate /etc/letsencrypt/live/notes.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/notes.yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:48787;
+        proxy_http_version 1.1;
+
+        # WebSocket 协同关键配置
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+}</code></pre>
+      </div>
+    </div>
+
+    <!-- 方案二：GitHub Pages 纯前端 -->
+    <div class="section-card">
+      <h2 class="section-title">📦 方案 C：GitHub Pages 自动化构建（离线 Demo 体验版）</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+        适合免服务器场景，在仓库中建立 GitHub Actions 工作流，自动构建纯前端 Demo 模式（数据存放在客户端 IndexedDB 中）：
+      </p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span>.github/workflows/deploy.yml</span>
+          <button class="copy-btn" onclick="copyCode(this)">复制</button>
+        </div>
+        <pre><code>name: Deploy Inkstone to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Demo Mode
+        run: npm run build:demo
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist/demo'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4</code></pre>
+      </div>
+
+      <div class="alert alert-warning">
+        <strong>⚠️ 注意：</strong> 在 GitHub 仓库设置 <code>Settings -> Pages</code> 中，将 Source 选为 <strong>GitHub Actions</strong> 即可。
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast 提示框 -->
+  <div id="toast">复制成功</div>
+
+  <script>
+    // 1. 主题切换与 SVG 图标协议实现
+    const themeToggleBtn = document.getElementById('themeToggle');
+    const moonSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+    const sunSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('inkstone_doc_theme', theme);
+      themeToggleBtn.innerHTML = theme === 'dark' ? sunSvg : moonSvg;
+      themeToggleBtn.setAttribute('title', theme === 'dark' ? '切换至亮色模式' : '切换至暗色模式');
+    }
+
+    const savedTheme = localStorage.getItem('inkstone_doc_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    applyTheme(savedTheme);
+
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
+
+    // 2. 选项卡切换逻辑
+    function switchTab(evt, tabId) {
+      const parent = evt.target.closest('.tab-box');
+      parent.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      parent.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      evt.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    // 3. Toast 提示
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    // 4. 双轨 Fallback 剪贴板复制机制 (遵循 Deployment Compatibility Protocol)
+    function copyCode(button) {
+      const pre = button.closest('.code-container').querySelector('pre code');
+      const text = pre.innerText;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('代码已复制到剪贴板！');
+        }).catch(() => {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.top = '-9999px';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast('代码已复制到剪贴板！');
+        } else {
+          showToast('复制失败，请手动选取代码');
+        }
+      } catch (err) {
+        showToast('复制失败，请手动选取代码');
+      }
+      document.body.removeChild(textArea);
+    }
+  </script>
+</body>
+</html>
