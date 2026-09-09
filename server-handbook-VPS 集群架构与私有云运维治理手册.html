@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPS 集群架构与私有云运维治理手册</title>
+  <!-- 内置高分辨率 SVG Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><path d='M25 30h50a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H25a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5zm0 24h50a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H25a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5zm5 7h4v4h-4zm0-24h4v4h-4z' fill='%23ffffff'/><circle cx='70' cy='36' r='3' fill='%2322c55e'/><circle cx='70' cy='60' r='3' fill='%2322c55e'/></svg>" type="image/svg+xml">
+  <style>
+    /* ================= 亮色模式（默认） ================= */
+    :root[data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --header-bg: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+      --accent-blue: #0284c7;
+      --accent-green: #16a34a;
+      --accent-amber: #d97706;
+      --accent-red: #dc2626;
+      --accent-purple: #9333ea;
+      --code-bg: #f1f5f9;
+      --code-text: #0f172a;
+      --table-th-bg: #f1f5f9;
+      --table-hover: #f8fafc;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+    }
+
+    /* ================= 暗色模式 ================= */
+    :root[data-theme="dark"] {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --header-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #c084fc;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --table-th-bg: rgba(15,23,42,0.6);
+      --table-hover: rgba(255,255,255,0.02);
+      --shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.25s, border-color 0.25s, color 0.25s; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* Header */
+    header {
+      background: var(--header-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    header h1 {
+      font-size: 1.85rem;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header p { color: var(--text-muted); font-size: 0.95rem; }
+
+    /* Theme Switcher Button */
+    .theme-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    .theme-toggle-btn:hover {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* Navigation Bar */
+    .nav-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--card-border);
+    }
+    .nav-btn {
+      background: var(--code-bg);
+      color: var(--text);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      border: 1px solid var(--card-border);
+    }
+    .nav-btn:hover {
+      background: var(--accent-blue);
+      color: #ffffff;
+      border-color: var(--accent-blue);
+    }
+
+    /* Section & Cards */
+    section { margin-bottom: 40px; }
+    h2 {
+      font-size: 1.35rem;
+      color: var(--text);
+      margin-bottom: 16px;
+      padding-left: 12px;
+      border-left: 4px solid var(--accent-blue);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .card-title { font-size: 1.1rem; font-weight: 600; color: var(--text); }
+    .card-subtitle { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-blue { background: rgba(2,132,199,0.12); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+    .badge-green { background: rgba(22,163,74,0.12); color: var(--accent-green); border: 1px solid var(--accent-green); }
+    .badge-amber { background: rgba(217,119,6,0.12); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+    .badge-red { background: rgba(220,38,38,0.12); color: var(--accent-red); border: 1px solid var(--accent-red); }
+    .badge-purple { background: rgba(147,51,234,0.12); color: var(--accent-purple); border: 1px solid var(--accent-purple); }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+    th, td { padding: 12px 16px; border-bottom: 1px solid var(--card-border); }
+    th { background: var(--table-th-bg); color: var(--accent-blue); font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--table-hover); }
+
+    /* Code Snippets */
+    .code-box {
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px;
+      margin: 12px 0;
+      position: relative;
+    }
+    pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.825rem;
+      color: var(--code-text);
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .alert-amber { background: rgba(217,119,6,0.1); border: 1px solid var(--accent-amber); color: var(--accent-amber); }
+    .alert-red { background: rgba(220,38,38,0.1); border: 1px solid var(--accent-red); color: var(--accent-red); }
+    .alert-blue { background: rgba(2,132,199,0.1); border: 1px solid var(--accent-blue); color: var(--accent-blue); }
+
+    ul, ol { padding-left: 20px; font-size: 0.88rem; color: var(--text); }
+    li { margin-bottom: 6px; }
+
+    footer {
+      text-align: center;
+      padding: 30px 0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--card-border);
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="header-top">
+      <h1>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        VPS 集群架构与私有云运维治理手册
+      </h1>
+      <!-- 亮暗模式切换开关 -->
+      <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
+        <span id="themeIcon">🌙</span>
+        <span id="themeText">切换暗色模式</span>
+      </button>
+    </div>
+    <p>整合：CPU 故障清洗 SOP · 账单与自动续约周期 · 服务分层部署矩阵 · 专属测试沙盒规划</p>
+    <div class="nav-bar">
+      <a href="#test-machine" class="nav-btn">🛠️ 测试机长效方案</a>
+      <a href="#topology" class="nav-btn">📊 全机队拓扑矩阵</a>
+      <a href="#roles" class="nav-btn">🏢 各机详细职责</a>
+      <a href="#billing" class="nav-btn">💰 账单与监控设置</a>
+      <a href="#incident" class="nav-btn">⚡ 高 CPU 清理脚本</a>
+      <a href="#action-plan" class="nav-btn">🚀 下线与迁移步骤</a>
+    </div>
+  </header>
+
+  <!-- 0. 测试机解决方案（专属核心章节） -->
+  <section id="test-machine">
+    <h2>🛠️ 测试沙盒长效解决方案（防搞崩主服务）</h2>
+    <div class="alert alert-blue">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+      <div>
+        <strong>核心原则：主生产机器（Netcup-BW25 与 2oVPS）严禁直接做 `docker run` 测试！</strong>测试环境有清晰的长短期三级梯队保障，绝不会出现“没有测试机”的情况。
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">第一级：本地 PVE-fnOS 沙盒（终极黄金标准）</div>
+          <span class="badge badge-green">最推荐 · 零成本</span>
+        </div>
+        <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:8px;">在你的标签页中已有现成的 <strong>PVE / 飞牛私有云 (fnOS)</strong> 本地虚拟化平台：</p>
+        <ul>
+          <li><strong>秒级快照与秒级回滚</strong>：测试任何可能死机、有安全隐患的新容器镜像，测坏了直接一点回滚。</li>
+          <li><strong>局域网千兆拉取</strong>：无需走公网 VPS 消耗流量，测通后直接导出 <code>docker-compose.yml</code> 扔上云端，这是专业运维最推崇的“本地测试 ➔ 云端部署”标准流。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">第二级：ColoCrossing 现役耗材（近期消耗）</div>
+          <span class="badge badge-amber">近期 5 个月现成</span>
+        </div>
+        <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:8px;">确定于 2027 年 1 月到期不再续费：</p>
+        <ul>
+          <li>它本身就是“待淘汰耗材”，在这几个月内，是<strong>完全不需要担心被搞崩的公网测试靶场</strong>。</li>
+          <li>任何需要公网 IP、外网 Webhook 回调的新奇服务，全部优先扔给它做极限测试。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">第三级：BITSFLOW-DE 释放方案（远期纯云端）</div>
+          <span class="badge badge-blue">远期独立云测试机</span>
+        </div>
+        <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:8px;">如果未来依然想要一台 24 小时在线的独立公网测试机：</p>
+        <ul>
+          <li>只需在后续将 <strong>NPM 反代网关迁入配置更强劲的 Netcup-BW25</strong>。</li>
+          <li>一旦解绑 NPM，<strong>BITSFLOW ($7 USD/年) 就能彻底变回纯粹的公网测试沙盒机</strong>，成本低至每年几杯咖啡钱。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. 全机队拓扑矩阵 -->
+  <section id="topology">
+    <h2>📊 1. 全机队角色定位与归类矩阵</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>服务器名称</th>
+            <th>硬件规格 / 周期费用</th>
+            <th>角色分工</th>
+            <th>当前/计划承载容器</th>
+            <th>处置建议</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>BITSFLOW-DE</strong><br><small>bit$7-DE-NUE</small></td>
+            <td>1C / $7 USD / 年付</td>
+            <td><span class="badge badge-blue">独立网关与探针</span></td>
+            <td>NPM (反代) · Komari Traffic Bot/Cron</td>
+            <td><strong>保留续订</strong>（全网总咽喉，当前不建议暴力折腾）</td>
+          </tr>
+          <tr>
+            <td><strong>Netcup-BW25</strong><br><small>VPS BlackWeek</small></td>
+            <td>高配 (2C4G/4C8G) / €20.43 季付</td>
+            <td><span class="badge badge-green">对外门户与通信中心</span></td>
+            <td>Halo博客 · 邮件服务器 · 图床 · (可选收拢NPM)</td>
+            <td><strong>保留续订</strong>（重点维护清洁 IP 信誉）</td>
+          </tr>
+          <tr>
+            <td><strong>Netcup-2oVPS</strong><br><small>VPS nano G11s</small></td>
+            <td>1C1G / €11.94 半年付</td>
+            <td><span class="badge badge-purple">私有云盘与知识资产</span></td>
+            <td>笔记(Inkstone/Papergrid) · Filebrowser · Sun-Panel导航</td>
+            <td><strong>保留续订</strong>（个人核心私密数据机）</td>
+          </tr>
+          <tr>
+            <td><strong>Netcup-1oVPS</strong><br><small>VPS piko G11s</small></td>
+            <td>1C1G / €11.88 年付</td>
+            <td><span class="badge badge-amber">脏活跑批隔离机</span></td>
+            <td>青龙面板 (Qinglong) · tg-signpulse 打卡通知</td>
+            <td><strong>保留续订</strong>（配置 2G Swap，限制并发）</td>
+          </tr>
+          <tr>
+            <td><strong>ColoCrossing</strong></td>
+            <td>1C1G / $11 USD / 年付</td>
+            <td><span class="badge badge-red">即时测试沙盒 🛠️</span></td>
+            <td>IPTV / Migu / 流媒体抓流 · 随意测试新镜像</td>
+            <td><strong>不续费</strong>（2027/01 到期前当耗材使用）</td>
+          </tr>
+          <tr>
+            <td><strong>DMIT / VMISS</strong></td>
+            <td>优化线路 / 美西 LAX</td>
+            <td><span class="badge badge-blue">专职科学出海</span></td>
+            <td>sing-box / Xray · Komari Agent</td>
+            <td><strong>保留续订</strong>（CN2 GIA/9929 线路机，绝不跑杂活）</td>
+          </tr>
+          <tr>
+            <td><strong>Oracle 免费 x2</strong></td>
+            <td>2C1G AMD (高超卖卡顿机)</td>
+            <td><span class="badge badge-amber">异地冷备库与哨兵</span></td>
+            <td>Rclone 异地加密打包库 · 探针网络节点</td>
+            <td><strong>永久免费</strong>（IO 极慢，严禁跑动态 Web/MySQL）</td>
+          </tr>
+          <tr>
+            <td><strong>bits-FRA-SMSM</strong></td>
+            <td>£25.16 GBP / 年付</td>
+            <td><span class="badge badge-red">待下线臃肿机</span></td>
+            <td>已堆积 10 个零散容器（逐步迁移清空）</td>
+            <td><strong>停止续费</strong>（到期直接销毁）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2. 核心架构细分方案 -->
+  <section id="roles">
+    <h2>🏢 2. 核心架构分工策略</h2>
+    <div class="grid">
+      
+      <!-- BITSFLOW-DE -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">BITSFLOW-DE（总入口与监控）</div>
+            <div class="card-subtitle">德国纽伦堡同城节点 (与 Netcup 同城)</div>
+          </div>
+          <span class="badge badge-blue">网关中枢</span>
+        </div>
+        <ul>
+          <li><strong>同城极低延迟</strong>：BITSFLOW 与你的 Netcup 均位于 DE-NUE（纽伦堡），互相反向代理延迟仅 1~3ms。</li>
+          <li><strong>网关物理解耦</strong>：即使后端 Netcup 上的 Halo 或 笔记容器挂了，NPM 依然在线，可返回标准的友好维护页。</li>
+          <li><strong>维护操作建议</strong>：
+            <div class="code-box">
+              <pre><span style="color:#64748b;"># 1. 彻底删除已经挂掉 6 周的冗余容器</span>
+docker rm dufs
+<span style="color:#64748b;"># 2. 停止并删除重复的文件管理器（2o 机已有）</span>
+docker stop filebrowser && docker rm filebrowser</pre>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Netcup-BW25 -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Netcup-BW25（门户与通信）</div>
+            <div class="card-subtitle">高配生产力机器</div>
+          </div>
+          <span class="badge badge-green">公网门户</span>
+        </div>
+        <ul>
+          <li><strong>Docker-Mailserver 邮箱服务</strong>：<strong>最高级别安全保护</strong>。邮箱 IP 信誉极度脆弱，严禁在此机运行任何爬虫或高频对外请求，防止 IP 进垃圾邮件黑名单。</li>
+          <li><strong>Halo 博客系统</strong>：个人对外公开门面。</li>
+          <li><strong>当前维护项</strong>：当前邮件容器呈 <code>unhealthy</code> 状态，需检查自检端口与 SPF/DKIM/DMARC 反向解析（PTR）。</li>
+        </ul>
+      </div>
+
+      <!-- Netcup-2oVPS -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Netcup-2oVPS（私有知识资产）</div>
+            <div class="card-subtitle">私有云与个人资产库</div>
+          </div>
+          <span class="badge badge-purple">私有核心</span>
+        </div>
+        <ul>
+          <li><strong>笔记与写作资产</strong>：集中运行 Inkstone-server、Papergrid 或 Memos，这是核心私密资产。</li>
+          <li><strong>个人导航工作台</strong>：运行 Sun-Panel，集成所有内外部服务的直达入口。</li>
+          <li><strong>私有文件网盘</strong>：保留运行良好的 Filebrowser 与 WebDAV，对接本地日常办公。</li>
+        </ul>
+      </div>
+
+      <!-- Netcup-1oVPS -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Netcup-1oVPS（脏活跑批专用）</div>
+            <div class="card-subtitle">自动化脚本专用小鸡</div>
+          </div>
+          <span class="badge badge-amber">风险隔离</span>
+        </div>
+        <ul>
+          <li><strong>青龙面板 (Qinglong)</strong>：托管第三方开源脚本库，物理隔离可能存在的恶意扫描与内存泄露。</li>
+          <li><strong>tg-signpulse</strong>：将签到通知类机器人从 BW25 迁移至此统一调度。</li>
+          <li><strong>稳定运行红线</strong>：必须开启 2G Swap，限制并发数为 1~2，Cron 定时任务错开整点。</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 3. 账单监控与解约周期提醒 -->
+  <section id="billing">
+    <h2>💰 3. Netcup 账单在 Komari 监控中的设置规范</h2>
+    <div class="alert alert-red">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <div>
+        <strong>高危付款警告：</strong>你的账单当前状态为 <code>unpaid</code>，付款截止日为 <strong>2026 年 9 月 23 日 (Due: 23.09.2026)</strong>！Netcup 逾期会产生逾期催缴费（Mahngebühr）或锁机，务必提前完成扣款。
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Komari 监控配置项</th>
+            <th>填写设置值</th>
+            <th>依据与避坑说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>服务到期时间 (Expire Date)</strong></td>
+            <td><strong style="color:var(--accent-blue);">2027-02-24</strong></td>
+            <td>取自账单上的服务周期 <code>24.08.2026 - 24.02.2027</code></td>
+          </tr>
+          <tr>
+            <td><strong>计费周期 (Cycle)</strong></td>
+            <td><strong>半年付 (Semi-annually / 6M)</strong></td>
+            <td><code>VPS nano G11s 6M</code>，每 6 个月产生一次账单</td>
+          </tr>
+          <tr>
+            <td><strong>续费金额 (Price)</strong></td>
+            <td><strong>€11.94 EUR</strong></td>
+            <td>半年的总付金额（折合月均 €1.99）</td>
+          </tr>
+          <tr>
+            <td><strong>提前解约截止线（避坑核心）</strong></td>
+            <td><strong style="color:var(--accent-amber);">最晚 2027-01-24 前</strong></td>
+            <td>Netcup 合同规定：必须在到期日前至少 <strong>31 天</strong>在 CCP 控制台发起解约，否则自动续签半年</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4. 高 CPU 故障清除 SOP -->
+  <section id="incident">
+    <h2>⚡ 4. 桌面环境与高占用进程清理复盘 (SOP)</h2>
+    <p style="color: var(--text-muted); margin-bottom: 12px; font-size: 0.88rem;">此前由于后台常驻的 Epiphany 浏览器及 WebKitWebProcess 死循环，导致双核机器 Load Average 飙升至 6.0+。标准清除流程：</p>
+    
+    <div class="code-box">
+      <pre><span style="color:#64748b;"># 1. 立即停止并禁用 xrdp 与 lightdm 桌面环境服务</span>
+sudo systemctl stop xrdp lightdm
+sudo systemctl disable xrdp lightdm
+
+<span style="color:#64748b;"># 2. 强杀残留的所有桌面与 WebKit 渲染进程</span>
+sudo pkill -9 -f 'WebKitWebProcess|epiphany|xfce|xfwm4|xrdp|lightdm|Xorg'
+
+<span style="color:#64748b;"># 3. 切换默认系统启动级别为纯命令行模式（multi-user）</span>
+sudo systemctl set-default multi-user.target
+
+<span style="color:#64748b;"># 4. 彻底卸载清理桌面组件包并清理废弃依赖包</span>
+sudo apt purge -y xrdp xorgxrdp lightdm 'xfce4*' 'xfwm4*' 'xserver-xorg*' epiphany-browser
+sudo apt autoremove --purge -y && sudo apt clean
+
+<span style="color:#64748b;"># 5. 低配 1C1G 小鸡（如 Netcup 1o/2o）快速开启 2G Swap 防爆内存</span>
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab</pre>
+    </div>
+  </section>
+
+  <!-- 5. 迁移下线行动计划 -->
+  <section id="action-plan">
+    <h2>🚀 5. 迁移与下线执行计划</h2>
+    <div class="card">
+      <ol>
+        <li><strong>第一阶段：解构 `bits-FRA-SMSM` 并下线</strong>
+          <ul>
+            <li>将有价值的 <code>inkstone-server</code>（墨石笔记）、<code>papergrid</code>、<code>sun-panel</code>（导航）迁移至 <strong>Netcup-2oVPS</strong>。</li>
+            <li>放弃无用测试容器，在账单后台关闭自动续费，任其到期释放。</li>
+          </ul>
+        </li>
+        <li><strong>第二阶段：净化 `Netcup-BW25` 独立生产机</strong>
+          <ul>
+            <li>将签到类的 <code>tg-signpulse</code> 迁出到 <strong>Netcup-1oVPS</strong>（与青龙面板集中管理）。</li>
+            <li>排查修复 <code>mailserver</code> 容器的 unhealthy 状态，确保独立干净的邮局信誉。</li>
+          </ul>
+        </li>
+        <li><strong>第三阶段：长效测试闭环</strong>
+          <ul>
+            <li>利用 <strong>本地 PVE-fnOS</strong> 或 <strong>ColoCrossing</strong> 消耗型机器完成所有新镜像调试，固化 <code>docker-compose.yml</code> 后再投产。</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>VPS 集群运维治理手册 · 默认亮色支持暗色切换 · 建议收藏本地离线使用</p>
+  </footer>
+
+</div>
+
+<!-- 模式切换与持久化存储脚本 -->
+<script>
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    const icon = document.getElementById('themeIcon');
+    const text = document.getElementById('themeText');
+    if (theme === 'dark') {
+      icon.textContent = '☀️';
+      text.textContent = '切换亮色模式';
+    } else {
+      icon.textContent = '🌙';
+      text.textContent = '切换暗色模式';
+    }
+  }
+
+  function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const targetTheme = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme(targetTheme);
+  }
+
+  // 初始化：优先读取本地缓存，无缓存默认使用浅色 (light)
+  (function initTheme() {
+    const savedTheme = localStorage.getItem('doc-theme') || 'light';
+    applyTheme(savedTheme);
+  })();
+</script>
+
+</body>
+</html>
