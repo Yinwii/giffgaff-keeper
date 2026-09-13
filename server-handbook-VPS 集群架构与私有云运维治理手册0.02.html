@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPS 集群架构与私有云运维治理手册 (含 AI Agent 规划)</title>
+  <!-- 内置高分辨率 SVG Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><path d='M25 30h50a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H25a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5zm0 24h50a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H25a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5zm5 7h4v4h-4zm0-24h4v4h-4z' fill='%23ffffff'/><circle cx='70' cy='36' r='3' fill='%2322c55e'/><circle cx='70' cy='60' r='3' fill='%2322c55e'/></svg>" type="image/svg+xml">
+  <style>
+    /* ================= 亮色模式（默认） ================= */
+    :root[data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --header-bg: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+      --accent-blue: #0284c7;
+      --accent-green: #16a34a;
+      --accent-amber: #d97706;
+      --accent-red: #dc2626;
+      --accent-purple: #9333ea;
+      --code-bg: #f1f5f9;
+      --code-text: #0f172a;
+      --table-th-bg: #f1f5f9;
+      --table-hover: #f8fafc;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+    }
+
+    /* ================= 暗色模式 ================= */
+    :root[data-theme="dark"] {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --header-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #c084fc;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --table-th-bg: rgba(15,23,42,0.6);
+      --table-hover: rgba(255,255,255,0.02);
+      --shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.25s, border-color 0.25s, color 0.25s; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container { width: 98%; max-width: 1560px; margin: 0 auto; }
+
+    /* Header */
+    header {
+      background: var(--header-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header p { color: var(--text-muted); font-size: 0.95rem; }
+
+    /* Theme Switcher Button */
+    .theme-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    .theme-toggle-btn:hover {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* Navigation Bar */
+    .nav-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--card-border);
+    }
+    .nav-btn {
+      background: var(--code-bg);
+      color: var(--text);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      border: 1px solid var(--card-border);
+    }
+    .nav-btn:hover {
+      background: var(--accent-blue);
+      color: #ffffff;
+      border-color: var(--accent-blue);
+    }
+
+    /* Section & Cards */
+    section { margin-bottom: 36px; }
+    h2 {
+      font-size: 1.35rem;
+      color: var(--text);
+      margin-bottom: 16px;
+      padding-left: 12px;
+      border-left: 4px solid var(--accent-blue);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .card-title { font-size: 1.08rem; font-weight: 600; color: var(--text); }
+    .card-subtitle { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-blue { background: rgba(2,132,199,0.12); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+    .badge-green { background: rgba(22,163,74,0.12); color: var(--accent-green); border: 1px solid var(--accent-green); }
+    .badge-amber { background: rgba(217,119,6,0.12); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+    .badge-red { background: rgba(220,38,38,0.12); color: var(--accent-red); border: 1px solid var(--accent-red); }
+    .badge-purple { background: rgba(147,51,234,0.12); color: var(--accent-purple); border: 1px solid var(--accent-purple); }
+
+    /* Tables */
+    .table-container {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+    th, td { padding: 11px 14px; border-bottom: 1px solid var(--card-border); }
+    th { background: var(--table-th-bg); color: var(--accent-blue); font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--table-hover); }
+
+    /* Code Snippets */
+    .code-box {
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px;
+      margin: 10px 0;
+      position: relative;
+    }
+    pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.825rem;
+      color: var(--code-text);
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .alert-amber { background: rgba(217,119,6,0.1); border: 1px solid var(--accent-amber); color: var(--accent-amber); }
+    .alert-red { background: rgba(220,38,38,0.1); border: 1px solid var(--accent-red); color: var(--accent-red); }
+    .alert-blue { background: rgba(2,132,199,0.1); border: 1px solid var(--accent-blue); color: var(--accent-blue); }
+
+    ul, ol { padding-left: 20px; font-size: 0.88rem; color: var(--text); }
+    li { margin-bottom: 6px; }
+
+    footer {
+      text-align: center;
+      padding: 24px 0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--card-border);
+      margin-top: 36px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="header-top">
+      <h1>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        VPS 集群架构与私有云运维治理手册
+      </h1>
+      <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
+        <span id="themeIcon">🌙</span>
+        <span id="themeText">切换暗色模式</span>
+      </button>
+    </div>
+    <p>整合：机队拓扑矩阵 · AI Agent (Hermes) 规划 · 账单预警 · 专属测试沙盒 · 高 CPU 治理 SOP</p>
+    <div class="nav-bar">
+      <a href="#topology" class="nav-btn">📊 全机队拓扑矩阵</a>
+      <a href="#agent" class="nav-btn">🤖 AI Agent 选型与落户</a>
+      <a href="#roles" class="nav-btn">🏢 核心机器分工</a>
+      <a href="#test-machine" class="nav-btn">🛠️ 专属测试沙盒</a>
+      <a href="#billing" class="nav-btn">💰 账单与监控设置</a>
+      <a href="#incident" class="nav-btn">⚡ 高 CPU 清理复盘</a>
+      <a href="#action-plan" class="nav-btn">🚀 下线迁移计划</a>
+    </div>
+  </header>
+
+  <!-- 1. 全机队拓扑矩阵 (更新 2oVPS 规格与 Agent) -->
+  <section id="topology">
+    <h2>📊 1. 全机队定位与角色分类矩阵</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>服务器标识</th>
+            <th>硬件规格 / 周期费用</th>
+            <th>核心角色定位</th>
+            <th>承载服务与规划</th>
+            <th>生命周期策略</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Netcup-2oVPS</strong><br><small>DE-NUE</small></td>
+            <td><strong style="color:var(--accent-purple);">2C 2G 60GB</strong><br><small>€11.94 EUR / 半年</small></td>
+            <td><span class="badge badge-purple">私有资产与 AI 智能中枢</span></td>
+            <td><strong>Hermes Agent (私人AI助理)</strong> · 笔记 (Inkstone/Memos) · Filebrowser · Sun-Panel · Dockhand</td>
+            <td><strong>核心续费</strong>（个人数据与本地 Agent 协同中心）</td>
+          </tr>
+          <tr>
+            <td><strong>Netcup-BW25</strong><br><small>DE-NUE</small></td>
+            <td>高配大机 (2C4G/4C8G)<br><small>€20.43 EUR / 季付</small></td>
+            <td><span class="badge badge-green">对外公共门户与通信</span></td>
+            <td>Halo 博客 · Docker-mailserver (邮箱) · Cloudflare 图床</td>
+            <td><strong>核心续费</strong>（维护清洁 IP 邮件信誉，禁跑爬虫/外部 Agent）</td>
+          </tr>
+          <tr>
+            <td><strong>BITSFLOW-DE</strong><br><small>bit$7-DE-NUE</small></td>
+            <td>1C / $7 USD / 年付</td>
+            <td><span class="badge badge-blue">独立网关与探针</span></td>
+            <td>NPM (Nginx Proxy Manager) · Komari Traffic 监控中枢</td>
+            <td><strong>持续续费</strong>（纽伦堡同城极速反代，全网总咽喉）</td>
+          </tr>
+          <tr>
+            <td><strong>Netcup-1oVPS</strong><br><small>DE-NUE</small></td>
+            <td>1C 1G 20GB<br><small>€11.88 EUR / 年付</small></td>
+            <td><span class="badge badge-amber">脏活自动化与随手测试</span></td>
+            <td>青龙面板 (Qinglong) · tg-signpulse · 临时微服务测试容器</td>
+            <td><strong>持续续费</strong>（配置 2G Swap，限制并发 1~2，搞崩不影响主站）</td>
+          </tr>
+          <tr>
+            <td><strong>ColoCrossing</strong><br><small>美西大带宽</small></td>
+            <td>1C 1G / $11 USD / 年付</td>
+            <td><span class="badge badge-red">即时消耗型沙盒 🛠️</span></td>
+            <td>IPTV / Migu / 流媒体耗流 · 重型/破坏性开源应用测试</td>
+            <td><strong>到期不续费</strong>（2027/01 到期前当耗材使用，随便折腾）</td>
+          </tr>
+          <tr>
+            <td><strong>DMIT / VMISS</strong></td>
+            <td>优质优化线路 / 美西 LAX</td>
+            <td><span class="badge badge-blue">专职科学出海</span></td>
+            <td>sing-box / Xray · Komari Agent</td>
+            <td><strong>核心续费</strong>（CN2 GIA/9929 线路机，绝不跑杂活）</td>
+          </tr>
+          <tr>
+            <td><strong>Oracle 免费 x2</strong></td>
+            <td>2C 1G AMD (低 IO 卡顿机)</td>
+            <td><span class="badge badge-amber">异地冷备库与哨兵</span></td>
+            <td>Rclone 异地加密冷备库 · 链路监测节点</td>
+            <td><strong>永久免费</strong>（IO 极慢，严禁跑动态 Web/MySQL）</td>
+          </tr>
+          <tr>
+            <td><strong>bits-FRA-SMSM</strong></td>
+            <td>£25.16 GBP / 年付</td>
+            <td><span class="badge badge-red">待清理下线机</span></td>
+            <td>原堆积 10 个容器（逐步迁移数据后关停）</td>
+            <td><strong>停止续费</strong>（到期直接销毁）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2. AI Agent 选型与落户规划 (新增重点板块) -->
+  <section id="agent">
+    <h2>🤖 2. AI Agent 选型对决与部署规划（Hermes Agent vs OpenClaw）</h2>
+    
+    <div class="alert alert-blue">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+      <div>
+        <strong>决策结论：选择【Hermes Agent】，并落户在【Netcup-2oVPS (2C2G 60GB)】！</strong><br>
+        结合“方便维护管理、占用资源极少、功能恰到好处”的要求，Hermes 压倒性优于臃肿的 OpenClaw；确认 2oVPS 拥有 2G 内存与 60G 硬盘后，它更是承接个人 AI 智能体的天选之机。
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">为什么坚决选 Hermes 而非 OpenClaw？</div>
+          <span class="badge badge-green">选型胜出</span>
+        </div>
+        <ul>
+          <li><strong>内存胃口天差地别</strong>：
+            <ul>
+              <li><strong>OpenClaw</strong>：基于 Node.js 22，空闲吃 600M~900M，执行任务或压缩上下文时动辄飙升至 <strong>1.5GB ~ 3GB+</strong>，极其容易把 VPS 榨干；</li>
+              <li><strong>Hermes Agent</strong>：基于轻量 Python + SQLite，守护进程仅占 ~250MB，Telegram 网关常驻仅 <strong>600MB ~ 900MB</strong>，运行平稳不漏内存。</li>
+            </ul>
+          </li>
+          <li><strong>维护心智成本极低</strong>：
+            <ul>
+              <li>OpenClaw 架构庞大（多渠道网关/消息总线），插件市场频繁更新断配；</li>
+              <li>Hermes 采用单文件 <code>config.yaml</code>，具备自学技能机制（Curator），无需配置繁琐插件，对个人 24 小时挂机助理最友好。</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">为什么 Hermes 必须落在 Netcup-2oVPS？</div>
+          <span class="badge badge-purple">架构深意</span>
+        </div>
+        <ul>
+          <li><strong>保护 BW25 的邮箱 IP（最大安全红线）</strong>：
+            <ul>
+              <li>BW25 运行着邮件服务器（对 IP 纯净度极度敏感）。AI Agent 频繁上网搜索、爬取链接，如果放在 BW25，极易导致邮件 IP 被拉黑（RBL）；<strong>放在 2oVPS 可彻底实现网络与 IP 隔离</strong>。</li>
+            </ul>
+          </li>
+          <li><strong>与“个人私有工作台”天然协同</strong>：
+            <ul>
+              <li>2oVPS 运行着笔记（Inkstone/Memos）和私有网盘（Filebrowser）。Hermes 作为个人助理，通过 Docker 目录只读挂载，未来能直接阅读个人笔记做本地知识库检索（RAG），体验浑然一体。</li>
+            </ul>
+          </li>
+          <li><strong>2C 2G 60GB 资源绰绰有余</strong>：
+            <ul>
+              <li>2oVPS 现有服务仅吃 300MB，净余 1.4GB 内存；给 Hermes 划定 1.2G 硬限制后，仍有充裕安全垫。</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Hermes Docker Compose 部署模板 -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title" style="margin-bottom:8px;">🛠️ Netcup-2oVPS 上的 Hermes Agent 生产部署模板 (`docker-compose.yml`)</div>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">
+        在 <code>/root/data/docker/hermes</code> 目录下创建配置，严格限制内存上限为 1200M，挂载专属数据卷，杜绝容器逃逸与资源挤占：
+      </p>
+      <div class="code-box">
+        <pre>services:
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    container_name: hermes-agent
+    restart: unless-stopped
+    volumes:
+      # 持久化存储 Agent 会话记忆、自学技能与 SQLite 数据库
+      - /root/data/docker/hermes/data:/opt/data
+      # (可选) 将个人笔记只读挂载给 Agent，供其学习个人知识库 (安全防篡改)
+      # - /root/data/docker/notes:/opt/knowledge_base:ro
+    environment:
+      - TZ=Asia/Shanghai
+      # 配置 Telegram Bot Token 与 LLM API 密钥 (建议写入 .env 文件)
+      - TELEGRAM_BOT_TOKEN=your_bot_token_here
+      - OPENROUTER_API_KEY=your_openrouter_key_here
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'          # 最多调用 1.5 核
+          memory: 1200M        # 内存硬上限 1.2G，为宿主机及笔记服务硬留 800MB 物理内存</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 核心机器职责细分 -->
+  <section id="roles">
+    <h2>🏢 3. 核心生产机器职责细分</h2>
+    <div class="grid">
+      <!-- 2oVPS -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Netcup-2oVPS（私有资产与智能中枢）</div>
+            <div class="card-subtitle">2C 2G 60GB 黄金规格 · 纽伦堡机房</div>
+          </div>
+          <span class="badge badge-purple">私有核心</span>
+        </div>
+        <ul>
+          <li><strong>Hermes Agent (AI 助理)</strong>：全天候常驻，响应 Telegram 交互、执行自动化总结与工具检索。</li>
+          <li><strong>个人笔记知识库</strong>：部署 Inkstone-server / Papergrid / Memos，存放核心知识资产。</li>
+          <li><strong>私有网盘与导航</strong>：Filebrowser、WebDAV 以及 Sun-Panel 个人内网工作台。</li>
+          <li><strong>Dockhand 主控端</strong>：整个机队的 Docker 集中控制中心。</li>
+        </ul>
+      </div>
+
+      <!-- BW25 -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Netcup-BW25（公共门户与通信中心）</div>
+            <div class="card-subtitle">高配大机 · 重点保护 IP 信誉</div>
+          </div>
+          <span class="badge badge-green">公网门户</span>
+        </div>
+        <ul>
+          <li><strong>Docker-Mailserver</strong>：独立邮局通信系统。<strong>严禁在此机运行爬虫或外部 Agent</strong>，维护洁净 IP。</li>
+          <li><strong>Halo 博客系统</strong>：公开展示站，通过 NPM 反向代理暴露公网。</li>
+          <li><strong>Cloudflare 图床</strong>：为全网博客和公共展示提供图床服务。</li>
+        </ul>
+      </div>
+
+      <!-- BITSFLOW -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">BITSFLOW-DE（总入口与监控）</div>
+            <div class="card-subtitle">$7/年 纽伦堡同城节点 · 与 Netcup 延迟 1~3ms</div>
+          </div>
+          <span class="badge badge-blue">网关总咽喉</span>
+        </div>
+        <ul>
+          <li><strong>NPM (Nginx Proxy Manager)</strong>：全网统一入口，自动收敛并续签所有域名的 Let's Encrypt 证书。</li>
+          <li><strong>Komari Traffic 监控中枢</strong>：全局流量监听与连通性探针总控。</li>
+          <li><strong>运维红线</strong>：作为全网命脉，<strong>严禁当做测试沙盒随意重启折腾</strong>。</li>
+        </ul>
+      </div>
+
+      <!-- 1oVPS -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Netcup-1oVPS（自动化与随手测试）</div>
+            <div class="card-subtitle">1C 1G 20GB · 脏活任务隔离机</div>
+          </div>
+          <span class="badge badge-amber">风险隔离</span>
+        </div>
+        <ul>
+          <li><strong>青龙面板 (Qinglong)</strong>：托管第三方开源打卡签到脚本，即使爆内存也不伤及主业务。</li>
+          <li><strong>tg-signpulse</strong>：签到通知机器人集中调度。</li>
+          <li><strong>轻量测试功能</strong>：日常随手跑几百 MB 的轻量小容器，测完即删。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 测试沙盒长效方案 -->
+  <section id="test-machine">
+    <h2>🛠️ 4. 专属测试沙盒长效方案（防搞崩主服务）</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">当下现成：ColoCrossing 消耗型测试机</div>
+          <span class="badge badge-red">近期主力</span>
+        </div>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:8px;">2027 年 1 月到期且确定不续费：</p>
+        <ul>
+          <li><strong>完全不心疼的耗材</strong>：任何大流量消耗、未知安全性的 Docker 镜像、重型自动化任务，先丢给它随便造；</li>
+          <li>搞崩了直接在后台面板一键重装系统，零心理负担。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">日常轻快：Netcup-1oVPS 伴随测试</div>
+          <span class="badge badge-amber">轻量随手</span>
+        </div>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:8px;">与青龙面板共用环境：</p>
+        <ul>
+          <li>适合测试各种 Go/Rust/Python 微服务小工具，单容器内存低于 300MB 的随手测完即删；</li>
+          <li>测试完毕随手敲 <code>docker system prune -f</code> 保持磁盘整洁。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">生产红线纪律（铁律）</div>
+          <span class="badge badge-blue">运维红线</span>
+        </div>
+        <ul>
+          <li><strong>严禁直接在 BW25 和 2oVPS 上执行未经验证的 <code>docker run</code></strong>；</li>
+          <li>所有服务在测试沙盒验证无误、固化精简好 <code>docker-compose.yml</code> 资源配额后，再部署投产。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 账单监控与解约周期提醒 -->
+  <section id="billing">
+    <h2>💰 5. Netcup 账单在 Komari 监控中的设置规范</h2>
+    <div class="alert alert-red">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <div>
+        <strong>高危付款警告：</strong>Netcup 账单当前状态为 <code>unpaid</code>，付款截止日为 <strong>2026 年 9 月 23 日 (Due: 23.09.2026)</strong>！Netcup 逾期会产生逾期催缴费（Mahngebühr）或停机，务必提前完成结清扣款。
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Komari 监控配置项</th>
+            <th>填写设置值</th>
+            <th>依据与避坑说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>服务到期时间 (Expire Date)</strong></td>
+            <td><strong style="color:var(--accent-blue);">2027-02-24</strong></td>
+            <td>取自账单上的服务周期 <code>24.08.2026 - 24.02.2027</code></td>
+          </tr>
+          <tr>
+            <td><strong>计费周期 (Cycle)</strong></td>
+            <td><strong>半年付 (Semi-annually / 6M)</strong></td>
+            <td><code>VPS nano G11s 6M</code>，每 6 个月产生一次账单</td>
+          </tr>
+          <tr>
+            <td><strong>续费金额 (Price)</strong></td>
+            <td><strong>€11.94 EUR</strong></td>
+            <td>半年的总付金额（折合月均 €1.99）</td>
+          </tr>
+          <tr>
+            <td><strong>提前解约截止线（避坑核心）</strong></td>
+            <td><strong style="color:var(--accent-amber);">最晚 2027-01-24 前</strong></td>
+            <td>Netcup 合同规定：必须在到期日前至少 <strong>31 天</strong>在 CCP 控制台发起解约，否则自动续签半年</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6. 高 CPU 故障清除 SOP -->
+  <section id="incident">
+    <h2>⚡ 6. 桌面环境与高占用进程清理复盘 (SOP)</h2>
+    <p style="color: var(--text-muted); margin-bottom: 12px; font-size: 0.88rem;">此前由于后台常驻的 Epiphany 浏览器及 WebKitWebProcess 死循环，导致双核机器 Load Average 飙升至 6.0+。标准清除流程：</p>
+    
+    <div class="code-box">
+      <pre><span style="color:#64748b;"># 1. 立即停止并禁用 xrdp 与 lightdm 桌面环境服务</span>
+sudo systemctl stop xrdp lightdm
+sudo systemctl disable xrdp lightdm
+
+<span style="color:#64748b;"># 2. 强杀残留的所有桌面与 WebKit 渲染进程</span>
+sudo pkill -9 -f 'WebKitWebProcess|epiphany|xfce|xfwm4|xrdp|lightdm|Xorg'
+
+<span style="color:#64748b;"># 3. 切换默认系统启动级别为纯命令行模式（multi-user）</span>
+sudo systemctl set-default multi-user.target
+
+<span style="color:#64748b;"># 4. 彻底卸载清理桌面组件包并清理废弃依赖包</span>
+sudo apt purge -y xrdp xorgxrdp lightdm 'xfce4*' 'xfwm4*' 'xserver-xorg*' epiphany-browser
+sudo apt autoremove --purge -y && sudo apt clean
+
+<span style="color:#64748b;"># 5. 1C1G 小鸡（如 Netcup 1o）快速开启 2G Swap 防爆内存</span>
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab</pre>
+    </div>
+  </section>
+
+  <!-- 7. 迁移与下线行动计划 -->
+  <section id="action-plan">
+    <h2>🚀 7. 迁移与下线执行计划</h2>
+    <div class="card">
+      <ol>
+        <li><strong>第一步：解构 `bits-FRA-SMSM` 并下线</strong>
+          <ul>
+            <li>将有价值的 <code>inkstone-server</code>（笔记）、<code>sun-panel</code>（导航）迁移至 <strong>Netcup-2oVPS</strong>；</li>
+            <li>放弃无用测试容器，在账单后台关闭自动续费，任其到期释放。</li>
+          </ul>
+        </li>
+        <li><strong>第二步：组建 2oVPS 的 AI 智能工作台</strong>
+          <ul>
+            <li>在 2oVPS 上部署 <strong>Hermes Agent</strong>，配置 Telegram Bot 凭据与模型 API Key；</li>
+            <li>设定 <code>1200M</code> 内存上限，并挂载持久化目录。</li>
+          </ul>
+        </li>
+        <li><strong>第三步：净化 `Netcup-BW25` 独立生产机</strong>
+          <ul>
+            <li>将签到类的 <code>tg-signpulse</code> 迁出到 <strong>Netcup-1oVPS</strong>（与青龙面板集中管理）；</li>
+            <li>排查修复 <code>mailserver</code> 容器的 unhealthy 状态，确保独立干净的邮局信誉。</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>VPS 集群架构与私有云运维治理手册 · 默认亮色模式 · 建议离线保存备用</p>
+  </footer>
+
+</div>
+
+<!-- 模式切换与持久化存储脚本 -->
+<script>
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    const icon = document.getElementById('themeIcon');
+    const text = document.getElementById('themeText');
+    if (theme === 'dark') {
+      icon.textContent = '☀️';
+      text.textContent = '切换亮色模式';
+    } else {
+      icon.textContent = '🌙';
+      text.textContent = '切换暗色模式';
+    }
+  }
+
+  function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const targetTheme = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme(targetTheme);
+  }
+
+  (function initTheme() {
+    const savedTheme = localStorage.getItem('doc-theme') || 'light';
+    applyTheme(savedTheme);
+  })();
+</script>
+
+</body>
+</html>
