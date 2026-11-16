@@ -51,13 +51,14 @@
     </table>
 
     <h2><span class="step-num">2</span> 邮局部署 (Poste.io)</h2>
-    <div class="desc">使用单镜像全能方案。默认加入禁用杀毒参数，启动后内存占用仅约 700MB。</div>
+    <div class="desc">使用单镜像全能方案。<b>关键点：必须用 host 网络模式</b>（端口直接监听宿主机，无需 -p 映射；bridge + -p 写法会让邮件日志里的客户端 IP 全部变成 docker 网关地址，破坏 rspamd 发件人信誉判断与 fail2ban 封禁逻辑）。默认禁用杀毒参数，启动后内存占用仅约 350MB，重启后 ClamAV 也不会复活（run 脚本检测到 DISABLE_CLAMAV 会自动停用）。</div>
     <div class="code-container">
         <button class="copy-btn" onclick="copyCode(this)">一键复制部署命令</button>
         <pre>mkdir -p /home/docker/mail && docker run -d --name mailserver \
+  --network host --restart always \
   -e HTTPS=ON \
   -e DISABLE_CLAMAV=TRUE \
-  -p 25:25 -p 465:465 -p 587:587 -p 993:993 -p 8080:8080 \
+  -e TZ=Europe/Prague \
   -v /home/docker/mail:/data \
   analogic/poste.io</pre>
     </div>
@@ -66,7 +67,7 @@
     
     <div class="card">
         <h3>1. 内存监测：<code>mailmem</code> 基础命令</h3>
-        <p class="desc">功能：静态查看容器占用的物理内存百分比。确认 ClamAV 关闭后应在 20% 左右。</p>
+        <p class="desc">功能：静态查看容器占用的物理内存百分比。确认 ClamAV 关闭后应在 4~5% 左右（约 350MB）；若显示 20%（约 1.5GB），说明 ClamAV 又跑起来了。</p>
         <div class="code-container">
             <button class="copy-btn" onclick="copyCode(this)">复制</button>
             <pre>docker stats mailserver --no-stream</pre>
@@ -83,8 +84,8 @@
     </div>
 
     <div class="card">
-        <h3>3. 精准控制杀毒 (基于运行时)</h3>
-        <p class="desc">功能：使用 s6 管理器直接关闭或开启 clamd 进程，实时释放内存。</p>
+        <h3>3. 精准控制杀毒 (仅临时手段)</h3>
+        <p class="desc">功能：使用 s6 管理器实时关闭/开启 clamd。<b>注意：此方法只对当前容器生命周期有效，容器或宿主机重启后 clamd 会自动复活</b>。永久禁用请使用第 2 节部署命令中的 <code>-e DISABLE_CLAMAV=TRUE</code> 参数（部署时带上即可，无需再手动停）。</p>
         <div class="code-container">
             <button class="copy-btn" onclick="copyCode(this)">复制禁用命令</button>
             <pre>docker exec mailserver s6-svc -d /var/run/s6/services/clamd</pre>
@@ -96,7 +97,7 @@
     </div>
 
     <h2><span class="step-num">4</span> 长期管理别名 (一键配置)</h2>
-    <p>将上述复杂命令封装为简单快捷键。配置后，输入 <code>clamoff</code> 即可释放 1GB 内存。</p>
+    <p>将上述命令封装为快捷键。配置后输入 <code>mailmem</code> 查内存、<code>clamoff</code> 临时释放内存。<b>提醒：clamoff 属临时手段，容器重启后需重新执行；永久方案是部署命令里的 DISABLE_CLAMAV 参数。</b></p>
     <div class="code-container">
         <button class="copy-btn" onclick="copyCode(this)">一键复制并配置别名</button>
         <pre>cat <<EOF >> ~/.bashrc
