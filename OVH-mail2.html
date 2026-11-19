@@ -120,6 +120,29 @@ source ~/.bashrc</pre>
         <b>登录凭证：</b> 用户名必须是<b>完整邮箱地址</b>。如果 SSL 连接失败，请检查防火墙是否允许 993/465 端口。
     </div>
 
+    <h3>5.1 新版 Outlook（免费版）添加 w@lilary.com 实操（2026-11-19 验证通过）</h3>
+    <div class="desc">
+        新版 Outlook（Microsoft.OutlookForWindows）<b>不支持 POP</b>，自建邮箱只能走 <b>IMAP</b>。
+        添加路径：<b>设置（齿轮）→ 添加账户 → 输入 w@lilary.com → 探测失败时选「高级选项 / 手动设置 → IMAP」</b>，按下表填写：
+    </div>
+    <table class="dns-table">
+        <tr><th>字段</th><th>填写值</th></tr>
+        <tr><td>电子邮件</td><td><code>w@lilary.com</code></td></tr>
+        <tr><td>用户名</td><td><code>w@lilary.com</code>（完整地址）</td></tr>
+        <tr><td>密码</td><td>Poste.io 后台为该邮箱设置的<b>邮箱密码</b>（不是任何微软账号密码）</td></tr>
+        <tr><td>收件服务器 (IMAP)</td><td><code>mail.lilary.com</code></td></tr>
+        <tr><td>收件端口 / 加密</td><td><code>993</code> + SSL/TLS</td></tr>
+        <tr><td>发件服务器 (SMTP)</td><td><code>mail.lilary.com</code></td></tr>
+        <tr><td>发件端口 / 加密</td><td><code>465</code> + SSL/TLS（若不被接受改 <code>587</code> + STARTTLS，两端口均已实测放通）</td></tr>
+        <tr><td>发件需要身份验证</td><td>勾选，凭据同收件</td></tr>
+    </table>
+    <div class="warning-box">
+        <b>三个注意点：</b><br>
+        1. <b>Cloud Sync：</b> 新版 Outlook 会把 IMAP 邮件同步到微软云做索引，BW25（152.53.86.5）上仍是原件；介意隐私的用 classic Outlook（需授权）或 Thunderbird。<br>
+        2. <b>端口检测：</b> 添加前可先在 PC 上 <code>Test-NetConnection mail.lilary.com -Port 993</code> 验证连通，已实测 25/143/465/587/993 全部开放。<br>
+        3. <b>界面变英文：</b> 设置 → General → Language and time → Display language 选「中文(简体)」，应用会自动下载语言包并重启。
+    </div>
+
     <h2><span class="step-num">6</span> 进阶测试与维护</h2>
     <ol>
         <li><b>跑分测试：</b> 前往 <a href="https://www.mail-tester.com" target="_blank">Mail-Tester.com</a>，目标 10/10 满分。</li>
